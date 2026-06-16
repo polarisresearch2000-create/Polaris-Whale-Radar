@@ -22,10 +22,14 @@ const CONFIG = {
   WATCHLIST_MAX_AGE_MIN: 90,       // 只推这么多分钟内的动作
 };
 
+const fs = require("fs");
+const path = require("path");
+
 const GAMMA = "https://gamma-api.polymarket.com";
 const DATA = "https://data-api.polymarket.com";
 const PNL = "https://user-pnl-api.polymarket.com";
 const LB = "https://lb-api.polymarket.com";
+const WL_FILE = path.join(__dirname, "data", "watchlist.json");
 
 // ---------------- 工具 ----------------
 async function getJSON(url, tries = 3) {
@@ -223,7 +227,16 @@ async function getTopWallets(limit) {
 // 打分(全期盈亏)，只留下达到盈利门槛的赢家。带缓存(6小时重建)。
 let _wlCache = { t: 0, list: null };
 async function buildCryptoWatchlist() {
+  // 内存缓存(同一进程内)
   if (_wlCache.list && Date.now() - _wlCache.t < CONFIG.WATCHLIST_TTL_MS) return _wlCache.list;
+  // 文件缓存(跨进程/跨云端每次运行复用，避免每 5 分钟重建一次)
+  try {
+    const c = JSON.parse(fs.readFileSync(WL_FILE, "utf8"));
+    if (c && c.t && Array.isArray(c.list) && Date.now() - c.t < CONFIG.WATCHLIST_TTL_MS) {
+      _wlCache = c;
+      return c.list;
+    }
+  } catch {}
 
   const [cryptoMap, trades] = await Promise.all([
     getCryptoMarkets(),
@@ -259,6 +272,10 @@ async function buildCryptoWatchlist() {
     }));
 
   _wlCache = { t: Date.now(), list: winners };
+  try {
+    fs.mkdirSync(path.dirname(WL_FILE), { recursive: true });
+    fs.writeFileSync(WL_FILE, JSON.stringify(_wlCache));
+  } catch {}
   return winners;
 }
 

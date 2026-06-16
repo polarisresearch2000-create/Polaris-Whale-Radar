@@ -30,14 +30,14 @@ jobs:
           TELEGRAM_CHANNEL: "@polarisresearch2000"
         run: node bot.js --once
 
-      - name: Persist dedupe state
+      - name: Persist state (dedupe + watchlist cache)
         run: |
-          if [ -n "$(git status --porcelain data/seen.json)" ]; then
+          if [ -n "$(git status --porcelain data)" ]; then
             git config user.name "polaris-bot"
             git config user.email "bot@users.noreply.github.com"
-            git add data/seen.json
-            git commit -m "chore: update dedupe state [skip ci]"
+            git add data
+            git commit -m "chore: update bot state [skip ci]"
             git push
           else
-            echo "No new signals; nothing to persist."
+            echo "No state changes to persist."
           fi
