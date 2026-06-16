@@ -23,8 +23,13 @@ function loadEnv(p) {
 }
 loadEnv(path.join(__dirname, ".env"));
 
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const CHANNEL = process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
+// 多赛道支持：PROFILE 选用哪套 token/频道(如 SPORTS)，空=默认(加密)。
+const PROFILE = (process.env.PROFILE || "").toUpperCase();
+const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
+const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
+const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
+const CHANNEL =
+  process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
 const POLL_MINUTES = Number(process.env.POLL_MINUTES || 3);
 // 本地想要"秒级近实时"就设 POLL_SECONDS（如 20），优先级高于 POLL_MINUTES
 const POLL_MS = process.env.POLL_SECONDS
@@ -32,9 +37,10 @@ const POLL_MS = process.env.POLL_SECONDS
   : POLL_MINUTES * 60 * 1000;
 const MAX_AGE_MIN = Number(process.env.MAX_SIGNAL_AGE_MIN || 180); // 大单信号只推这么多分钟内的
 const WATCH_MAX_AGE_MIN = Number(process.env.WATCHLIST_MAX_AGE_MIN || 90); // 观察名单只推这么多分钟内的
-const WATCH_MAX_PER_RUN = Number(process.env.WATCHLIST_MAX_PER_RUN || 8); // 单轮最多推几条观察名单信号(防刷屏)
+const WATCH_MAX_PER_RUN = Number(process.env.WATCHLIST_MAX_PER_RUN || 5); // 单轮最多推几条观察名单信号(防刷屏)
+const SIGNAL_MAX_PER_RUN = Number(process.env.SIGNAL_MAX_PER_RUN || 5); // 单轮最多推几条大额信号(防刷屏)
 const WHALE_PULL = process.env.POLL_SECONDS ? 500 : 2000; // 快速轮询模式拉少一点成交，省流量
-const SEEN_FILE = path.join(__dirname, "data", "seen.json");
+const SEEN_FILE = path.join(__dirname, "data", `seen_${TAG}.json`); // 每个赛道独立去重
 
 if (!TOKEN) {
   console.error("❌ 缺少 TELEGRAM_BOT_TOKEN（请检查 .env）");
@@ -109,7 +115,7 @@ function fmtSignal(w) {
     `   <code>${esc(w.proxyWallet)}</code>`,
     ``,
     `🔗 <a href="${url}">View market on Polymarket ↗</a>`,
-    `🔭 Polaris Research · Polymarket Crypto Smart-Money Radar`,
+    `🔭 Polaris Research · Polymarket ${LABEL} Smart-Money Radar`,
   ].join("\n");
 }
 
@@ -137,7 +143,7 @@ function fmtWatchlistSignal(w) {
     `   <code>${esc(w.proxyWallet)}</code>`,
     ``,
     `🔗 <a href="${url}">View market on Polymarket ↗</a>`,
-    `🔭 Polaris Research · Polymarket Crypto Smart-Money Radar`,
+    `🔭 Polaris Research · Polymarket ${LABEL} Smart-Money Radar`,
   ].join("\n");
 }
 
@@ -155,36 +161,39 @@ async function send(text) {
 async function pollOnce() {
   const seen = loadSeen();
 
-  // 1) 大额交易信号
+  // 1) 大额交易信号(按聪明钱盈利排序，优先推最强的)
   const { signals, stats } = await scan({ whaleTradesToPull: WHALE_PULL, maxAgeMinutes: MAX_AGE_MIN });
-  const freshWhales = signals.filter((s) => !seen.has(s.key));
+  const freshWhalesAll = signals
+    .filter((s) => !seen.has(s.key))
+    .sort((a, b) => (b.allTimePnl || 0) - (a.allTimePnl || 0));
 
   // 2) 观察名单信号(榜首赢家的动作，任何金额)
-  let freshWatch = [];
+  let freshWatchAll = [];
   let watchStats = { watchSize: 0 };
   try {
     const wl = await scanWatchlist({ maxAgeMinutes: WATCH_MAX_AGE_MIN });
     watchStats = wl.stats;
-    freshWatch = wl.hits.filter((s) => !seen.has(s.key)).slice(0, WATCH_MAX_PER_RUN);
+    freshWatchAll = wl.hits.filter((s) => !seen.has(s.key));
   } catch (e) {
     console.error("观察名单扫描出错:", e.message);
   }
 
+  // 每轮限量推送(防刷屏)；未推送的也标记已读，避免之后涓滴式补推
+  const whalesPost = freshWhalesAll.slice(0, SIGNAL_MAX_PER_RUN);
+  const watchPost = freshWatchAll.slice(0, WATCH_MAX_PER_RUN);
+
   console.log(
-    `[${new Date().toISOString()}] 大单 ${stats.cryptoWhaleCount}/新${freshWhales.length} ｜ 观察名单 ${watchStats.watchSize}人/新${freshWatch.length}`
+    `[${new Date().toISOString()}] 大单 ${stats.cryptoWhaleCount}/新${freshWhalesAll.length}/推${whalesPost.length} ｜ 名单 ${watchStats.watchSize}人/新${freshWatchAll.length}/推${watchPost.length}`
   );
 
-  for (const s of freshWhales) {
-    await send(fmtSignal(s));
-    seen.add(s.key);
-  }
-  for (const s of freshWatch) {
-    await send(fmtWatchlistSignal(s));
-    seen.add(s.key);
-  }
+  for (const s of whalesPost) await send(fmtSignal(s));
+  for (const s of watchPost) await send(fmtWatchlistSignal(s));
+
+  for (const s of freshWhalesAll) seen.add(s.key);
+  for (const s of freshWatchAll) seen.add(s.key);
 
   saveSeen(seen);
-  return freshWhales.length + freshWatch.length;
+  return whalesPost.length + watchPost.length;
 }
 
 // ---------- 入口 ----------

@@ -29,7 +29,9 @@ const GAMMA = "https://gamma-api.polymarket.com";
 const DATA = "https://data-api.polymarket.com";
 const PNL = "https://user-pnl-api.polymarket.com";
 const LB = "https://lb-api.polymarket.com";
-const WL_FILE = path.join(__dirname, "data", "watchlist.json");
+// 赛道(可配置)：crypto / fifa-world-cup / sports / politics ... 默认 crypto
+const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
+const WL_FILE = path.join(__dirname, "data", `watchlist_${TAG}.json`); // 每个赛道独立缓存
 
 // ---------------- 工具 ----------------
 async function getJSON(url, tries = 3) {
@@ -72,6 +74,8 @@ const isDirectional = (price) => price > 0.15 && price < 0.85;
 const HFT_RE = /\bup or down\b/i;
 const CRYPTO_WORDS =
   /\b(bitcoin|btc|ethereum|eth|crypto|solana|\bsol\b|xrp|ripple|dogecoin|doge|binance|coinbase|stablecoin|usdc|usdt|altcoin|memecoin|nft|defi)\b/i;
+// 关键词兜底：仅加密用标题判断；其他赛道只靠 tag 名单，避免误判
+const KEYWORDS = TAG === "crypto" ? CRYPTO_WORDS : null;
 
 // ---------------- 数据拉取 ----------------
 // 返回 Map: conditionId(小写) -> { endMs, closed }，用于过滤已结束/即将结算的市场
@@ -84,7 +88,7 @@ async function getCryptoMarkets() {
     let events;
     try {
       events = await getJSON(
-        `${GAMMA}/events?tag_slug=crypto&closed=false&limit=100&offset=${page * 100}`
+        `${GAMMA}/events?tag_slug=${TAG}&closed=false&limit=100&offset=${page * 100}`
       );
     } catch {
       break;
@@ -161,7 +165,7 @@ async function scan(opts = {}) {
     }))
     .filter((t) => {
       const meta = cryptoMap.get((t.conditionId || "").toLowerCase());
-      const isCrypto = !!meta || CRYPTO_WORDS.test(t.title || "");
+      const isCrypto = !!meta || (KEYWORDS && KEYWORDS.test(t.title || ""));
       if (!isCrypto) return false;
       if (CONFIG.EXCLUDE_HFT && HFT_RE.test(t.title || "")) return false;
       // 排除已结束 / 即将结算的市场(对这种市场的信号没有意义)
@@ -247,7 +251,7 @@ async function buildCryptoWatchlist() {
   const nameOf = new Map();
   for (const t of trades) {
     const meta = cryptoMap.get((t.conditionId || "").toLowerCase());
-    const isCrypto = !!meta || CRYPTO_WORDS.test(t.title || "");
+    const isCrypto = !!meta || (KEYWORDS && KEYWORDS.test(t.title || ""));
     if (!isCrypto) continue;
     if (CONFIG.EXCLUDE_HFT && HFT_RE.test(t.title || "")) continue;
     const w = (t.proxyWallet || "").toLowerCase();
@@ -305,7 +309,7 @@ async function scanWatchlist(opts = {}) {
   for (const { w, trades } of lists) {
     for (const t of trades) {
       const meta = cryptoMap.get((t.conditionId || "").toLowerCase());
-      const isCrypto = !!meta || CRYPTO_WORDS.test(t.title || "");
+      const isCrypto = !!meta || (KEYWORDS && KEYWORDS.test(t.title || ""));
       if (!isCrypto) continue;
       if (CONFIG.EXCLUDE_HFT && HFT_RE.test(t.title || "")) continue;
       if (meta && meta.closed) continue;
