@@ -65,10 +65,10 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 
 // 把"分钟前"转成易读的相对时间
 function ago(min) {
-  if (min < 1) return "刚刚";
-  if (min < 60) return `${min}分钟前`;
+  if (min < 1) return "剛剛";
+  if (min < 60) return `${min}分鐘前`;
   const h = Math.floor(min / 60);
-  if (h < 24) return min % 60 ? `${h}小时${min % 60}分前` : `${h}小时前`;
+  if (h < 24) return min % 60 ? `${h}小時${min % 60}分前` : `${h}小時前`;
   return `${Math.floor(h / 24)}天前`;
 }
 
@@ -85,15 +85,15 @@ async function tg(method, body) {
 
 const tagEn = (p) =>
   p > 50000
-    ? "🐋🟢 巨鲸赢家 Profitable Whale"
+    ? "🐋🟢 巨鯨贏家 Profitable Whale"
     : p > 5000
-    ? "🟢 赢家钱包 Winning wallet"
+    ? "🟢 贏家錢包 Winning wallet"
     : p < -5000
-    ? "🔴 亏损钱包 Losing wallet"
-    : "⚪ 普通钱包 Neutral";
+    ? "🔴 虧損錢包 Losing wallet"
+    : "⚪ 普通錢包 Neutral";
 
-// 中文辅助：买卖方向、结果选项
-const sideZh = (s) => (s === "BUY" ? "买入" : s === "SELL" ? "卖出" : s);
+// 繁中輔助：買賣方向、結果選項
+const sideZh = (s) => (s === "BUY" ? "買入" : s === "SELL" ? "賣出" : s);
 const ocZh = (o) =>
   ({ yes: "是", no: "否", over: "大/高", under: "小/低", draw: "平局" }[String(o).toLowerCase()] || "");
 
@@ -111,17 +111,17 @@ function fmtSignal(w) {
   return [
     `${tagEn(w.allTimePnl)}  ·  ${conv}`,
     ``,
-    `${sq} <b>${sideZh(w.side)} ${oc}${ocz}</b>  @ ${price}  (隐含概率 ${pct}%)`,
-    `💰 金额 Size <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
+    `${sq} <b>${sideZh(w.side)} ${oc}${ocz}</b>  @ ${price}  (隱含機率 ${pct}%)`,
+    `💰 金額 Size <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
     ``,
     `📊 ${esc(w.title)}`,
     ``,
     `👤 <b>${name}</b>`,
-    `   历史盈亏 PnL <b>${fmtUSD(w.allTimePnl)}</b>  ·  持仓市值 ${fmtUSD(w.value)}`,
+    `   歷史盈虧 PnL <b>${fmtUSD(w.allTimePnl)}</b>  ·  持倉市值 ${fmtUSD(w.value)}`,
     `   <code>${esc(w.proxyWallet)}</code>`,
     ``,
-    `🔗 <a href="${url}">查看市场 View on Polymarket ↗</a>`,
-    `🔭 Polaris Research · Polymarket ${LABEL} 聪明钱雷达`,
+    `🔗 <a href="${url}">查看市場 View on Polymarket ↗</a>`,
+    `🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`,
   ].join("\n");
 }
 
@@ -138,19 +138,19 @@ function fmtWatchlistSignal(w) {
   const name = esc(w.name || w.proxyWallet.slice(0, 8));
   const ocz = ocZh(w.outcome) ? `（${ocZh(w.outcome)}）` : "";
   return [
-    `👑 <b>顶级赢家出手 TOP TRADER MOVE</b>  ·  ${conv}`,
+    `👑 <b>頂級贏家出手 TOP TRADER MOVE</b>  ·  ${conv}`,
     ``,
-    `${sq} <b>${sideZh(w.side)} ${oc}${ocz}</b>  @ ${price}  (隐含概率 ${pct}%)`,
-    `💰 金额 Size <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
+    `${sq} <b>${sideZh(w.side)} ${oc}${ocz}</b>  @ ${price}  (隱含機率 ${pct}%)`,
+    `💰 金額 Size <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
     ``,
     `📊 ${esc(w.title)}`,
     ``,
     `👤 <b>${name}</b>  (盈利榜第 #${w.rank} 名)`,
-    `   历史总盈利 Profit <b>${fmtUSD(w.profit)}</b>`,
+    `   歷史總盈利 Profit <b>${fmtUSD(w.profit)}</b>`,
     `   <code>${esc(w.proxyWallet)}</code>`,
     ``,
-    `🔗 <a href="${url}">查看市场 View on Polymarket ↗</a>`,
-    `🔭 Polaris Research · Polymarket ${LABEL} 聪明钱雷达`,
+    `🔗 <a href="${url}">查看市場 View on Polymarket ↗</a>`,
+    `🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`,
   ].join("\n");
 }
 
