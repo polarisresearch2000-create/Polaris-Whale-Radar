@@ -33,6 +33,7 @@ const POLL_MS = process.env.POLL_SECONDS
 const MAX_AGE_MIN = Number(process.env.MAX_SIGNAL_AGE_MIN || 180); // 大单信号只推这么多分钟内的
 const WATCH_MAX_AGE_MIN = Number(process.env.WATCHLIST_MAX_AGE_MIN || 90); // 观察名单只推这么多分钟内的
 const WATCH_MAX_PER_RUN = Number(process.env.WATCHLIST_MAX_PER_RUN || 8); // 单轮最多推几条观察名单信号(防刷屏)
+const WHALE_PULL = process.env.POLL_SECONDS ? 500 : 2000; // 快速轮询模式拉少一点成交，省流量
 const SEEN_FILE = path.join(__dirname, "data", "seen.json");
 
 if (!TOKEN) {
@@ -155,7 +156,7 @@ async function pollOnce() {
   const seen = loadSeen();
 
   // 1) 大额交易信号
-  const { signals, stats } = await scan({ whaleTradesToPull: 2000, maxAgeMinutes: MAX_AGE_MIN });
+  const { signals, stats } = await scan({ whaleTradesToPull: WHALE_PULL, maxAgeMinutes: MAX_AGE_MIN });
   const freshWhales = signals.filter((s) => !seen.has(s.key));
 
   // 2) 观察名单信号(榜首赢家的动作，任何金额)

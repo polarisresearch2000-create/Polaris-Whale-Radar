@@ -3,9 +3,11 @@ name: Polaris Whale Radar
 # 每 15 分钟扫描一次 Polymarket，把新信号推到 Telegram 频道。
 # 也可以在 GitHub 的 Actions 页面手动点 "Run workflow" 立即触发。
 on:
-  schedule:
-    - cron: "*/5 * * * *" # GitHub Actions 免费层最快约每 5 分钟(且可能被延迟)
-  workflow_dispatch: {}
+  # ⏸ 已暂停定时运行(本地快速轮询期间，避免与本地重复推送)。
+  # 恢复云端：取消下面两行的注释即可。
+  # schedule:
+  #   - cron: "*/5 * * * *"
+  workflow_dispatch: {} # 仍可在 Actions 页手动 Run workflow
 
 permissions:
   contents: write # 允许把去重状态(data/seen.json)提交回仓库
