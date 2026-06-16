@@ -2,23 +2,23 @@
 // 从 Polymarket 拉取加密市场大额成交，给钱包标注真实战绩，挑出「聪明钱方向性下注」信号。
 
 const CONFIG = {
-  MIN_NOTIONAL_USDC: 1000,    // 多大金额(USDC)才算「巨鲸」(服务端直接过滤)
+  MIN_NOTIONAL_USDC: Number(process.env.MIN_NOTIONAL || 1000), // 多大金额(USDC)才算「巨鲸」(可按赛道调)
   WHALE_TRADES_TO_PULL: 1000, // 默认拉多少笔「大额」成交
   CRYPTO_EVENT_PAGES: 6,      // 抓多少页加密市场建立过滤名单 (每页100)
   EXCLUDE_HFT: true,          // 排除「Up or Down」超短线刷单市场(纯赌博噪音)
   MAX_WALLETS_TO_SCORE: 60,   // 最多给多少笔(按金额)查钱包战绩
-  SIGNAL_MIN_PNL: 5000,       // 钱包全期盈亏超过此值才算「聪明钱」
+  SIGNAL_MIN_PNL: Number(process.env.SIGNAL_MIN_PNL || 5000), // 钱包全期盈亏超过此值才算「聪明钱」(可按赛道调)
   MIN_MIN_TO_RESOLUTION: 60,  // 距结算少于这么多分钟(或已结束)的市场不推
   TOP_N: 15,                  // 完整榜单展示前 N 笔
   WALLET_CONCURRENCY: 6,      // 同时查询多少个钱包
   SCORE_TTL_MS: 60 * 60 * 1000, // 钱包战绩缓存时长(战绩变化慢，1小时足够)
   MARKETS_TTL_MS: 30 * 60 * 1000, // 加密市场名单缓存(高频轮询时不重复拉取)
   // ② 观察名单(主动盯"加密活跃的常胜钱包")
-  WATCHLIST_MIN_PNL: 30000,        // 全期盈亏达到此值才纳入观察名单
+  WATCHLIST_MIN_PNL: Number(process.env.WATCHLIST_MIN_PNL || 30000), // 全期盈亏达到此值才纳入观察名单(可按赛道调)
   WATCHLIST_DISCOVERY_MAX: 80,     // 每次最多评估多少个加密活跃钱包来建名单
   WATCHLIST_TTL_MS: 6 * 60 * 60 * 1000, // 名单缓存(6小时重建一次)
   WATCHLIST_TRADES_PER_WALLET: 20, // 每个名单钱包查最近多少笔成交
-  WATCHLIST_MIN_NOTIONAL: 100,     // 名单成交的最小金额(滤掉灰尘单)
+  WATCHLIST_MIN_NOTIONAL: Number(process.env.WATCHLIST_MIN_NOTIONAL || 100), // 名单成交最小金额(可按赛道调)
   WATCHLIST_MAX_AGE_MIN: 90,       // 只推这么多分钟内的动作
 };
 
@@ -76,6 +76,15 @@ const CRYPTO_WORDS =
   /\b(bitcoin|btc|ethereum|eth|crypto|solana|\bsol\b|xrp|ripple|dogecoin|doge|binance|coinbase|stablecoin|usdc|usdt|altcoin|memecoin|nft|defi)\b/i;
 // 关键词兜底：仅加密用标题判断；其他赛道只靠 tag 名单，避免误判
 const KEYWORDS = TAG === "crypto" ? CRYPTO_WORDS : null;
+
+// 各赛道的「噪音」市场过滤(衍生玩法/prop，无聪明钱信号价值)
+const SPORTS_NOISE = /more markets|exact score|halftime|total corners|total goals|player props|first (team|goal)|both teams|anytime|to score|over\/?under|o\/u|\bo\.u\.?|announcer|corners|cards|booking/i;
+const NOISE_BY_TAG = {
+  "fifa-world-cup": SPORTS_NOISE,
+  soccer: SPORTS_NOISE,
+  sports: SPORTS_NOISE,
+};
+const EXCLUDE_EXTRA = NOISE_BY_TAG[TAG] || null;
 
 // ---------------- 数据拉取 ----------------
 // 返回 Map: conditionId(小写) -> { endMs, closed }，用于过滤已结束/即将结算的市场
@@ -168,6 +177,7 @@ async function scan(opts = {}) {
       const isCrypto = !!meta || (KEYWORDS && KEYWORDS.test(t.title || ""));
       if (!isCrypto) return false;
       if (CONFIG.EXCLUDE_HFT && HFT_RE.test(t.title || "")) return false;
+      if (EXCLUDE_EXTRA && EXCLUDE_EXTRA.test(t.title || "")) return false;
       // 排除已结束 / 即将结算的市场(对这种市场的信号没有意义)
       if (meta && meta.closed) return false;
       if (meta && meta.endMs && meta.endMs <= nowMs + CONFIG.MIN_MIN_TO_RESOLUTION * 60000) return false;
@@ -236,7 +246,11 @@ async function buildCryptoWatchlist() {
   // 文件缓存(跨进程/跨云端每次运行复用，避免每 5 分钟重建一次)
   try {
     const c = JSON.parse(fs.readFileSync(WL_FILE, "utf8"));
-    if (c && c.t && Array.isArray(c.list) && Date.now() - c.t < CONFIG.WATCHLIST_TTL_MS) {
+    if (
+      c && c.t && Array.isArray(c.list) &&
+      Date.now() - c.t < CONFIG.WATCHLIST_TTL_MS &&
+      c.minPnl === CONFIG.WATCHLIST_MIN_PNL // 门槛变了就重建
+    ) {
       _wlCache = c;
       return c.list;
     }
@@ -254,6 +268,7 @@ async function buildCryptoWatchlist() {
     const isCrypto = !!meta || (KEYWORDS && KEYWORDS.test(t.title || ""));
     if (!isCrypto) continue;
     if (CONFIG.EXCLUDE_HFT && HFT_RE.test(t.title || "")) continue;
+    if (EXCLUDE_EXTRA && EXCLUDE_EXTRA.test(t.title || "")) continue;
     const w = (t.proxyWallet || "").toLowerCase();
     if (w && !nameOf.has(w)) nameOf.set(w, t.name || t.pseudonym || "");
   }
@@ -275,7 +290,7 @@ async function buildCryptoWatchlist() {
       rank: i + 1,
     }));
 
-  _wlCache = { t: Date.now(), list: winners };
+  _wlCache = { t: Date.now(), list: winners, minPnl: CONFIG.WATCHLIST_MIN_PNL };
   try {
     fs.mkdirSync(path.dirname(WL_FILE), { recursive: true });
     fs.writeFileSync(WL_FILE, JSON.stringify(_wlCache));
@@ -312,6 +327,7 @@ async function scanWatchlist(opts = {}) {
       const isCrypto = !!meta || (KEYWORDS && KEYWORDS.test(t.title || ""));
       if (!isCrypto) continue;
       if (CONFIG.EXCLUDE_HFT && HFT_RE.test(t.title || "")) continue;
+    if (EXCLUDE_EXTRA && EXCLUDE_EXTRA.test(t.title || "")) continue;
       if (meta && meta.closed) continue;
       if (meta && meta.endMs && meta.endMs <= nowMs + CONFIG.MIN_MIN_TO_RESOLUTION * 60000) continue;
       if (!isDirectional(t.price)) continue; // 只要「方向性」下注，过滤吃息噪音
