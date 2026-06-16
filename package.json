@@ -1,0 +1,16 @@
+{
+  "name": "polaris-whale-radar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Polymarket 加密市场聪明钱雷达 — 推送到 Telegram",
+  "scripts": {
+    "report": "node index.js",
+    "bot": "node bot.js",
+    "bot:once": "node bot.js --once",
+    "bot:test": "node bot.js --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

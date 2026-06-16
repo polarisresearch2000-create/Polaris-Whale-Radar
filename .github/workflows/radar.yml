@@ -1,0 +1,43 @@
+name: Polaris Whale Radar
+
+# 每 15 分钟扫描一次 Polymarket，把新信号推到 Telegram 频道。
+# 也可以在 GitHub 的 Actions 页面手动点 "Run workflow" 立即触发。
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write # 允许把去重状态(data/seen.json)提交回仓库
+
+concurrency:
+  group: radar
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run radar scan
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: "@polarisresearch2000"
+        run: node bot.js --once
+
+      - name: Persist dedupe state
+        run: |
+          if [ -n "$(git status --porcelain data/seen.json)" ]; then
+            git config user.name "polaris-bot"
+            git config user.email "bot@users.noreply.github.com"
+            git add data/seen.json
+            git commit -m "chore: update dedupe state [skip ci]"
+            git push
+          else
+            echo "No new signals; nothing to persist."
+          fi
