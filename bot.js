@@ -97,6 +97,74 @@ const sideZh = (s) => (s === "BUY" ? "買入" : s === "SELL" ? "賣出" : s);
 const ocZh = (o) =>
   ({ yes: "是", no: "否", over: "大/高", under: "小/低", draw: "平局" }[String(o).toLowerCase()] || "");
 
+// ---- 市場標題翻譯(規則+詞典，繁中港式譯名，無法解析則保留英文) ----
+const TEAMS = {
+  france: "法國", senegal: "塞內加爾", iraq: "伊拉克", norway: "挪威", argentina: "阿根廷",
+  algeria: "阿爾及利亞", austria: "奧地利", jordan: "約旦", portugal: "葡萄牙",
+  "dr congo": "剛果民主共和國", congo: "剛果", england: "英格蘭", croatia: "克羅地亞",
+  ecuador: "厄瓜多爾", mexico: "墨西哥", "korea republic": "韓國", "south korea": "韓國", korea: "韓國",
+  ghana: "加納", panama: "巴拿馬", brazil: "巴西", haiti: "海地", "united states": "美國", usa: "美國",
+  australia: "澳洲", spain: "西班牙", "saudi arabia": "沙地阿拉伯", uzbekistan: "烏茲別克",
+  colombia: "哥倫比亞", canada: "加拿大", qatar: "卡塔爾", scotland: "蘇格蘭", morocco: "摩洛哥",
+  "new zealand": "紐西蘭", egypt: "埃及", uruguay: "烏拉圭", "cabo verde": "佛得角", "cape verde": "佛得角",
+  belgium: "比利時", switzerland: "瑞士", "bosnia-herzegovina": "波斯尼亞", bosnia: "波斯尼亞",
+  germany: "德國", "côte d'ivoire": "象牙海岸", "cote d'ivoire": "象牙海岸", "ivory coast": "象牙海岸",
+  netherlands: "荷蘭", sweden: "瑞典", "türkiye": "土耳其", turkey: "土耳其", paraguay: "巴拉圭",
+  italy: "意大利", japan: "日本", iran: "伊朗", nigeria: "尼日利亞", denmark: "丹麥", poland: "波蘭",
+  serbia: "塞爾維亞", cameroon: "喀麥隆", tunisia: "突尼斯", peru: "秘魯", chile: "智利", greece: "希臘",
+  wales: "威爾士", ukraine: "烏克蘭", "curaçao": "庫拉索", curacao: "庫拉索",
+};
+const tTeam = (s) => TEAMS[String(s).trim().toLowerCase()] || String(s).trim();
+const STAGE = {
+  final: "決賽", quarterfinals: "八強", "quarter-finals": "八強", semifinals: "四強",
+  "semi-finals": "四強", "round of 16": "16強", "knockout stages": "淘汰賽",
+  "knockout stage": "淘汰賽", knockout: "淘汰賽",
+};
+const cryptoZh = (c) =>
+  ({ bitcoin: "比特幣", ethereum: "以太坊", solana: "Solana", xrp: "瑞波幣 XRP", dogecoin: "狗狗幣" }[
+    String(c).toLowerCase()
+  ] || c);
+const MONTH = { january: "1月", february: "2月", march: "3月", april: "4月", may: "5月", june: "6月", july: "7月", august: "8月", september: "9月", october: "10月", november: "11月", december: "12月" };
+const tMonth = (mo) => MONTH[String(mo).toLowerCase()] || mo;
+const tDate = (s) => {
+  const m = String(s).match(/^([A-Za-z]+)\s+(\d+)$/);
+  return m && MONTH[m[1].toLowerCase()] ? `${MONTH[m[1].toLowerCase()]}${m[2]}日` : s;
+};
+
+function translateTitle(t) {
+  const s = String(t || "").trim();
+  let m;
+  if ((m = s.match(/^(?:Will\s+)?(.+?)\s+vs\.?\s+(.+?)\s+end in a draw\??$/i)))
+    return `${tTeam(m[1])} vs ${tTeam(m[2])}：會打成平手嗎？`;
+  if ((m = s.match(/^Will\s+(.+?)\s+win(?:\s+on\s+(.+?))?\??$/i)))
+    return `${tTeam(m[1])} 會贏嗎？${m[2] ? `（${m[2]}）` : ""}`;
+  if (/^world cup winner$/i.test(s)) return "世界盃冠軍";
+  if (/golden boot/i.test(s)) return "世界盃：金靴獎得主";
+  if ((m = s.match(/^world cup group (\w+) winner$/i))) return `世界盃 ${m[1].toUpperCase()} 組頭名`;
+  if (/advance to knockout/i.test(s)) return "世界盃：晉級淘汰賽的球隊";
+  if ((m = s.match(/(?:nation|team) to reach (.+)$/i)))
+    return `世界盃：晉級${STAGE[m[1].trim().toLowerCase()] || m[1]}的國家`;
+  if (/which continent.*win/i.test(s)) return "哪個大洲奪得世界盃？";
+  if ((m = s.match(/^Will\s+(.+?)\s+play in the World Cup\??$/i))) return `${m[1]} 會在世界盃上場嗎？`;
+  // 加密
+  if ((m = s.match(/^Will\s+(Bitcoin|Ethereum|Solana|XRP|Dogecoin)\s+reach\s+(\$[\d,.]+k?)\s+in\s+(\w+)\??$/i)))
+    return `${cryptoZh(m[1])} ${tMonth(m[3])}內會漲到 ${m[2]} 嗎？`;
+  if ((m = s.match(/^Will\s+(Bitcoin|Ethereum|Solana|XRP|Dogecoin)\s+dip to\s+(\$[\d,.]+k?)\s+in\s+(\w+)\??$/i)))
+    return `${cryptoZh(m[1])} ${tMonth(m[3])}內會跌到 ${m[2]} 嗎？`;
+  if ((m = s.match(/^Will the price of\s+(Bitcoin|Ethereum|Solana|XRP)\s+be (above|below|between)\s+(.+?)\s+on\s+(.+?)\??$/i)))
+    return `${tDate(m[4])} ${cryptoZh(m[1])}會${{ above: "高於", below: "低於", between: "介於" }[m[2].toLowerCase()]} ${m[3]} 嗎？`;
+  // 純對陣 X vs Y(放最後，避免吃掉上面更具体的句式)
+  if ((m = s.match(/^(.+?)\s+vs\.?\s+(.+?)$/i))) return `${tTeam(m[1])} vs ${tTeam(m[2])}`;
+  return s; // 兜底：保留原文
+}
+
+// 標題區塊：中文為主，原英文小字附在下一行(翻不出来则只显示英文)
+function titleBlock(w) {
+  const en = String(w.title || "").trim();
+  const zh = translateTitle(en);
+  return zh !== en ? `📊 ${esc(zh)}\n   <i>${esc(en)}</i>` : `📊 ${esc(en)}`;
+}
+
 function fmtSignal(w) {
   const name = esc(w.name || w.pseudonym || w.proxyWallet.slice(0, 8));
   const conv = w.directional ? "🎯 方向性下注 Directional" : "🛡 吃息套保 Yield";
@@ -114,7 +182,7 @@ function fmtSignal(w) {
     `${sq} <b>${sideZh(w.side)} ${oc}${ocz}</b>  @ ${price}  (隱含機率 ${pct}%)`,
     `💰 金額 Size <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
     ``,
-    `📊 ${esc(w.title)}`,
+    titleBlock(w),
     ``,
     `👤 <b>${name}</b>`,
     `   歷史盈虧 PnL <b>${fmtUSD(w.allTimePnl)}</b>  ·  持倉市值 ${fmtUSD(w.value)}`,
@@ -143,7 +211,7 @@ function fmtWatchlistSignal(w) {
     `${sq} <b>${sideZh(w.side)} ${oc}${ocz}</b>  @ ${price}  (隱含機率 ${pct}%)`,
     `💰 金額 Size <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
     ``,
-    `📊 ${esc(w.title)}`,
+    titleBlock(w),
     ``,
     `👤 <b>${name}</b>  (盈利榜第 #${w.rank} 名)`,
     `   歷史總盈利 Profit <b>${fmtUSD(w.profit)}</b>`,
@@ -226,7 +294,11 @@ async function main() {
   }, POLL_MS);
 }
 
-main().catch((e) => {
-  console.error("启动失败:", e.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((e) => {
+    console.error("启动失败:", e.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { translateTitle, titleBlock };
