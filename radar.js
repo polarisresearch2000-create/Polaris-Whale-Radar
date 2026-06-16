@@ -12,11 +12,20 @@ const CONFIG = {
   TOP_N: 15,                  // 完整榜单展示前 N 笔
   WALLET_CONCURRENCY: 6,      // 同时查询多少个钱包
   SCORE_TTL_MS: 60 * 60 * 1000, // 钱包战绩缓存时长(战绩变化慢，1小时足够)
+  MARKETS_TTL_MS: 30 * 60 * 1000, // 加密市场名单缓存(高频轮询时不重复拉取)
+  // ② 观察名单(主动盯"加密活跃的常胜钱包")
+  WATCHLIST_MIN_PNL: 30000,        // 全期盈亏达到此值才纳入观察名单
+  WATCHLIST_DISCOVERY_MAX: 80,     // 每次最多评估多少个加密活跃钱包来建名单
+  WATCHLIST_TTL_MS: 6 * 60 * 60 * 1000, // 名单缓存(6小时重建一次)
+  WATCHLIST_TRADES_PER_WALLET: 20, // 每个名单钱包查最近多少笔成交
+  WATCHLIST_MIN_NOTIONAL: 100,     // 名单成交的最小金额(滤掉灰尘单)
+  WATCHLIST_MAX_AGE_MIN: 90,       // 只推这么多分钟内的动作
 };
 
 const GAMMA = "https://gamma-api.polymarket.com";
 const DATA = "https://data-api.polymarket.com";
 const PNL = "https://user-pnl-api.polymarket.com";
+const LB = "https://lb-api.polymarket.com";
 
 // ---------------- 工具 ----------------
 async function getJSON(url, tries = 3) {
@@ -62,7 +71,10 @@ const CRYPTO_WORDS =
 
 // ---------------- 数据拉取 ----------------
 // 返回 Map: conditionId(小写) -> { endMs, closed }，用于过滤已结束/即将结算的市场
+// 带缓存：高频轮询时不重复拉取整张市场名单
+let _cmCache = { t: 0, map: null };
 async function getCryptoMarkets() {
+  if (_cmCache.map && Date.now() - _cmCache.t < CONFIG.MARKETS_TTL_MS) return _cmCache.map;
   const map = new Map();
   for (let page = 0; page < CONFIG.CRYPTO_EVENT_PAGES; page++) {
     let events;
@@ -83,6 +95,7 @@ async function getCryptoMarkets() {
         });
       }
   }
+  _cmCache = { t: Date.now(), map };
   return map;
 }
 
@@ -186,4 +199,122 @@ async function scan(opts = {}) {
   };
 }
 
-module.exports = { scan, fmtUSD, CONFIG, isDirectional };
+// ---------------- ② 观察名单：主动盯历史盈利榜前列的钱包 ----------------
+// 思路：不等大单，而是盯住"证明过自己"的常胜钱包，他们一进加密市场(任何金额)就报警。
+async function getTopWallets(limit) {
+  let arr;
+  try {
+    arr = await getJSON(`${LB}/profit?window=all&limit=${limit}`);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map((w, i) => ({
+      wallet: (w.proxyWallet || "").toLowerCase(),
+      profit: w.amount || 0,
+      name: w.name || w.pseudonym || "",
+      rank: i + 1,
+    }))
+    .filter((w) => w.wallet);
+}
+
+// 动态构建"加密活跃的常胜钱包"名单：从近期加密大单里找出活跃钱包，
+// 打分(全期盈亏)，只留下达到盈利门槛的赢家。带缓存(6小时重建)。
+let _wlCache = { t: 0, list: null };
+async function buildCryptoWatchlist() {
+  if (_wlCache.list && Date.now() - _wlCache.t < CONFIG.WATCHLIST_TTL_MS) return _wlCache.list;
+
+  const [cryptoMap, trades] = await Promise.all([
+    getCryptoMarkets(),
+    getWhaleTrades(CONFIG.WHALE_TRADES_TO_PULL),
+  ]);
+
+  // 收集在加密市场活跃的钱包(顺带记下名字)
+  const nameOf = new Map();
+  for (const t of trades) {
+    const meta = cryptoMap.get((t.conditionId || "").toLowerCase());
+    const isCrypto = !!meta || CRYPTO_WORDS.test(t.title || "");
+    if (!isCrypto) continue;
+    if (CONFIG.EXCLUDE_HFT && HFT_RE.test(t.title || "")) continue;
+    const w = (t.proxyWallet || "").toLowerCase();
+    if (w && !nameOf.has(w)) nameOf.set(w, t.name || t.pseudonym || "");
+  }
+
+  const uniq = [...nameOf.keys()].slice(0, CONFIG.WATCHLIST_DISCOVERY_MAX);
+  const scored = await mapLimit(uniq, CONFIG.WALLET_CONCURRENCY, async (w) => ({
+    wallet: w,
+    score: await getWalletScore(w),
+  }));
+
+  const winners = scored
+    .filter((s) => (s.score.allTimePnl || 0) >= CONFIG.WATCHLIST_MIN_PNL)
+    .sort((a, b) => b.score.allTimePnl - a.score.allTimePnl)
+    .map((s, i) => ({
+      wallet: s.wallet,
+      profit: s.score.allTimePnl,
+      value: s.score.value,
+      name: nameOf.get(s.wallet) || "",
+      rank: i + 1,
+    }));
+
+  _wlCache = { t: Date.now(), list: winners };
+  return winners;
+}
+
+async function scanWatchlist(opts = {}) {
+  const maxAgeMin = opts.maxAgeMinutes || CONFIG.WATCHLIST_MAX_AGE_MIN;
+  const nowMs = Date.now();
+  const nowSec = nowMs / 1000;
+
+  const [cryptoMap, top] = await Promise.all([
+    getCryptoMarkets(),
+    buildCryptoWatchlist(),
+  ]);
+
+  // 并发查每个榜首钱包的最近成交
+  const lists = await mapLimit(top, CONFIG.WALLET_CONCURRENCY, async (w) => {
+    try {
+      const tr = await getJSON(
+        `${DATA}/trades?user=${w.wallet}&limit=${CONFIG.WATCHLIST_TRADES_PER_WALLET}`
+      );
+      return { w, trades: Array.isArray(tr) ? tr : [] };
+    } catch {
+      return { w, trades: [] };
+    }
+  });
+
+  const hits = [];
+  for (const { w, trades } of lists) {
+    for (const t of trades) {
+      const meta = cryptoMap.get((t.conditionId || "").toLowerCase());
+      const isCrypto = !!meta || CRYPTO_WORDS.test(t.title || "");
+      if (!isCrypto) continue;
+      if (CONFIG.EXCLUDE_HFT && HFT_RE.test(t.title || "")) continue;
+      if (meta && meta.closed) continue;
+      if (meta && meta.endMs && meta.endMs <= nowMs + CONFIG.MIN_MIN_TO_RESOLUTION * 60000) continue;
+      if (!isDirectional(t.price)) continue; // 只要「方向性」下注，过滤吃息噪音
+      const notional = (t.size || 0) * (t.price || 0);
+      if (notional < CONFIG.WATCHLIST_MIN_NOTIONAL) continue;
+      const ageMin = Math.max(0, Math.round((nowSec - (t.timestamp || nowSec)) / 60));
+      if (ageMin > maxAgeMin) continue;
+      hits.push({
+        ...t,
+        proxyWallet: w.wallet,
+        name: w.name,
+        notional,
+        ageMin,
+        profit: w.profit,
+        rank: w.rank,
+        allTimePnl: w.profit,
+        directional: isDirectional(t.price),
+        key: `${w.wallet}_${t.conditionId}_${t.timestamp}_${t.outcomeIndex}`,
+      });
+    }
+  }
+  // 排名靠前(更赚)优先，其次更新鲜
+  hits.sort((a, b) => a.rank - b.rank || a.ageMin - b.ageMin);
+  return { hits, stats: { watchSize: top.length, marketCount: cryptoMap.size } };
+}
+
+module.exports = { scan, scanWatchlist, buildCryptoWatchlist, getTopWallets, fmtUSD, CONFIG, isDirectional };

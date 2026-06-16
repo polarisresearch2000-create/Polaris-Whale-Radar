@@ -7,7 +7,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -26,7 +26,13 @@ loadEnv(path.join(__dirname, ".env"));
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL = process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
 const POLL_MINUTES = Number(process.env.POLL_MINUTES || 3);
-const MAX_AGE_MIN = Number(process.env.MAX_SIGNAL_AGE_MIN || 180); // 只推这么多分钟内的成交
+// 本地想要"秒级近实时"就设 POLL_SECONDS（如 20），优先级高于 POLL_MINUTES
+const POLL_MS = process.env.POLL_SECONDS
+  ? Number(process.env.POLL_SECONDS) * 1000
+  : POLL_MINUTES * 60 * 1000;
+const MAX_AGE_MIN = Number(process.env.MAX_SIGNAL_AGE_MIN || 180); // 大单信号只推这么多分钟内的
+const WATCH_MAX_AGE_MIN = Number(process.env.WATCHLIST_MAX_AGE_MIN || 90); // 观察名单只推这么多分钟内的
+const WATCH_MAX_PER_RUN = Number(process.env.WATCHLIST_MAX_PER_RUN || 8); // 单轮最多推几条观察名单信号(防刷屏)
 const SEEN_FILE = path.join(__dirname, "data", "seen.json");
 
 if (!TOKEN) {
@@ -106,26 +112,78 @@ function fmtSignal(w) {
   ].join("\n");
 }
 
+// 观察名单信号：榜首赢家的动作(用排行榜的盈利数据，无需额外查询)
+function fmtWatchlistSignal(w) {
+  const conv = w.directional ? "🎯 Directional bet" : "🛡 Yield/hedge";
+  const slug = w.eventSlug || w.slug || "";
+  const url = slug ? `https://polymarket.com/event/${slug}` : "https://polymarket.com";
+  const isYes = /yes/i.test(w.outcome || "");
+  const sq = isYes ? "🟩" : "🟥";
+  const oc = String(w.outcome || "").toUpperCase();
+  const price = Number(w.price).toFixed(3);
+  const pct = Math.round(Number(w.price) * 100);
+  const name = esc(w.name || w.proxyWallet.slice(0, 8));
+  return [
+    `👑 <b>TOP TRADER MOVE</b>  ·  ${conv}`,
+    ``,
+    `${sq} <b>${w.side} ${oc}</b>  @ ${price}  (${pct}% implied)`,
+    `💰 Size: <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
+    ``,
+    `📊 ${esc(w.title)}`,
+    ``,
+    `👤 <b>${name}</b>  (#${w.rank} all-time profit)`,
+    `   All-time profit: <b>${fmtUSD(w.profit)}</b>`,
+    `   <code>${esc(w.proxyWallet)}</code>`,
+    ``,
+    `🔗 <a href="${url}">View market on Polymarket ↗</a>`,
+    `🔭 Polaris Research · Polymarket Crypto Smart-Money Radar`,
+  ].join("\n");
+}
+
 // ---------- 一轮扫描 ----------
+async function send(text) {
+  await tg("sendMessage", {
+    chat_id: CHANNEL,
+    text,
+    parse_mode: "HTML",
+    disable_web_page_preview: true,
+  });
+  await new Promise((r) => setTimeout(r, 1200)); // 避免触发限频
+}
+
 async function pollOnce() {
   const seen = loadSeen();
+
+  // 1) 大额交易信号
   const { signals, stats } = await scan({ whaleTradesToPull: 2000, maxAgeMinutes: MAX_AGE_MIN });
-  const fresh = signals.filter((s) => !seen.has(s.key));
-  console.log(
-    `[${new Date().toISOString()}] 加密大单 ${stats.cryptoWhaleCount} ｜ 信号 ${signals.length} ｜ 新信号 ${fresh.length}`
-  );
-  for (const s of fresh) {
-    await tg("sendMessage", {
-      chat_id: CHANNEL,
-      text: fmtSignal(s),
-      parse_mode: "HTML",
-      disable_web_page_preview: true,
-    });
-    seen.add(s.key);
-    await new Promise((r) => setTimeout(r, 1200)); // 避免触发限频
+  const freshWhales = signals.filter((s) => !seen.has(s.key));
+
+  // 2) 观察名单信号(榜首赢家的动作，任何金额)
+  let freshWatch = [];
+  let watchStats = { watchSize: 0 };
+  try {
+    const wl = await scanWatchlist({ maxAgeMinutes: WATCH_MAX_AGE_MIN });
+    watchStats = wl.stats;
+    freshWatch = wl.hits.filter((s) => !seen.has(s.key)).slice(0, WATCH_MAX_PER_RUN);
+  } catch (e) {
+    console.error("观察名单扫描出错:", e.message);
   }
+
+  console.log(
+    `[${new Date().toISOString()}] 大单 ${stats.cryptoWhaleCount}/新${freshWhales.length} ｜ 观察名单 ${watchStats.watchSize}人/新${freshWatch.length}`
+  );
+
+  for (const s of freshWhales) {
+    await send(fmtSignal(s));
+    seen.add(s.key);
+  }
+  for (const s of freshWatch) {
+    await send(fmtWatchlistSignal(s));
+    seen.add(s.key);
+  }
+
   saveSeen(seen);
-  return fresh.length;
+  return freshWhales.length + freshWatch.length;
 }
 
 // ---------- 入口 ----------
@@ -140,14 +198,15 @@ async function main() {
     return;
   }
 
-  console.log(`🔭 Polaris 雷达启动 ｜ 频道 ${CHANNEL} ｜ 每 ${POLL_MINUTES} 分钟扫描一次`);
+  const everyDesc = process.env.POLL_SECONDS ? `${process.env.POLL_SECONDS} 秒` : `${POLL_MINUTES} 分钟`;
+  console.log(`🔭 Polaris 雷达启动 ｜ 频道 ${CHANNEL} ｜ 每 ${everyDesc}扫描一次`);
   const n = await pollOnce();
   console.log(`首轮推送 ${n} 条`);
 
   if (process.argv.includes("--once")) return;
   setInterval(() => {
     pollOnce().catch((e) => console.error("轮询出错:", e.message));
-  }, POLL_MINUTES * 60 * 1000);
+  }, POLL_MS);
 }
 
 main().catch((e) => {

@@ -4,7 +4,7 @@ name: Polaris Whale Radar
 # 也可以在 GitHub 的 Actions 页面手动点 "Run workflow" 立即触发。
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *" # GitHub Actions 免费层最快约每 5 分钟(且可能被延迟)
   workflow_dispatch: {}
 
 permissions:
