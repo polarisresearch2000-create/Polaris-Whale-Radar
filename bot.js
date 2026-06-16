@@ -26,6 +26,7 @@ loadEnv(path.join(__dirname, ".env"));
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL = process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
 const POLL_MINUTES = Number(process.env.POLL_MINUTES || 3);
+const MAX_AGE_MIN = Number(process.env.MAX_SIGNAL_AGE_MIN || 180); // 只推这么多分钟内的成交
 const SEEN_FILE = path.join(__dirname, "data", "seen.json");
 
 if (!TOKEN) {
@@ -48,6 +49,15 @@ function saveSeen(set) {
 
 // ---------- Telegram ----------
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// 把"分钟前"转成易读的相对时间
+function ago(min) {
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return min % 60 ? `${h}h ${min % 60}m ago` : `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
 
 async function tg(method, body) {
   const r = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
@@ -83,7 +93,7 @@ function fmtSignal(w) {
     `${tagEn(w.allTimePnl)}  ·  ${conv}`,
     ``,
     `${sq} <b>${w.side} ${oc}</b>  @ ${price}  (${pct}% implied)`,
-    `💰 Size: <b>${fmtUSD(w.notional)}</b>`,
+    `💰 Size: <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
     ``,
     `📊 ${esc(w.title)}`,
     ``,
@@ -99,7 +109,7 @@ function fmtSignal(w) {
 // ---------- 一轮扫描 ----------
 async function pollOnce() {
   const seen = loadSeen();
-  const { signals, stats } = await scan({ whaleTradesToPull: 2000 });
+  const { signals, stats } = await scan({ whaleTradesToPull: 2000, maxAgeMinutes: MAX_AGE_MIN });
   const fresh = signals.filter((s) => !seen.has(s.key));
   console.log(
     `[${new Date().toISOString()}] 加密大单 ${stats.cryptoWhaleCount} ｜ 信号 ${signals.length} ｜ 新信号 ${fresh.length}`

@@ -8,6 +8,7 @@ const CONFIG = {
   EXCLUDE_HFT: true,          // 排除「Up or Down」超短线刷单市场(纯赌博噪音)
   MAX_WALLETS_TO_SCORE: 60,   // 最多给多少笔(按金额)查钱包战绩
   SIGNAL_MIN_PNL: 5000,       // 钱包全期盈亏超过此值才算「聪明钱」
+  MIN_MIN_TO_RESOLUTION: 60,  // 距结算少于这么多分钟(或已结束)的市场不推
   TOP_N: 15,                  // 完整榜单展示前 N 笔
   WALLET_CONCURRENCY: 6,      // 同时查询多少个钱包
   SCORE_TTL_MS: 60 * 60 * 1000, // 钱包战绩缓存时长(战绩变化慢，1小时足够)
@@ -60,8 +61,9 @@ const CRYPTO_WORDS =
   /\b(bitcoin|btc|ethereum|eth|crypto|solana|\bsol\b|xrp|ripple|dogecoin|doge|binance|coinbase|stablecoin|usdc|usdt|altcoin|memecoin|nft|defi)\b/i;
 
 // ---------------- 数据拉取 ----------------
-async function getCryptoConditionIds() {
-  const ids = new Set();
+// 返回 Map: conditionId(小写) -> { endMs, closed }，用于过滤已结束/即将结算的市场
+async function getCryptoMarkets() {
+  const map = new Map();
   for (let page = 0; page < CONFIG.CRYPTO_EVENT_PAGES; page++) {
     let events;
     try {
@@ -72,9 +74,16 @@ async function getCryptoConditionIds() {
       break;
     }
     if (!Array.isArray(events) || events.length === 0) break;
-    for (const ev of events) for (const m of ev.markets || []) if (m.conditionId) ids.add(m.conditionId.toLowerCase());
+    for (const ev of events)
+      for (const m of ev.markets || []) {
+        if (!m.conditionId) continue;
+        map.set(m.conditionId.toLowerCase(), {
+          endMs: m.endDate ? Date.parse(m.endDate) : 0,
+          closed: !!m.closed,
+        });
+      }
   }
-  return ids;
+  return map;
 }
 
 async function getWhaleTrades(pull) {
@@ -121,17 +130,28 @@ async function getWalletScore(wallet) {
 // ---------------- 主扫描 ----------------
 async function scan(opts = {}) {
   const pull = opts.whaleTradesToPull || CONFIG.WHALE_TRADES_TO_PULL;
+  const maxAgeMin = opts.maxAgeMinutes || 0; // 0 = 不按时间过滤
+  const nowMs = Date.now();
+  const nowSec = nowMs / 1000;
 
-  const [cryptoIds, trades] = await Promise.all([getCryptoConditionIds(), getWhaleTrades(pull)]);
+  const [cryptoMap, trades] = await Promise.all([getCryptoMarkets(), getWhaleTrades(pull)]);
 
   const cryptoWhales = trades
-    .map((t) => ({ ...t, notional: (t.size || 0) * (t.price || 0) }))
+    .map((t) => ({
+      ...t,
+      notional: (t.size || 0) * (t.price || 0),
+      ageMin: Math.max(0, Math.round((nowSec - (t.timestamp || nowSec)) / 60)),
+    }))
     .filter((t) => {
-      const isCrypto = cryptoIds.size
-        ? cryptoIds.has((t.conditionId || "").toLowerCase())
-        : CRYPTO_WORDS.test(t.title || "");
+      const meta = cryptoMap.get((t.conditionId || "").toLowerCase());
+      const isCrypto = !!meta || CRYPTO_WORDS.test(t.title || "");
       if (!isCrypto) return false;
       if (CONFIG.EXCLUDE_HFT && HFT_RE.test(t.title || "")) return false;
+      // 排除已结束 / 即将结算的市场(对这种市场的信号没有意义)
+      if (meta && meta.closed) return false;
+      if (meta && meta.endMs && meta.endMs <= nowMs + CONFIG.MIN_MIN_TO_RESOLUTION * 60000) return false;
+      // 排除太旧的成交(只在传入 maxAgeMinutes 时生效)
+      if (maxAgeMin && t.ageMin > maxAgeMin) return false;
       return true;
     })
     .sort((a, b) => b.notional - a.notional);
@@ -159,7 +179,7 @@ async function scan(opts = {}) {
     signals,
     top: working.slice(0, CONFIG.TOP_N),
     stats: {
-      marketCount: cryptoIds.size,
+      marketCount: cryptoMap.size,
       tradeCount: trades.length,
       cryptoWhaleCount: cryptoWhales.length,
     },

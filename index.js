@@ -6,7 +6,7 @@ function renderTrade(w) {
   const conv = w.directional ? "🎯方向性" : "🛡吃息";
   const name = w.name || w.pseudonym || "(匿名)";
   console.log(
-    `\n${w.tag} | ${conv}  ${fmtUSD(w.notional)}  ${w.side}「${w.outcome}」@${Number(w.price).toFixed(3)}`
+    `\n${w.tag} | ${conv}  ${fmtUSD(w.notional)}  ${w.side}「${w.outcome}」@${Number(w.price).toFixed(3)}  (${w.ageMin}分钟前)`
   );
   console.log(`   市场: ${w.title}`);
   console.log(
