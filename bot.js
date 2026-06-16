@@ -74,19 +74,25 @@ function fmtSignal(w) {
   const conv = w.directional ? "🎯 Directional bet" : "🛡 Yield/hedge";
   const slug = w.eventSlug || w.slug || "";
   const url = slug ? `https://polymarket.com/event/${slug}` : "https://polymarket.com";
+  const isYes = /yes/i.test(w.outcome || "");
+  const sq = isYes ? "🟩" : "🟥";
+  const oc = String(w.outcome || "").toUpperCase();
+  const price = Number(w.price).toFixed(3);
+  const pct = Math.round(Number(w.price) * 100);
   return [
-    `${tagEn(w.allTimePnl)} | ${conv}`,
+    `${tagEn(w.allTimePnl)}  ·  ${conv}`,
     ``,
-    `💰 <b>${fmtUSD(w.notional)}</b>  ${w.side} "${esc(w.outcome)}" @ ${Number(w.price).toFixed(3)}`,
+    `${sq} <b>${w.side} ${oc}</b>  @ ${price}  (${pct}% implied)`,
+    `💰 Size: <b>${fmtUSD(w.notional)}</b>`,
+    ``,
     `📊 ${esc(w.title)}`,
     ``,
     `👤 <b>${name}</b>`,
-    `   All-time PnL: <b>${fmtUSD(w.allTimePnl)}</b> | Portfolio: ${fmtUSD(w.value)}`,
+    `   All-time PnL: <b>${fmtUSD(w.allTimePnl)}</b>  ·  Portfolio: ${fmtUSD(w.value)}`,
     `   <code>${esc(w.proxyWallet)}</code>`,
     ``,
     `🔗 <a href="${url}">View market on Polymarket ↗</a>`,
-    ``,
-    `🔭 Polaris Research | Polymarket Crypto Smart-Money Radar`,
+    `🔭 Polaris Research · Polymarket Crypto Smart-Money Radar`,
   ].join("\n");
 }
 
