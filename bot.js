@@ -65,11 +65,11 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 
 // 把"分钟前"转成易读的相对时间
 function ago(min) {
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
+  if (min < 1) return "刚刚";
+  if (min < 60) return `${min}分钟前`;
   const h = Math.floor(min / 60);
-  if (h < 24) return min % 60 ? `${h}h ${min % 60}m ago` : `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  if (h < 24) return min % 60 ? `${h}小时${min % 60}分前` : `${h}小时前`;
+  return `${Math.floor(h / 24)}天前`;
 }
 
 async function tg(method, body) {
@@ -85,43 +85,49 @@ async function tg(method, body) {
 
 const tagEn = (p) =>
   p > 50000
-    ? "🐋🟢 PROFITABLE WHALE"
+    ? "🐋🟢 巨鲸赢家 Profitable Whale"
     : p > 5000
-    ? "🟢 Winning wallet"
+    ? "🟢 赢家钱包 Winning wallet"
     : p < -5000
-    ? "🔴 Losing wallet"
-    : "⚪ Neutral wallet";
+    ? "🔴 亏损钱包 Losing wallet"
+    : "⚪ 普通钱包 Neutral";
+
+// 中文辅助：买卖方向、结果选项
+const sideZh = (s) => (s === "BUY" ? "买入" : s === "SELL" ? "卖出" : s);
+const ocZh = (o) =>
+  ({ yes: "是", no: "否", over: "大/高", under: "小/低", draw: "平局" }[String(o).toLowerCase()] || "");
 
 function fmtSignal(w) {
   const name = esc(w.name || w.pseudonym || w.proxyWallet.slice(0, 8));
-  const conv = w.directional ? "🎯 Directional bet" : "🛡 Yield/hedge";
+  const conv = w.directional ? "🎯 方向性下注 Directional" : "🛡 吃息套保 Yield";
   const slug = w.eventSlug || w.slug || "";
   const url = slug ? `https://polymarket.com/event/${slug}` : "https://polymarket.com";
   const isYes = /yes/i.test(w.outcome || "");
   const sq = isYes ? "🟩" : "🟥";
   const oc = String(w.outcome || "").toUpperCase();
+  const ocz = ocZh(w.outcome) ? `（${ocZh(w.outcome)}）` : "";
   const price = Number(w.price).toFixed(3);
   const pct = Math.round(Number(w.price) * 100);
   return [
     `${tagEn(w.allTimePnl)}  ·  ${conv}`,
     ``,
-    `${sq} <b>${w.side} ${oc}</b>  @ ${price}  (${pct}% implied)`,
-    `💰 Size: <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
+    `${sq} <b>${sideZh(w.side)} ${oc}${ocz}</b>  @ ${price}  (隐含概率 ${pct}%)`,
+    `💰 金额 Size <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
     ``,
     `📊 ${esc(w.title)}`,
     ``,
     `👤 <b>${name}</b>`,
-    `   All-time PnL: <b>${fmtUSD(w.allTimePnl)}</b>  ·  Portfolio: ${fmtUSD(w.value)}`,
+    `   历史盈亏 PnL <b>${fmtUSD(w.allTimePnl)}</b>  ·  持仓市值 ${fmtUSD(w.value)}`,
     `   <code>${esc(w.proxyWallet)}</code>`,
     ``,
-    `🔗 <a href="${url}">View market on Polymarket ↗</a>`,
-    `🔭 Polaris Research · Polymarket ${LABEL} Smart-Money Radar`,
+    `🔗 <a href="${url}">查看市场 View on Polymarket ↗</a>`,
+    `🔭 Polaris Research · Polymarket ${LABEL} 聪明钱雷达`,
   ].join("\n");
 }
 
 // 观察名单信号：榜首赢家的动作(用排行榜的盈利数据，无需额外查询)
 function fmtWatchlistSignal(w) {
-  const conv = w.directional ? "🎯 Directional bet" : "🛡 Yield/hedge";
+  const conv = w.directional ? "🎯 方向性下注 Directional" : "🛡 吃息套保 Yield";
   const slug = w.eventSlug || w.slug || "";
   const url = slug ? `https://polymarket.com/event/${slug}` : "https://polymarket.com";
   const isYes = /yes/i.test(w.outcome || "");
@@ -130,20 +136,21 @@ function fmtWatchlistSignal(w) {
   const price = Number(w.price).toFixed(3);
   const pct = Math.round(Number(w.price) * 100);
   const name = esc(w.name || w.proxyWallet.slice(0, 8));
+  const ocz = ocZh(w.outcome) ? `（${ocZh(w.outcome)}）` : "";
   return [
-    `👑 <b>TOP TRADER MOVE</b>  ·  ${conv}`,
+    `👑 <b>顶级赢家出手 TOP TRADER MOVE</b>  ·  ${conv}`,
     ``,
-    `${sq} <b>${w.side} ${oc}</b>  @ ${price}  (${pct}% implied)`,
-    `💰 Size: <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
+    `${sq} <b>${sideZh(w.side)} ${oc}${ocz}</b>  @ ${price}  (隐含概率 ${pct}%)`,
+    `💰 金额 Size <b>${fmtUSD(w.notional)}</b>  ·  🕐 ${ago(w.ageMin)}`,
     ``,
     `📊 ${esc(w.title)}`,
     ``,
-    `👤 <b>${name}</b>  (#${w.rank} all-time profit)`,
-    `   All-time profit: <b>${fmtUSD(w.profit)}</b>`,
+    `👤 <b>${name}</b>  (盈利榜第 #${w.rank} 名)`,
+    `   历史总盈利 Profit <b>${fmtUSD(w.profit)}</b>`,
     `   <code>${esc(w.proxyWallet)}</code>`,
     ``,
-    `🔗 <a href="${url}">View market on Polymarket ↗</a>`,
-    `🔭 Polaris Research · Polymarket ${LABEL} Smart-Money Radar`,
+    `🔗 <a href="${url}">查看市场 View on Polymarket ↗</a>`,
+    `🔭 Polaris Research · Polymarket ${LABEL} 聪明钱雷达`,
   ].join("\n");
 }
 
