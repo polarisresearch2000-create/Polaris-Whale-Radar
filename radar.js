@@ -354,4 +354,87 @@ async function scanWatchlist(opts = {}) {
   return { hits, stats: { watchSize: top.length, marketCount: cryptoMap.size } };
 }
 
-module.exports = { scan, scanWatchlist, buildCryptoWatchlist, getTopWallets, fmtUSD, CONFIG, isDirectional };
+// ---- 巨鯨持倉快照：按市場聚合「大額買入」的多空分布 ----
+async function marketSentiment(opts = {}) {
+  const topN = opts.topMarkets || 6;
+  const minUsd = opts.minNotional || CONFIG.MIN_NOTIONAL_USDC;
+  const nowMs = Date.now();
+  const [cryptoMap, trades] = await Promise.all([
+    getCryptoMarkets(),
+    getWhaleTrades(CONFIG.WHALE_TRADES_TO_PULL),
+  ]);
+  const byMarket = new Map();
+  for (const t of trades) {
+    if (t.side !== "BUY") continue; // 只统计买入(建仓)，最能反映持仓倾向
+    const meta = cryptoMap.get((t.conditionId || "").toLowerCase());
+    const isV = !!meta || (KEYWORDS && KEYWORDS.test(t.title || ""));
+    if (!isV) continue;
+    if (CONFIG.EXCLUDE_HFT && HFT_RE.test(t.title || "")) continue;
+    if (EXCLUDE_EXTRA && EXCLUDE_EXTRA.test(t.title || "")) continue;
+    if (meta && meta.closed) continue;
+    if (meta && meta.endMs && meta.endMs <= nowMs + CONFIG.MIN_MIN_TO_RESOLUTION * 60000) continue;
+    const usd = (t.size || 0) * (t.price || 0);
+    if (usd < minUsd) continue;
+    const cid = t.conditionId;
+    if (!byMarket.has(cid))
+      byMarket.set(cid, { title: t.title, eventSlug: t.eventSlug || t.slug, outcomes: new Map(), total: 0, wallets: new Set() });
+    const mk = byMarket.get(cid);
+    const oc = t.outcome || "?";
+    if (!mk.outcomes.has(oc)) mk.outcomes.set(oc, { usd: 0, wallets: new Set() });
+    const o = mk.outcomes.get(oc);
+    o.usd += usd;
+    o.wallets.add(t.proxyWallet);
+    mk.total += usd;
+    mk.wallets.add(t.proxyWallet);
+  }
+  const markets = [...byMarket.values()]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, topN)
+    .map((mk) => ({
+      title: mk.title,
+      eventSlug: mk.eventSlug,
+      total: mk.total,
+      wallets: mk.wallets.size,
+      breakdown: [...mk.outcomes.entries()]
+        .map(([outcome, o]) => ({ outcome, usd: o.usd, wallets: o.wallets.size, pct: Math.round((o.usd / mk.total) * 100) }))
+        .sort((a, b) => b.usd - a.usd),
+    }));
+  return { markets };
+}
+
+// ---- 顶级赢家风格画像 ----
+const catOf = (title) => {
+  const t = String(title || "").toLowerCase();
+  if (/bitcoin|btc|ethereum|eth|crypto|solana|xrp|dogecoin/.test(t)) return "加密";
+  if (/trump|election|president|senate|congress|\bvote|government|\bwar\b|israel|iran|ukraine|tariff|\bfed\b/.test(t)) return "政治/地緣";
+  if (/ vs\.? |world cup|nba|nfl|premier|league|\bcup\b|golden boot|group \w winner|tennis|\bufc\b/.test(t)) return "體育";
+  return "其他";
+};
+
+async function analyzeTopTraders(limit = 20) {
+  const top = await getTopWallets(limit);
+  const profiles = await mapLimit(top, CONFIG.WALLET_CONCURRENCY, async (w) => {
+    let trades = [];
+    try {
+      trades = await getJSON(`${DATA}/trades?user=${w.wallet}&limit=100`);
+    } catch {}
+    trades = Array.isArray(trades) ? trades : [];
+    const buys = trades.filter((t) => t.side === "BUY");
+    const n = buys.length || 1;
+    const avgPrice = buys.reduce((s, t) => s + (t.price || 0), 0) / n;
+    const avgSize = buys.reduce((s, t) => s + (t.size || 0) * (t.price || 0), 0) / n;
+    const dirPct = Math.round((buys.filter((t) => t.price > 0.15 && t.price < 0.85).length / n) * 100);
+    const cat = {};
+    for (const t of trades) cat[catOf(t.title)] = (cat[catOf(t.title)] || 0) + 1;
+    const mainCat = Object.entries(cat).sort((a, b) => b[1] - a[1])[0]?.[0] || "?";
+    const priceStyle = avgPrice > 0.72 ? "吃確定性(押熱門)" : avgPrice < 0.45 ? "博冷門/逆向" : "均衡";
+    return { ...w, avgPrice, avgSize, dirPct, mainCat, nTrades: trades.length, priceStyle };
+  });
+  return profiles;
+}
+
+module.exports = {
+  scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
+  marketSentiment, analyzeTopTraders,
+  fmtUSD, CONFIG, isDirectional,
+};
