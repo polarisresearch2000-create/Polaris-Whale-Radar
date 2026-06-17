@@ -403,20 +403,34 @@ async function marketSentiment(opts = {}) {
     }
     const buys = Array.isArray(tr) ? tr.filter((t) => t.side === "BUY") : [];
     const byOut = new Map();
+    const byWallet = new Map();
     const allWallets = new Set();
     for (const t of buys) {
       const o = t.outcome || "?";
+      const u = (t.size || 0) * (t.price || 0);
       if (!byOut.has(o)) byOut.set(o, { usd: 0, wallets: new Set() });
       const e = byOut.get(o);
-      e.usd += (t.size || 0) * (t.price || 0);
+      e.usd += u;
       e.wallets.add(t.proxyWallet);
       allWallets.add(t.proxyWallet);
+      if (!byWallet.has(t.proxyWallet)) byWallet.set(t.proxyWallet, { usd: 0, byOut: new Map(), name: t.name || t.pseudonym || "" });
+      const wr = byWallet.get(t.proxyWallet);
+      wr.usd += u;
+      wr.byOut.set(o, (wr.byOut.get(o) || 0) + u);
     }
     const total = [...byOut.values()].reduce((s, v) => s + v.usd, 0);
     const breakdown = [...byOut.entries()]
       .map(([outcome, v]) => ({ outcome, usd: v.usd, wallets: v.wallets.size, pct: total ? Math.round((v.usd / total) * 100) : 0 }))
       .sort((a, b) => b.usd - a.usd);
-    return { title: mk.title, eventSlug: mk.eventSlug, total, wallets: allWallets.size, breakdown };
+    // 最大单大户: 在该市场下注金额最大的钱包 + 他主押哪一边
+    let topWhale = null;
+    for (const [w, wr] of byWallet) {
+      if (!topWhale || wr.usd > topWhale.usd) {
+        const side = [...wr.byOut.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+        topWhale = { wallet: w, name: wr.name, usd: wr.usd, outcome: side };
+      }
+    }
+    return { title: mk.title, eventSlug: mk.eventSlug, total, wallets: allWallets.size, breakdown, topWhale };
   });
 
   const markets = enriched.filter((m) => m.total > 0).sort((a, b) => b.total - a.total).slice(0, topN);

@@ -243,23 +243,42 @@ function fmtWatchlistSignal(w) {
 // ---------- 一轮扫描 ----------
 // 持仓快照：各市场大额买入的多空分布
 function fmtPositioning(markets, threshold) {
-  const lines = [
-    "📊 <b>巨鯨持倉快照 Whale Positioning</b>",
-    `（大戶下注的多空分布 · 錢往哪押 · 統計 ≥ ${fmtUSD(threshold || 500)} 的買入）`,
+  const top = markets.slice(0, 4); // 双语版较长, 取前4个盘
+  const thr = fmtUSD(threshold || 500);
+  const url = (m) => (m.eventSlug ? `https://polymarket.com/event/${m.eventSlug}` : "https://polymarket.com");
+
+  // 中文(分析版)
+  const cn = [
+    "📊 <b>巨鯨持倉分析（精華版）</b>",
+    `（大戶下注的多空分布 · 錢往哪押 · 統計 ≥ ${thr} 的買入）`,
     "",
   ];
-  for (const m of markets) {
-    const slug = m.eventSlug || "";
-    const url = slug ? `https://polymarket.com/event/${slug}` : "https://polymarket.com";
-    lines.push(`🔥 <a href="${url}">${esc(translateTitle(m.title))}</a>  <i>(共 ${m.wallets} 人 · ${fmtUSD(m.total)})</i>`);
-    m.breakdown.slice(0, 4).forEach((b, i) => {
+  for (const m of top) {
+    cn.push(`🔥 <a href="${url(m)}">${esc(translateTitle(m.title))}</a>  <i>(共 ${m.wallets} 人 · ${fmtUSD(m.total)})</i>`);
+    m.breakdown.slice(0, 3).forEach((b, i) => {
       const ocz = ocZh(b.outcome) ? `（${ocZh(b.outcome)}）` : "";
-      lines.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}${ocz}  ${fmtUSD(b.usd)} · ${b.wallets}人 · ${b.pct}%`);
+      cn.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}${ocz}  ${fmtUSD(b.usd)} · ${b.wallets}人 · ${b.pct}%`);
     });
-    lines.push("");
+    if (m.topWhale) {
+      const ocz = ocZh(m.topWhale.outcome) ? `（${ocZh(m.topWhale.outcome)}）` : "";
+      cn.push(`   🐋 最大單大戶: <code>${esc(m.topWhale.wallet)}</code>`);
+      cn.push(`      押 ${esc(String(m.topWhale.outcome))}${ocz} · ${fmtUSD(m.topWhale.usd)}`);
+    }
+    cn.push("");
   }
-  lines.push(`🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
-  return lines.join("\n");
+
+  // English (below)
+  const en = ["━━━━━━━━ English ━━━━━━━━", "📊 <b>Whale Positioning Analysis</b>", `(Where the big money bets · buys ≥ ${thr})`, ""];
+  for (const m of top) {
+    en.push(`🔥 <a href="${url(m)}">${esc(m.title)}</a>  <i>(${m.wallets} traders · ${fmtUSD(m.total)})</i>`);
+    m.breakdown.slice(0, 3).forEach((b, i) => {
+      en.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}  ${fmtUSD(b.usd)} · ${b.wallets} · ${b.pct}%`);
+    });
+    if (m.topWhale) en.push(`   🐋 Biggest bettor: <code>${esc(m.topWhale.wallet)}</code> on ${esc(String(m.topWhale.outcome))} · ${fmtUSD(m.topWhale.usd)}`);
+    en.push("");
+  }
+  en.push(`🔭 Polaris Research · Polymarket ${LABEL} Smart-Money Radar`);
+  return [...cn, ...en].join("\n");
 }
 
 // 顶级赢家风格榜
