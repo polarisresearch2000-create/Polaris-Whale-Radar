@@ -242,16 +242,16 @@ function fmtWatchlistSignal(w) {
 
 // ---------- 一轮扫描 ----------
 // 持仓快照：各市场大额买入的多空分布
-function fmtPositioning(markets) {
+function fmtPositioning(markets, threshold) {
   const lines = [
     "📊 <b>巨鯨持倉快照 Whale Positioning</b>",
-    "（大額買入的多空分布 · 錢往哪押）",
+    `（大戶下注的多空分布 · 錢往哪押 · 統計 ≥ ${fmtUSD(threshold || 500)} 的買入）`,
     "",
   ];
   for (const m of markets) {
     const slug = m.eventSlug || "";
     const url = slug ? `https://polymarket.com/event/${slug}` : "https://polymarket.com";
-    lines.push(`🔥 <a href="${url}">${esc(translateTitle(m.title))}</a>`);
+    lines.push(`🔥 <a href="${url}">${esc(translateTitle(m.title))}</a>  <i>(共 ${m.wallets} 人 · ${fmtUSD(m.total)})</i>`);
     m.breakdown.slice(0, 4).forEach((b, i) => {
       const ocz = ocZh(b.outcome) ? `（${ocZh(b.outcome)}）` : "";
       lines.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}${ocz}  ${fmtUSD(b.usd)} · ${b.wallets}人 · ${b.pct}%`);
@@ -331,9 +331,9 @@ async function pollOnce() {
     const now = Date.now();
     if (now - (d.positioning || 0) >= POSITIONING_MIN * 60000) {
       try {
-        const { markets } = await marketSentiment({ topMarkets: 5 });
+        const { markets, threshold } = await marketSentiment({ topMarkets: 5 });
         if (markets.length) {
-          await send(fmtPositioning(markets));
+          await send(fmtPositioning(markets, threshold));
           d.positioning = now;
           console.log("  → 已推持仓快照");
         }

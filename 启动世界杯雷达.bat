@@ -9,6 +9,8 @@ set MIN_NOTIONAL=5000
 set SIGNAL_MIN_PNL=20000
 set WATCHLIST_MIN_PNL=50000
 set WATCHLIST_MIN_NOTIONAL=500
+rem --- 持仓快照独立低门槛(只影响多空统计, 不影响信号) ---
+set POSITIONING_MIN_NOTIONAL=500
 echo ==========================================
 echo   Polaris Radar - World Cup (Sports) 20s
 echo   Close this window to STOP.

@@ -2,7 +2,8 @@
 // 从 Polymarket 拉取加密市场大额成交，给钱包标注真实战绩，挑出「聪明钱方向性下注」信号。
 
 const CONFIG = {
-  MIN_NOTIONAL_USDC: Number(process.env.MIN_NOTIONAL || 1000), // 多大金额(USDC)才算「巨鲸」(可按赛道调)
+  MIN_NOTIONAL_USDC: Number(process.env.MIN_NOTIONAL || 1000), // 多大金额(USDC)才算「巨鲸」信号(可按赛道调)
+  POSITIONING_MIN_NOTIONAL: Number(process.env.POSITIONING_MIN_NOTIONAL || 500), // 持仓快照独立(低)门槛, 与信号门槛分开
   WHALE_TRADES_TO_PULL: 1000, // 默认拉多少笔「大额」成交
   CRYPTO_EVENT_PAGES: 6,      // 抓多少页加密市场建立过滤名单 (每页100)
   EXCLUDE_HFT: true,          // 排除「Up or Down」超短线刷单市场(纯赌博噪音)
@@ -354,52 +355,72 @@ async function scanWatchlist(opts = {}) {
   return { hits, stats: { watchSize: top.length, marketCount: cryptoMap.size } };
 }
 
-// ---- 巨鯨持倉快照：按市場聚合「大額買入」的多空分布 ----
+// ---- 巨鯨持倉快照：按「每个市场」精确拉大額買入, 统计多空分布(独立低门槛) ----
+// 取活跃赛事(按24h量) → 展开主胜负/平市场 → 逐个市场用 /trades?market= 拉买入 → 聚合人数/金额/比例。
+async function getMatchEvents(maxEvents) {
+  const events = [];
+  for (let p = 0; p < 2; p++) {
+    let evs;
+    try {
+      evs = await getJSON(`${GAMMA}/events?tag_slug=${TAG}&closed=false&limit=100&offset=${p * 100}&order=volume24hr&ascending=false`);
+    } catch {
+      break;
+    }
+    if (!Array.isArray(evs) || !evs.length) break;
+    events.push(...evs);
+    if (evs.length < 100) break;
+  }
+  const filtered =
+    TAG === "crypto"
+      ? events
+      : events.filter((e) => / vs\.? /i.test(e.title) && !(EXCLUDE_EXTRA && EXCLUDE_EXTRA.test(e.title)));
+  return filtered.slice(0, maxEvents);
+}
+
 async function marketSentiment(opts = {}) {
   const topN = opts.topMarkets || 6;
-  const minUsd = opts.minNotional || CONFIG.MIN_NOTIONAL_USDC;
-  const nowMs = Date.now();
-  const [cryptoMap, trades] = await Promise.all([
-    getCryptoMarkets(),
-    getWhaleTrades(CONFIG.WHALE_TRADES_TO_PULL),
-  ]);
-  const byMarket = new Map();
-  for (const t of trades) {
-    if (t.side !== "BUY") continue; // 只统计买入(建仓)，最能反映持仓倾向
-    const meta = cryptoMap.get((t.conditionId || "").toLowerCase());
-    const isV = !!meta || (KEYWORDS && KEYWORDS.test(t.title || ""));
-    if (!isV) continue;
-    if (CONFIG.EXCLUDE_HFT && HFT_RE.test(t.title || "")) continue;
-    if (EXCLUDE_EXTRA && EXCLUDE_EXTRA.test(t.title || "")) continue;
-    if (meta && meta.closed) continue;
-    if (meta && meta.endMs && meta.endMs <= nowMs + CONFIG.MIN_MIN_TO_RESOLUTION * 60000) continue;
-    const usd = (t.size || 0) * (t.price || 0);
-    if (usd < minUsd) continue;
-    const cid = t.conditionId;
-    if (!byMarket.has(cid))
-      byMarket.set(cid, { title: t.title, eventSlug: t.eventSlug || t.slug, outcomes: new Map(), total: 0, wallets: new Set() });
-    const mk = byMarket.get(cid);
-    const oc = t.outcome || "?";
-    if (!mk.outcomes.has(oc)) mk.outcomes.set(oc, { usd: 0, wallets: new Set() });
-    const o = mk.outcomes.get(oc);
-    o.usd += usd;
-    o.wallets.add(t.proxyWallet);
-    mk.total += usd;
-    mk.wallets.add(t.proxyWallet);
+  const minUsd = opts.minNotional || CONFIG.POSITIONING_MIN_NOTIONAL;
+  const events = await getMatchEvents(opts.maxEvents || 12);
+
+  // 收集要统计的市场(主胜负/平, 排除衍生玩法)
+  const targets = [];
+  for (const ev of events) {
+    for (const m of ev.markets || []) {
+      if (!m.conditionId) continue;
+      if (EXCLUDE_EXTRA && EXCLUDE_EXTRA.test(m.question || "")) continue;
+      if (/spread|o\/u|over\/under|exact|corner|halftime|player|total/i.test(m.question || "")) continue;
+      targets.push({ cid: m.conditionId, title: m.question, eventSlug: ev.slug });
+    }
   }
-  const markets = [...byMarket.values()]
-    .sort((a, b) => b.total - a.total)
-    .slice(0, topN)
-    .map((mk) => ({
-      title: mk.title,
-      eventSlug: mk.eventSlug,
-      total: mk.total,
-      wallets: mk.wallets.size,
-      breakdown: [...mk.outcomes.entries()]
-        .map(([outcome, o]) => ({ outcome, usd: o.usd, wallets: o.wallets.size, pct: Math.round((o.usd / mk.total) * 100) }))
-        .sort((a, b) => b.usd - a.usd),
-    }));
-  return { markets };
+
+  // 逐个市场精确拉「大额买入」
+  const enriched = await mapLimit(targets, CONFIG.WALLET_CONCURRENCY, async (mk) => {
+    let tr;
+    try {
+      tr = await getJSON(`${DATA}/trades?market=${mk.cid}&filterType=CASH&filterAmount=${minUsd}&limit=500`);
+    } catch {
+      tr = null;
+    }
+    const buys = Array.isArray(tr) ? tr.filter((t) => t.side === "BUY") : [];
+    const byOut = new Map();
+    const allWallets = new Set();
+    for (const t of buys) {
+      const o = t.outcome || "?";
+      if (!byOut.has(o)) byOut.set(o, { usd: 0, wallets: new Set() });
+      const e = byOut.get(o);
+      e.usd += (t.size || 0) * (t.price || 0);
+      e.wallets.add(t.proxyWallet);
+      allWallets.add(t.proxyWallet);
+    }
+    const total = [...byOut.values()].reduce((s, v) => s + v.usd, 0);
+    const breakdown = [...byOut.entries()]
+      .map(([outcome, v]) => ({ outcome, usd: v.usd, wallets: v.wallets.size, pct: total ? Math.round((v.usd / total) * 100) : 0 }))
+      .sort((a, b) => b.usd - a.usd);
+    return { title: mk.title, eventSlug: mk.eventSlug, total, wallets: allWallets.size, breakdown };
+  });
+
+  const markets = enriched.filter((m) => m.total > 0).sort((a, b) => b.total - a.total).slice(0, topN);
+  return { markets, threshold: minUsd };
 }
 
 // ---- 顶级赢家风格画像 ----
