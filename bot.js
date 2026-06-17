@@ -274,7 +274,11 @@ function fmtPositioning(markets, threshold) {
     m.breakdown.slice(0, 3).forEach((b, i) => {
       en.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}  ${fmtUSD(b.usd)} · ${b.wallets} · ${b.pct}%`);
     });
-    if (m.topWhale) en.push(`   🐋 Biggest bettor: <code>${esc(m.topWhale.wallet)}</code> on ${esc(String(m.topWhale.outcome))} · ${fmtUSD(m.topWhale.usd)}`);
+    if (m.topWhale) {
+      const w = m.topWhale.wallet;
+      const short = `${w.slice(0, 6)}…${w.slice(-4)}`;
+      en.push(`   🐋 Biggest bettor on ${esc(String(m.topWhale.outcome))} · ${fmtUSD(m.topWhale.usd)}  (${short})`);
+    }
     en.push("");
   }
   en.push(`🔭 Polaris Research · Polymarket ${LABEL} Smart-Money Radar`);
