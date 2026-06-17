@@ -7,7 +7,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -41,6 +41,11 @@ const WATCH_MAX_PER_RUN = Number(process.env.WATCHLIST_MAX_PER_RUN || 5); // 单
 const SIGNAL_MAX_PER_RUN = Number(process.env.SIGNAL_MAX_PER_RUN || 5); // 单轮最多推几条大额信号(防刷屏)
 const WHALE_PULL = process.env.POLL_SECONDS ? 500 : 2000; // 快速轮询模式拉少一点成交，省流量
 const SEEN_FILE = path.join(__dirname, "data", `seen_${TAG}.json`); // 每个赛道独立去重
+// 定时摘要：持仓快照 + 赢家风格
+const DIGESTS = (process.env.DIGESTS || "on") !== "off";
+const POSITIONING_MIN = Number(process.env.POSITIONING_MIN || 120); // 持仓快照间隔(分钟)
+const PROFILES_MIN = Number(process.env.PROFILES_MIN || 1440); // 赢家风格榜间隔(分钟)
+const DIGEST_FILE = path.join(__dirname, "data", `digest_${TAG}.json`);
 
 if (!TOKEN) {
   console.error("❌ 缺少 TELEGRAM_BOT_TOKEN（请检查 .env）");
@@ -58,6 +63,19 @@ function loadSeen() {
 function saveSeen(set) {
   fs.mkdirSync(path.dirname(SEEN_FILE), { recursive: true });
   fs.writeFileSync(SEEN_FILE, JSON.stringify([...set].slice(-5000)));
+}
+function loadDigest() {
+  try {
+    return JSON.parse(fs.readFileSync(DIGEST_FILE, "utf8"));
+  } catch {
+    return {};
+  }
+}
+function saveDigest(s) {
+  try {
+    fs.mkdirSync(path.dirname(DIGEST_FILE), { recursive: true });
+    fs.writeFileSync(DIGEST_FILE, JSON.stringify(s));
+  } catch {}
 }
 
 // ---------- Telegram ----------
@@ -223,6 +241,45 @@ function fmtWatchlistSignal(w) {
 }
 
 // ---------- 一轮扫描 ----------
+// 持仓快照：各市场大额买入的多空分布
+function fmtPositioning(markets) {
+  const lines = [
+    "📊 <b>巨鯨持倉快照 Whale Positioning</b>",
+    "（大額買入的多空分布 · 錢往哪押）",
+    "",
+  ];
+  for (const m of markets) {
+    const slug = m.eventSlug || "";
+    const url = slug ? `https://polymarket.com/event/${slug}` : "https://polymarket.com";
+    lines.push(`🔥 <a href="${url}">${esc(translateTitle(m.title))}</a>`);
+    m.breakdown.slice(0, 4).forEach((b, i) => {
+      const ocz = ocZh(b.outcome) ? `（${ocZh(b.outcome)}）` : "";
+      lines.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}${ocz}  ${fmtUSD(b.usd)} · ${b.wallets}人 · ${b.pct}%`);
+    });
+    lines.push("");
+  }
+  lines.push(`🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
+  return lines.join("\n");
+}
+
+// 顶级赢家风格榜
+function fmtProfiles(profiles) {
+  const lines = [
+    "🏆 <b>頂級贏家風格 Top Traders</b>",
+    "（盈利榜前列玩家怎麼下注）",
+    "",
+  ];
+  profiles.slice(0, 12).forEach((w) => {
+    const name = esc(w.name || w.wallet.slice(0, 8));
+    lines.push(`<b>#${w.rank} ${name}</b> ${fmtUSD(w.profit)}`);
+    lines.push(`   ${w.mainCat} · 方向性 ${w.dirPct}% · 均價 ${w.avgPrice.toFixed(2)}(${w.priceStyle}) · 均注 ${fmtUSD(w.avgSize)}`);
+  });
+  lines.push("");
+  lines.push("💡 共性：頂級贏家多為「方向性大額下注」，極少吃息刷量");
+  lines.push(`🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
+  return lines.join("\n");
+}
+
 async function send(text) {
   await tg("sendMessage", {
     chat_id: CHANNEL,
@@ -266,8 +323,39 @@ async function pollOnce() {
 
   for (const s of freshWhalesAll) seen.add(s.key);
   for (const s of freshWatchAll) seen.add(s.key);
-
   saveSeen(seen);
+
+  // 定时摘要：持仓快照 / 赢家风格(到点才推)
+  if (DIGESTS) {
+    const d = loadDigest();
+    const now = Date.now();
+    if (now - (d.positioning || 0) >= POSITIONING_MIN * 60000) {
+      try {
+        const { markets } = await marketSentiment({ topMarkets: 5 });
+        if (markets.length) {
+          await send(fmtPositioning(markets));
+          d.positioning = now;
+          console.log("  → 已推持仓快照");
+        }
+      } catch (e) {
+        console.error("持仓快照出错:", e.message);
+      }
+    }
+    if (now - (d.profiles || 0) >= PROFILES_MIN * 60000) {
+      try {
+        const p = await analyzeTopTraders(12);
+        if (p.length) {
+          await send(fmtProfiles(p));
+          d.profiles = now;
+          console.log("  → 已推赢家风格榜");
+        }
+      } catch (e) {
+        console.error("赢家风格出错:", e.message);
+      }
+    }
+    saveDigest(d);
+  }
+
   return whalesPost.length + watchPost.length;
 }
 
@@ -301,4 +389,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { translateTitle, titleBlock };
+module.exports = { translateTitle, titleBlock, fmtPositioning, fmtProfiles };

@@ -427,7 +427,7 @@ async function analyzeTopTraders(limit = 20) {
     const cat = {};
     for (const t of trades) cat[catOf(t.title)] = (cat[catOf(t.title)] || 0) + 1;
     const mainCat = Object.entries(cat).sort((a, b) => b[1] - a[1])[0]?.[0] || "?";
-    const priceStyle = avgPrice > 0.72 ? "吃確定性(押熱門)" : avgPrice < 0.45 ? "博冷門/逆向" : "均衡";
+    const priceStyle = avgPrice > 0.72 ? "押熱門" : avgPrice < 0.45 ? "博冷門" : "均衡";
     return { ...w, avgPrice, avgSize, dirPct, mainCat, nTrades: trades.length, priceStyle };
   });
   return profiles;
