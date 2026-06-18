@@ -1,0 +1,62 @@
+{
+  "predictions": {
+    "760438": {
+      "match": "Czechia vs South Africa",
+      "home": "Czechia",
+      "away": "South Africa",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0xe5c215ac428d4143f9ebc817c9ac6e717a2e2ab0",
+        "side": "home",
+        "usd": 182836.762199
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-18T11:00:46.240Z"
+    },
+    "760439": {
+      "match": "Switzerland vs Bosnia-Herzegovina",
+      "home": "Switzerland",
+      "away": "Bosnia-Herzegovina",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0x198a38b9704cf3a5ed321f28c8a7836559676762",
+        "side": "home",
+        "usd": 159853.709999
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-18T11:00:46.471Z"
+    },
+    "760440": {
+      "match": "Canada vs Qatar",
+      "home": "Canada",
+      "away": "Qatar",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "home",
+        "usd": 115446.2496
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-18T11:00:46.690Z"
+    },
+    "760441": {
+      "match": "Mexico vs South Korea",
+      "home": "Mexico",
+      "away": "South Korea",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0x84cfffc3f16dcc353094de30d4a45226eccd2f63",
+        "side": "home",
+        "usd": 14245.3272
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-18T11:00:46.915Z"
+    }
+  },
+  "settled": [],
+  "stats": {
+    "total": 0,
+    "whaleWins": 0,
+    "bigWins": 0
+  }
+}
