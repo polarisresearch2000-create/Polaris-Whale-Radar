@@ -13,6 +13,8 @@ rem positioning snapshot independent low threshold (stats only, not signals)
 set POSITIONING_MIN_NOTIONAL=500
 rem push the positioning analysis every 15 minutes
 set POSITIONING_MIN=15
+rem turn off the global Top-Traders profiles (off-topic for World Cup)
+set PROFILES_ENABLED=off
 echo ==========================================
 echo   Polaris Radar - World Cup (Sports) 20s
 echo   Close this window to STOP.

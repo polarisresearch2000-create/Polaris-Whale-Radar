@@ -43,6 +43,7 @@ const WHALE_PULL = process.env.POLL_SECONDS ? 500 : 2000; // 快速轮询模式�
 const SEEN_FILE = path.join(__dirname, "data", `seen_${TAG}.json`); // 每个赛道独立去重
 // 定时摘要：持仓快照 + 赢家风格
 const DIGESTS = (process.env.DIGESTS || "on") !== "off";
+const PROFILES_ENABLED = (process.env.PROFILES_ENABLED || "on") !== "off"; // 顶级赢家风格榜(全站; 体育频道可关)
 const POSITIONING_MIN = Number(process.env.POSITIONING_MIN || 120); // 持仓快照间隔(分钟)
 const PROFILES_MIN = Number(process.env.PROFILES_MIN || 1440); // 赢家风格榜间隔(分钟)
 const DIGEST_FILE = path.join(__dirname, "data", `digest_${TAG}.json`);
@@ -447,7 +448,7 @@ async function pollOnce() {
         console.error("持仓快照出错:", e.message);
       }
     }
-    if (now - (d.profiles || 0) >= PROFILES_MIN * 60000) {
+    if (PROFILES_ENABLED && now - (d.profiles || 0) >= PROFILES_MIN * 60000) {
       try {
         const p = await analyzeTopTraders(12);
         if (p.length) {

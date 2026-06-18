@@ -34,6 +34,7 @@ jobs:
           WATCHLIST_MIN_NOTIONAL: "500"
           POSITIONING_MIN_NOTIONAL: "500"
           POSITIONING_MIN: "15"
+          PROFILES_ENABLED: "off"
         run: node bot.js --once
       - name: Persist state (dedupe + watchlist + digest)
         run: |
