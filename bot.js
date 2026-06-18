@@ -7,7 +7,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -46,6 +46,9 @@ const DIGESTS = (process.env.DIGESTS || "on") !== "off";
 const POSITIONING_MIN = Number(process.env.POSITIONING_MIN || 120); // 持仓快照间隔(分钟)
 const PROFILES_MIN = Number(process.env.PROFILES_MIN || 1440); // 赢家风格榜间隔(分钟)
 const DIGEST_FILE = path.join(__dirname, "data", `digest_${TAG}.json`);
+// 赛果追踪(仅体育赛道自动开启)
+const RESULTS_ON = /world-cup|soccer|sports/.test(TAG);
+const RESULTS_FILE = path.join(__dirname, "data", `results_${TAG}.json`);
 
 if (!TOKEN) {
   console.error("❌ 缺少 TELEGRAM_BOT_TOKEN（请检查 .env）");
@@ -76,6 +79,86 @@ function saveDigest(s) {
     fs.mkdirSync(path.dirname(DIGEST_FILE), { recursive: true });
     fs.writeFileSync(DIGEST_FILE, JSON.stringify(s));
   } catch {}
+}
+function loadResults() {
+  try {
+    return JSON.parse(fs.readFileSync(RESULTS_FILE, "utf8"));
+  } catch {
+    return { predictions: {}, settled: [], stats: { total: 0, whaleWins: 0, bigWins: 0 } };
+  }
+}
+function saveResults(r) {
+  try {
+    fs.mkdirSync(path.dirname(RESULTS_FILE), { recursive: true });
+    fs.writeFileSync(RESULTS_FILE, JSON.stringify(r, null, 2));
+  } catch {}
+}
+const SIDE_ZH = { home: "主勝", draw: "平局", away: "客勝" };
+const sideLabel = (side, home, away) => (side === "home" ? home : side === "away" ? away : side === "draw" ? "平局" : "?");
+
+// 捕捉(赛前/早段)各场的巨鲸方向 + 结算完赛 + 推送赛果总结
+async function trackResults() {
+  const res = loadResults();
+  let wc, pmEvents;
+  try {
+    [wc, pmEvents] = await Promise.all([getWcResults(), getMatchEvents(20)]);
+  } catch (e) {
+    console.error("赛果追踪取数出错:", e.message);
+    return;
+  }
+  // 1) 捕捉新比赛的预测(仅捕捉一次，尽量赛前/早段)
+  for (const m of wc) {
+    if (m.completed || res.predictions[m.id]) continue;
+    const pred = await matchPrediction(m, pmEvents).catch(() => null);
+    if (pred) {
+      res.predictions[m.id] = {
+        match: `${m.home} vs ${m.away}`, home: m.home, away: m.away,
+        whaleSide: pred.whaleSide, bigBettor: pred.bigBettor, state: m.state, capturedAt: new Date().toISOString(),
+      };
+    }
+  }
+  // 2) 结算完赛且有预测、尚未结算的
+  let newSettle = 0;
+  for (const m of wc) {
+    if (!m.completed || !m.actual) continue;
+    const p = res.predictions[m.id];
+    if (!p || res.settled.find((s) => s.espnId === m.id)) continue;
+    const whaleWin = p.whaleSide === m.actual;
+    const bigWin = p.bigBettor && p.bigBettor.side === m.actual;
+    res.settled.push({
+      espnId: m.id, match: p.match, home: p.home, away: p.away,
+      whaleSide: p.whaleSide, bigBettorSide: p.bigBettor?.side, actual: m.actual,
+      score: `${m.homeScore}-${m.awayScore}`, whaleWin, bigWin, settledAt: new Date().toISOString(),
+    });
+    res.stats.total++;
+    if (whaleWin) res.stats.whaleWins++;
+    if (bigWin) res.stats.bigWins++;
+    newSettle++;
+  }
+  saveResults(res);
+  if (newSettle > 0) {
+    await send(fmtResultSummary(res));
+    console.log(`  → 已推赛果总结(新结算 ${newSettle})`);
+  }
+}
+
+function fmtResultSummary(res) {
+  const st = res.stats;
+  const wr = st.total ? Math.round((st.whaleWins / st.total) * 100) : 0;
+  const bwr = st.total ? Math.round((st.bigWins / st.total) * 100) : 0;
+  const lines = ["🏁 <b>賽果總結 Results</b>", `（巨鯨方向 vs 實際賽果 · 命中率追蹤）`, ""];
+  for (const s of res.settled.slice(-6)) {
+    const actualLabel = sideLabel(s.actual, s.home, s.away);
+    lines.push(`${s.whaleWin ? "✅" : "❌"} ${esc(s.match)} <b>${s.score}</b> → ${esc(actualLabel)}勝`);
+    lines.push(`   巨鯨押 ${esc(sideLabel(s.whaleSide, s.home, s.away))} ${s.whaleWin ? "✅" : "❌"} · 最大戶押 ${esc(sideLabel(s.bigBettorSide, s.home, s.away))} ${s.bigWin ? "✅" : "❌"}`);
+  }
+  lines.push("");
+  lines.push(`📊 <b>累計戰績 (${st.total} 場)</b>`);
+  lines.push(`   🐋 巨鯨多數方命中: <b>${st.whaleWins}/${st.total} (${wr}%)</b>`);
+  lines.push(`   👑 最大單大戶命中: <b>${st.bigWins}/${st.total} (${bwr}%)</b>`);
+  lines.push("");
+  lines.push(`🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
+  return lines.join("\n");
 }
 
 // ---------- Telegram ----------
@@ -379,6 +462,15 @@ async function pollOnce() {
     saveDigest(d);
   }
 
+  // 赛果追踪(体育赛道): 捕捉巨鲸方向 + 结算完赛 + 推送总结
+  if (RESULTS_ON) {
+    try {
+      await trackResults();
+    } catch (e) {
+      console.error("赛果追踪出错:", e.message);
+    }
+  }
+
   return whalesPost.length + watchPost.length;
 }
 
@@ -391,6 +483,13 @@ async function main() {
       parse_mode: "HTML",
     });
     console.log("✅ 测试消息已发送到", CHANNEL);
+    return;
+  }
+  if (process.argv.includes("--results")) {
+    const r = loadResults();
+    console.log(`赛果追踪 (${TAG}): 已结算 ${r.stats.total} 场 | 巨鲸命中 ${r.stats.whaleWins} | 最大户命中 ${r.stats.bigWins}`);
+    console.log(`待结算预测: ${Object.keys(r.predictions).length} 场`);
+    r.settled.slice(-10).forEach((s) => console.log(`  ${s.whaleWin ? "✅" : "❌"} ${s.match} ${s.score} 实际${s.actual} | 巨鲸${s.whaleSide} 最大户${s.bigBettorSide}`));
     return;
   }
 

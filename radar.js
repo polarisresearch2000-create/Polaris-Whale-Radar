@@ -468,8 +468,79 @@ async function analyzeTopTraders(limit = 20) {
   return profiles;
 }
 
+// ---- 赛果追踪: 巨鲸方向 / 最大单大户 的命中率 ----
+const ESPN_SB_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
+const teamToks = (s) => String(s || "").toLowerCase().replace(/[^a-z\s]/g, " ").split(/\s+/).filter((w) => w.length >= 3 && w !== "the");
+
+// ESPN 世界杯赛果(含完赛结果 home/draw/away)
+async function getWcResults() {
+  const sb = await getJSON(ESPN_SB_URL).catch(() => null);
+  if (!sb) return [];
+  const out = [];
+  for (const ev of sb.events || []) {
+    const comp = ev.competitions?.[0];
+    if (!comp) continue;
+    const home = comp.competitors?.find((c) => c.homeAway === "home");
+    const away = comp.competitors?.find((c) => c.homeAway === "away");
+    if (!home || !away) continue;
+    const completed = !!(comp.status?.type?.completed || ev.status?.type?.completed);
+    const hs = Number(home.score), as = Number(away.score);
+    out.push({
+      id: ev.id, home: home.team.displayName, away: away.team.displayName,
+      homeTokens: teamToks(home.team.displayName), awayTokens: teamToks(away.team.displayName),
+      state: ev.status?.type?.state, completed, homeScore: hs, awayScore: as,
+      actual: completed ? (hs > as ? "home" : hs < as ? "away" : "draw") : null,
+    });
+  }
+  return out;
+}
+
+// 某场比赛当前的"巨鲸多数方"和"最大单大户"押注方向(用持仓低门槛统计买入)
+async function matchPrediction(m, pmEvents) {
+  const pmEvent = pmEvents.find((e) => {
+    const t = e.title.toLowerCase();
+    return m.homeTokens.some((x) => t.includes(x)) && m.awayTokens.some((x) => t.includes(x));
+  });
+  if (!pmEvent) return null;
+  const markets = [];
+  for (const mk of pmEvent.markets || []) {
+    if (!mk.conditionId) continue;
+    const q = mk.question.toLowerCase();
+    let side = null;
+    if (/draw/.test(q)) side = "draw";
+    else if (m.homeTokens.some((t) => q.includes(t))) side = "home";
+    else if (m.awayTokens.some((t) => q.includes(t))) side = "away";
+    if (side && !markets.find((x) => x.side === side)) markets.push({ side, cid: mk.conditionId });
+  }
+  const dist = { home: 0, draw: 0, away: 0 };
+  const walletAgg = new Map();
+  for (const mm of markets) {
+    const tr = await getJSON(`${DATA}/trades?market=${mm.cid}&filterType=CASH&filterAmount=${CONFIG.POSITIONING_MIN_NOTIONAL}&limit=500`).catch(() => null);
+    const buys = Array.isArray(tr) ? tr.filter((t) => t.side === "BUY" && /yes/i.test(t.outcome || "")) : [];
+    for (const t of buys) {
+      const u = (t.size || 0) * (t.price || 0);
+      dist[mm.side] += u;
+      if (!walletAgg.has(t.proxyWallet)) walletAgg.set(t.proxyWallet, { usd: 0, bySide: new Map() });
+      const w = walletAgg.get(t.proxyWallet);
+      w.usd += u;
+      w.bySide.set(mm.side, (w.bySide.get(mm.side) || 0) + u);
+    }
+  }
+  if (dist.home + dist.draw + dist.away <= 0) return null;
+  const whaleSide = ["home", "draw", "away"].reduce((a, b) => (dist[b] > dist[a] ? b : a));
+  let bigBettor = null;
+  for (const [w, wr] of walletAgg) {
+    if (!bigBettor || wr.usd > bigBettor.usd) {
+      const side = [...wr.bySide.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+      bigBettor = { wallet: w, side, usd: wr.usd };
+    }
+  }
+  return { whaleSide, dist, bigBettor };
+}
+
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
-  marketSentiment, analyzeTopTraders,
+  marketSentiment, analyzeTopTraders, getMatchEvents,
+  getWcResults, matchPrediction,
   fmtUSD, CONFIG, isDirectional,
 };
