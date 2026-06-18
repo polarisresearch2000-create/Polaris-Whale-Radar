@@ -328,13 +328,12 @@ function fmtWatchlistSignal(w) {
 // 持仓快照：各市场大额买入的多空分布
 function fmtPositioning(markets, threshold) {
   const top = markets.slice(0, 4); // 双语版较长, 取前4个盘
-  const thr = fmtUSD(threshold || 500);
   const url = (m) => (m.eventSlug ? `https://polymarket.com/event/${m.eventSlug}` : "https://polymarket.com");
 
   // 中文(分析版)
   const cn = [
     "📊 <b>巨鯨持倉分析（精華版）</b>",
-    `（大戶下注的多空分布 · 錢往哪押 · 統計 ≥ ${thr} 的買入）`,
+    `（大戶下注的多空分布 · 錢往哪押）`,
     "",
   ];
   for (const m of top) {
@@ -352,7 +351,7 @@ function fmtPositioning(markets, threshold) {
   }
 
   // English (below)
-  const en = ["━━━━━━━━ English ━━━━━━━━", "📊 <b>Whale Positioning Analysis</b>", `(Where the big money bets · buys ≥ ${thr})`, ""];
+  const en = ["━━━━━━━━ English ━━━━━━━━", "📊 <b>Whale Positioning Analysis</b>", "(Where the big money is betting)", ""];
   for (const m of top) {
     en.push(`🔥 <a href="${url(m)}">${esc(m.title)}</a>  <i>(${m.wallets} traders · ${fmtUSD(m.total)})</i>`);
     m.breakdown.slice(0, 3).forEach((b, i) => {
