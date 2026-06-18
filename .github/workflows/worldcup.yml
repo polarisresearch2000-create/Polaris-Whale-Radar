@@ -1,0 +1,48 @@
+name: Polaris World Cup Radar
+
+# 世界杯频道 24/7 云端运行(每5分钟扫描一次)。
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: worldcup
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run World Cup radar
+        env:
+          SPORTS_BOT_TOKEN: ${{ secrets.SPORTS_BOT_TOKEN }}
+          SPORTS_CHANNEL: "@polarisresearch2000_PE"
+          PROFILE: SPORTS
+          POLY_TAG: fifa-world-cup
+          VERTICAL_LABEL: World Cup
+          MIN_NOTIONAL: "5000"
+          SIGNAL_MIN_PNL: "20000"
+          WATCHLIST_MIN_PNL: "50000"
+          WATCHLIST_MIN_NOTIONAL: "500"
+          POSITIONING_MIN_NOTIONAL: "500"
+          POSITIONING_MIN: "15"
+        run: node bot.js --once
+      - name: Persist state (dedupe + watchlist + digest)
+        run: |
+          if [ -n "$(git status --porcelain data)" ]; then
+            git config user.name "polaris-bot"
+            git config user.email "bot@users.noreply.github.com"
+            git add data
+            git commit -m "chore: update worldcup state [skip ci]"
+            git push
+          else
+            echo "No state changes to persist."
+          fi
