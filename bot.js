@@ -27,7 +27,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V3.1"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V3.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -328,10 +328,9 @@ function fmtWatchlistSignal(w) {
 // ---------- 一轮扫描 ----------
 // 持仓快照：各市场大额买入的多空分布
 function fmtPositioning(markets, threshold) {
-  const top = markets.slice(0, 4); // 双语版较长, 取前4个盘
+  const top = markets.slice(0, 6); // 纯中文, 可多放几个盘
   const url = (m) => (m.eventSlug ? `https://polymarket.com/event/${m.eventSlug}` : "https://polymarket.com");
 
-  // 中文(分析版)
   const cn = [
     "📊 <b>巨鯨持倉分析（精華版）</b>",
     `（大戶下注的多空分布 · 錢往哪押）`,
@@ -350,23 +349,8 @@ function fmtPositioning(markets, threshold) {
     }
     cn.push("");
   }
-
-  // English (below)
-  const en = ["━━━━━━━━ English ━━━━━━━━", "📊 <b>Whale Positioning Analysis</b>", "(Where the big money is betting)", ""];
-  for (const m of top) {
-    en.push(`🔥 <a href="${url(m)}">${esc(m.title)}</a>  <i>(${m.wallets} traders · ${fmtUSD(m.total)})</i>`);
-    m.breakdown.slice(0, 3).forEach((b, i) => {
-      en.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}  ${fmtUSD(b.usd)} · ${b.wallets} · ${b.pct}%`);
-    });
-    if (m.topWhale) {
-      const w = m.topWhale.wallet;
-      const short = `${w.slice(0, 6)}…${w.slice(-4)}`;
-      en.push(`   🐋 Biggest bettor on ${esc(String(m.topWhale.outcome))} · ${fmtUSD(m.topWhale.usd)}  (${short})`);
-    }
-    en.push("");
-  }
-  en.push(`🔭 Polaris Research · Polymarket ${LABEL} Smart-Money Radar`);
-  return [...cn, ...en].join("\n");
+  cn.push(`🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
+  return cn.join("\n");
 }
 
 // 顶级赢家风格榜
