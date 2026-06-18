@@ -510,24 +510,36 @@ async function matchPrediction(m, pmEvents) {
     if (/draw/.test(q)) side = "draw";
     else if (m.homeTokens.some((t) => q.includes(t))) side = "home";
     else if (m.awayTokens.some((t) => q.includes(t))) side = "away";
-    if (side && !markets.find((x) => x.side === side)) markets.push({ side, cid: mk.conditionId });
+    if (!side || markets.find((x) => x.side === side)) continue;
+    // 该结果的 Polymarket 下注价(Yes 隐含概率), 算 ROI 必需
+    let price = null;
+    try {
+      const outs = JSON.parse(mk.outcomes || "[]");
+      const px = JSON.parse(mk.outcomePrices || "[]");
+      const yi = outs.findIndex((o) => /yes/i.test(o));
+      if (yi >= 0) price = Number(px[yi]);
+    } catch {}
+    markets.push({ side, cid: mk.conditionId, price });
   }
-  const dist = { home: 0, draw: 0, away: 0 };
+  const sides = { home: { usd: 0, price: null }, draw: { usd: 0, price: null }, away: { usd: 0, price: null } };
+  for (const mm of markets) if (sides[mm.side]) sides[mm.side].price = Number.isFinite(mm.price) ? mm.price : null;
   const walletAgg = new Map();
   for (const mm of markets) {
     const tr = await getJSON(`${DATA}/trades?market=${mm.cid}&filterType=CASH&filterAmount=${CONFIG.POSITIONING_MIN_NOTIONAL}&limit=500`).catch(() => null);
     const buys = Array.isArray(tr) ? tr.filter((t) => t.side === "BUY" && /yes/i.test(t.outcome || "")) : [];
     for (const t of buys) {
       const u = (t.size || 0) * (t.price || 0);
-      dist[mm.side] += u;
+      sides[mm.side].usd += u;
       if (!walletAgg.has(t.proxyWallet)) walletAgg.set(t.proxyWallet, { usd: 0, bySide: new Map() });
       const w = walletAgg.get(t.proxyWallet);
       w.usd += u;
       w.bySide.set(mm.side, (w.bySide.get(mm.side) || 0) + u);
     }
   }
-  if (dist.home + dist.draw + dist.away <= 0) return null;
-  const whaleSide = ["home", "draw", "away"].reduce((a, b) => (dist[b] > dist[a] ? b : a));
+  const totalUsd = sides.home.usd + sides.draw.usd + sides.away.usd;
+  if (totalUsd <= 0) return null;
+  const whaleSide = ["home", "draw", "away"].reduce((a, b) => (sides[b].usd > sides[a].usd ? b : a));
+  const consensusPct = sides[whaleSide].usd / totalUsd;
   let bigBettor = null;
   for (const [w, wr] of walletAgg) {
     if (!bigBettor || wr.usd > bigBettor.usd) {
@@ -535,7 +547,7 @@ async function matchPrediction(m, pmEvents) {
       bigBettor = { wallet: w, side, usd: wr.usd };
     }
   }
-  return { whaleSide, dist, bigBettor };
+  return { whaleSide, consensusPct, bigBettor, sides };
 }
 
 module.exports = {

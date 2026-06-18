@@ -27,7 +27,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V3.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V3.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -83,11 +83,17 @@ function saveDigest(s) {
   } catch {}
 }
 function loadResults() {
+  let r;
   try {
-    return JSON.parse(fs.readFileSync(RESULTS_FILE, "utf8"));
+    r = JSON.parse(fs.readFileSync(RESULTS_FILE, "utf8"));
   } catch {
-    return { predictions: {}, settled: [], stats: { total: 0, whaleWins: 0, bigWins: 0 } };
+    r = {};
   }
+  r.predictions = r.predictions || {};
+  r.settled = Array.isArray(r.settled) ? r.settled : [];
+  r.strategies = r.strategies || {}; // key -> { bets, wins, profit }
+  delete r.stats; // 旧字段(单一命中率)弃用
+  return r;
 }
 function saveResults(r) {
   try {
@@ -95,10 +101,47 @@ function saveResults(r) {
     fs.writeFileSync(RESULTS_FILE, JSON.stringify(r, null, 2));
   } catch {}
 }
-const SIDE_ZH = { home: "主勝", draw: "平局", away: "客勝" };
 const sideLabel = (side, home, away) => (side === "home" ? home : side === "away" ? away : side === "draw" ? "平局" : "?");
 
-// 捕捉(赛前/早段)各场的巨鲸方向 + 结算完赛 + 推送赛果总结
+// 并行前向测试的 4 条策略
+const STRATS = [
+  { key: "followWhale", label: "🐋 跟巨鯨多數方" },
+  { key: "followBig", label: "👑 跟最大單大戶" },
+  { key: "highConsensus", label: "🔒 高共識(>85%)才跟" },
+  { key: "fadeFav", label: "🔄 反向 fade 大眾" },
+];
+
+// 给定预测 p 与实际结果, 算每条策略这场的下注(方向/下注价/输赢/单位ROI)
+function evalStrategies(p, actual) {
+  const priceOf = (side) => {
+    const x = p.sides?.[side]?.price;
+    return Number.isFinite(x) && x > 0 && x < 1 ? x : null;
+  };
+  const back = (side) => {
+    const price = priceOf(side);
+    if (!side || price == null) return null;
+    const win = actual === side;
+    return { side, price, win, profit: win ? (1 - price) / price : -1 }; // 每 $1 成本的盈亏
+  };
+  const out = {
+    followWhale: back(p.whaleSide),
+    followBig: back(p.bigBettor?.side),
+    highConsensus: p.consensusPct >= 0.85 ? back(p.whaleSide) : null,
+    fadeFav: null,
+  };
+  // 反向: 在巨鲸热门结果上买 No
+  const yes = priceOf(p.whaleSide);
+  if (yes != null) {
+    const noPrice = 1 - yes;
+    if (noPrice > 0 && noPrice < 1) {
+      const win = actual !== p.whaleSide;
+      out.fadeFav = { side: `No(${p.whaleSide})`, price: noPrice, win, profit: win ? (1 - noPrice) / noPrice : -1 };
+    }
+  }
+  return out;
+}
+
+// 捕捉(赛前/早段)预测 + 结算完赛 + 累计各策略 ROI + 推送
 async function trackResults() {
   const res = loadResults();
   let wc, pmEvents;
@@ -108,33 +151,40 @@ async function trackResults() {
     console.error("赛果追踪取数出错:", e.message);
     return;
   }
-  // 1) 捕捉新比赛的预测(仅捕捉一次，尽量赛前/早段)
+  // 1) 捕捉/补全预测(尽量赛前; 缺 sides/价 的旧记录自动升级补全)
   for (const m of wc) {
-    if (m.completed || res.predictions[m.id]) continue;
+    if (m.completed) continue;
+    const ex = res.predictions[m.id];
+    if (ex && ex.sides) continue;
     const pred = await matchPrediction(m, pmEvents).catch(() => null);
-    if (pred) {
+    if (pred && pred.sides) {
       res.predictions[m.id] = {
         match: `${m.home} vs ${m.away}`, home: m.home, away: m.away,
-        whaleSide: pred.whaleSide, bigBettor: pred.bigBettor, state: m.state, capturedAt: new Date().toISOString(),
+        whaleSide: pred.whaleSide, consensusPct: pred.consensusPct, bigBettor: pred.bigBettor,
+        sides: pred.sides, state: m.state, capturedAt: new Date().toISOString(),
       };
     }
   }
-  // 2) 结算完赛且有预测、尚未结算的
+  // 2) 结算完赛、有(带价)预测、未结算的
   let newSettle = 0;
   for (const m of wc) {
     if (!m.completed || !m.actual) continue;
     const p = res.predictions[m.id];
-    if (!p || res.settled.find((s) => s.espnId === m.id)) continue;
-    const whaleWin = p.whaleSide === m.actual;
-    const bigWin = p.bigBettor && p.bigBettor.side === m.actual;
+    if (!p || !p.sides || res.settled.find((s) => s.espnId === m.id)) continue;
+    const strat = evalStrategies(p, m.actual);
+    for (const { key } of STRATS) {
+      const r = strat[key];
+      if (!r) continue;
+      const s = (res.strategies[key] = res.strategies[key] || { bets: 0, wins: 0, profit: 0 });
+      s.bets++;
+      if (r.win) s.wins++;
+      s.profit += r.profit;
+    }
     res.settled.push({
-      espnId: m.id, match: p.match, home: p.home, away: p.away,
-      whaleSide: p.whaleSide, bigBettorSide: p.bigBettor?.side, actual: m.actual,
-      score: `${m.homeScore}-${m.awayScore}`, whaleWin, bigWin, settledAt: new Date().toISOString(),
+      espnId: m.id, match: p.match, home: p.home, away: p.away, actual: m.actual,
+      score: `${m.homeScore}-${m.awayScore}`, whaleSide: p.whaleSide, bigBettorSide: p.bigBettor?.side,
+      strat, settledAt: new Date().toISOString(),
     });
-    res.stats.total++;
-    if (whaleWin) res.stats.whaleWins++;
-    if (bigWin) res.stats.bigWins++;
     newSettle++;
   }
   saveResults(res);
@@ -144,21 +194,30 @@ async function trackResults() {
   }
 }
 
+const roiPct = (s) => (s.bets ? Math.round((s.profit / s.bets) * 100) : 0);
+
 function fmtResultSummary(res) {
-  const st = res.stats;
-  const wr = st.total ? Math.round((st.whaleWins / st.total) * 100) : 0;
-  const bwr = st.total ? Math.round((st.bigWins / st.total) * 100) : 0;
-  const lines = ["🏁 <b>賽果總結 Results</b>", `（巨鯨方向 vs 實際賽果 · 命中率追蹤）`, ""];
-  for (const s of res.settled.slice(-6)) {
+  const lines = ["🏁 <b>賽果總結 + 策略戰績</b>", "（巨鯨方向 vs 賽果 · 按下注價算 ROI）", ""];
+  for (const s of res.settled.slice(-5)) {
     const actualLabel = sideLabel(s.actual, s.home, s.away);
-    lines.push(`${s.whaleWin ? "✅" : "❌"} ${esc(s.match)} <b>${s.score}</b> → ${esc(actualLabel)}勝`);
-    lines.push(`   巨鯨押 ${esc(sideLabel(s.whaleSide, s.home, s.away))} ${s.whaleWin ? "✅" : "❌"} · 最大戶押 ${esc(sideLabel(s.bigBettorSide, s.home, s.away))} ${s.bigWin ? "✅" : "❌"}`);
+    const fw = s.strat?.followWhale, fb = s.strat?.followBig;
+    lines.push(`${fw?.win ? "✅" : "❌"} ${esc(s.match)} <b>${s.score}</b> → ${esc(actualLabel)}勝`);
+    lines.push(`   巨鯨押 ${esc(sideLabel(s.whaleSide, s.home, s.away))} ${fw?.win ? "✅" : "❌"} · 最大戶 ${fb ? (fb.win ? "✅" : "❌") : "—"}`);
   }
   lines.push("");
-  lines.push(`📊 <b>累計戰績 (${st.total} 場)</b>`);
-  lines.push(`   🐋 巨鯨多數方命中: <b>${st.whaleWins}/${st.total} (${wr}%)</b>`);
-  lines.push(`   👑 最大單大戶命中: <b>${st.bigWins}/${st.total} (${bwr}%)</b>`);
+  lines.push("📊 <b>策略累計戰績（前向測試 · ROI）</b>");
+  for (const { key, label } of STRATS) {
+    const s = res.strategies[key];
+    if (!s || !s.bets) {
+      lines.push(`${label}: 暫無`);
+      continue;
+    }
+    const wr = Math.round((s.wins / s.bets) * 100);
+    const roi = roiPct(s);
+    lines.push(`${label}: ${s.bets}場 命中${wr}% · ROI <b>${roi >= 0 ? "+" : ""}${roi}%</b>`);
+  }
   lines.push("");
+  lines.push("⚠️ 樣本小時 ROI 噪聲大; 跑滿幾十場才算數");
   lines.push(`🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
   return lines.join("\n");
 }
@@ -472,9 +531,13 @@ async function main() {
   }
   if (process.argv.includes("--results")) {
     const r = loadResults();
-    console.log(`赛果追踪 (${TAG}): 已结算 ${r.stats.total} 场 | 巨鲸命中 ${r.stats.whaleWins} | 最大户命中 ${r.stats.bigWins}`);
-    console.log(`待结算预测: ${Object.keys(r.predictions).length} 场`);
-    r.settled.slice(-10).forEach((s) => console.log(`  ${s.whaleWin ? "✅" : "❌"} ${s.match} ${s.score} 实际${s.actual} | 巨鲸${s.whaleSide} 最大户${s.bigBettorSide}`));
+    console.log(`赛果追踪 (${TAG}): 已结算 ${r.settled.length} 场 | 待结算预测 ${Object.keys(r.predictions).length} 场`);
+    for (const { key, label } of STRATS) {
+      const s = r.strategies[key];
+      if (!s || !s.bets) { console.log(`  ${label}: 暂无`); continue; }
+      console.log(`  ${label}: ${s.bets}场 命中${Math.round((s.wins / s.bets) * 100)}% ROI ${roiPct(s) >= 0 ? "+" : ""}${roiPct(s)}%`);
+    }
+    r.settled.slice(-10).forEach((s) => console.log(`    ${s.strat?.followWhale?.win ? "✅" : "❌"} ${s.match} ${s.score} 实际${s.actual}`));
     return;
   }
 
@@ -496,4 +559,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { translateTitle, titleBlock, fmtPositioning, fmtProfiles };
+module.exports = { translateTitle, titleBlock, fmtPositioning, fmtProfiles, fmtResultSummary, evalStrategies };
