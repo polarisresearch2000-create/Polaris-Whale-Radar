@@ -550,9 +550,66 @@ async function matchPrediction(m, pmEvents) {
   return { whaleSide, consensusPct, bigBettor, sides };
 }
 
+// ---- 加密版预判: 单个二元市场(Yes/No)的巨鲸方向 ----
+async function cryptoPrediction(mk) {
+  if (!mk.conditionId) return null;
+  let outs;
+  try {
+    outs = JSON.parse(mk.outcomes || "[]");
+  } catch {
+    return null;
+  }
+  let px = [];
+  try {
+    px = JSON.parse(mk.outcomePrices || "[]");
+  } catch {}
+  const sides = {};
+  outs.forEach((o, i) => (sides[o] = { usd: 0, price: Number(px[i]) }));
+  const tr = await getJSON(`${DATA}/trades?market=${mk.conditionId}&filterType=CASH&filterAmount=${CONFIG.POSITIONING_MIN_NOTIONAL}&limit=500`).catch(() => null);
+  const buys = Array.isArray(tr) ? tr.filter((t) => t.side === "BUY") : [];
+  const walletAgg = new Map();
+  for (const t of buys) {
+    const o = t.outcome;
+    if (!sides[o]) continue;
+    const u = (t.size || 0) * (t.price || 0);
+    sides[o].usd += u;
+    if (!walletAgg.has(t.proxyWallet)) walletAgg.set(t.proxyWallet, { usd: 0, bySide: new Map() });
+    const w = walletAgg.get(t.proxyWallet);
+    w.usd += u;
+    w.bySide.set(o, (w.bySide.get(o) || 0) + u);
+  }
+  const total = Object.values(sides).reduce((s, v) => s + v.usd, 0);
+  if (total <= 0) return null;
+  const whaleSide = Object.keys(sides).reduce((a, b) => (sides[b].usd > sides[a].usd ? b : a));
+  const consensusPct = sides[whaleSide].usd / total;
+  let bigBettor = null;
+  for (const [w, wr] of walletAgg) {
+    if (!bigBettor || wr.usd > bigBettor.usd) {
+      const side = [...wr.bySide.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+      bigBettor = { wallet: w, side, usd: wr.usd };
+    }
+  }
+  return { whaleSide, consensusPct, bigBettor, sides };
+}
+
+// 按 gamma 数字 id 读市场结算结果, 返回获胜的 outcome 字符串(未结算返回 null)
+async function getMarketResolution(gammaId) {
+  const m = await getJSON(`${GAMMA}/markets/${gammaId}`).catch(() => null);
+  if (!m || !m.closed) return null;
+  let outs, px;
+  try {
+    outs = JSON.parse(m.outcomes || "[]");
+    px = JSON.parse(m.outcomePrices || "[]");
+  } catch {
+    return null;
+  }
+  const wi = px.findIndex((p) => Number(p) >= 0.99);
+  return wi >= 0 ? outs[wi] : null;
+}
+
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction,
+  getWcResults, matchPrediction, cryptoPrediction, getMarketResolution,
   fmtUSD, CONFIG, isDirectional,
 };

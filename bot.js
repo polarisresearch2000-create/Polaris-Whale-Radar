@@ -7,7 +7,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -27,7 +27,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V3.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V3.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -102,7 +102,15 @@ function saveResults(r) {
     fs.writeFileSync(RESULTS_FILE, JSON.stringify(r, null, 2));
   } catch {}
 }
-const sideLabel = (side, home, away) => (side === "home" ? home : side === "away" ? away : side === "draw" ? "平局" : "?");
+const sideLabel = (side, home, away) =>
+  side === "home" ? home : side === "away" ? away : side === "draw" ? "平局" : /yes/i.test(side || "") ? "是" : /no/i.test(side || "") ? "否" : side || "?";
+// 赛果/结算结果的展示文字(体育: X勝/平局; 加密: 是✓/否✗)
+const resultLabel = (s) => {
+  if (s.actual === "draw") return "平局";
+  if (/^yes$/i.test(s.actual)) return "是 ✓";
+  if (/^no$/i.test(s.actual)) return "否 ✗";
+  return sideLabel(s.actual, s.home, s.away) + "勝";
+};
 
 // 并行前向测试的 4 条策略
 const STRATS = [
@@ -211,6 +219,77 @@ async function trackResults() {
   saveResults(res);
 }
 
+// 加密版赛果追踪: 二元市场(Yes/No)预判 + 按市场解析结算 + 同样的多策略 ROI/置顶
+async function trackResultsCrypto() {
+  const res = loadResults();
+  let events;
+  try {
+    events = await getMatchEvents(15);
+  } catch (e) {
+    console.error("加密赛果取数出错:", e.message);
+    return;
+  }
+  // 1) 捕捉: 活跃加密市场(排除 up/down 高频), 每个市场捕捉一次; 每轮限量控制请求
+  const candidates = [];
+  for (const ev of events)
+    for (const mk of ev.markets || []) {
+      const id = mk.conditionId;
+      if (!id || !mk.id || mk.closed) continue;
+      if (/up or down/i.test(mk.question || "")) continue;
+      if ((res.predictions[id] && res.predictions[id].sides) || res.settled.find((s) => s.espnId === id)) continue;
+      candidates.push({ ev, mk });
+    }
+  for (const { ev, mk } of candidates.slice(0, 25)) {
+    const pred = await cryptoPrediction(mk).catch(() => null);
+    if (pred && pred.sides) {
+      res.predictions[mk.conditionId] = {
+        match: mk.question, slug: ev.slug, gammaId: mk.id,
+        whaleSide: pred.whaleSide, consensusPct: pred.consensusPct, bigBettor: pred.bigBettor,
+        sides: pred.sides, capturedAt: new Date().toISOString(),
+      };
+    }
+  }
+  // 2) 结算: 检查已捕捉但未结算市场的解析结果(每轮限量查, 控制请求)
+  const pending = Object.entries(res.predictions).filter(([id, p]) => p.gammaId && p.sides && !res.settled.find((s) => s.espnId === id));
+  let newSettle = 0;
+  for (const [id, p] of pending.slice(0, 30)) {
+    const actual = await getMarketResolution(p.gammaId).catch(() => null);
+    if (!actual) continue;
+    const strat = evalStrategies(p, actual);
+    for (const { key } of STRATS) {
+      const r = strat[key];
+      if (!r) continue;
+      const s = (res.strategies[key] = res.strategies[key] || { bets: 0, wins: 0, profit: 0 });
+      s.bets++;
+      if (r.win) s.wins++;
+      s.profit += r.profit;
+    }
+    res.settled.push({ espnId: id, match: p.match, slug: p.slug, actual, whaleSide: p.whaleSide, bigBettorSide: p.bigBettor?.side, strat, settledAt: new Date().toISOString() });
+    newSettle++;
+  }
+  if (newSettle > 0) {
+    await send(fmtResultSummary(res));
+    await postOrUpdateTrackRecord(res);
+    console.log(`  → 加密赛果结算 ${newSettle} + 更新置顶`);
+  }
+  // 3) 每日预判
+  const hk = hkNow();
+  const hkDay = hk.toISOString().slice(0, 10);
+  if (hk.getUTCHours() >= PREVIEW_HOUR && res.previewDay !== hkDay) {
+    const upcoming = Object.entries(res.predictions)
+      .filter(([id]) => !res.settled.find((s) => s.espnId === id))
+      .slice(0, 5)
+      .map(([id, p]) => ({ id, ...p }));
+    if (upcoming.length) {
+      await send(fmtDailyPreview(upcoming, res));
+      res.previewDay = hkDay;
+      await postOrUpdateTrackRecord(res);
+      console.log(`  → 加密今日预判(${upcoming.length})`);
+    }
+  }
+  saveResults(res);
+}
+
 const roiPct = (s) => (s.bets ? Math.round((s.profit / s.bets) * 100) : 0);
 const hkNow = () => new Date(Date.now() + 8 * 3600 * 1000); // 香港时间
 
@@ -248,13 +327,14 @@ function fmtTrackRecord(res) {
 
 // 每日固定: 今日巨鲸预判
 function fmtDailyPreview(matches, res) {
-  const lines = ["☀️ <b>今日巨鯨預判 Daily Preview</b>", "（今日世界盃 · 大戶押哪邊）", ""];
+  const sub = LABEL === "World Cup" ? "今日世界盃 · 大戶押哪邊" : "當前熱門 · 大戶押哪邊";
+  const lines = ["☀️ <b>今日巨鯨預判 Daily Preview</b>", `（${sub}）`, ""];
   for (const m of matches) {
     const p = res.predictions[m.id];
     if (!p) continue;
     const cons = Math.round((p.consensusPct || 0) * 100);
     const big = p.bigBettor ? sideLabel(p.bigBettor.side, p.home, p.away) : "—";
-    lines.push(`🆚 ${esc(p.match)}`);
+    lines.push(`${p.home ? "🆚" : "🔥"} ${esc(p.match)}`);
     lines.push(`   巨鯨預判: <b>${esc(sideLabel(p.whaleSide, p.home, p.away))}</b> (共識 ${cons}%) · 最大戶押 ${esc(big)}`);
   }
   const best = bestStrategy(res);
@@ -266,9 +346,9 @@ function fmtDailyPreview(matches, res) {
 function fmtResultSummary(res) {
   const lines = ["🏁 <b>賽果總結 + 策略戰績</b>", "（巨鯨方向 vs 賽果 · 按下注價算 ROI）", ""];
   for (const s of res.settled.slice(-5)) {
-    const actualLabel = sideLabel(s.actual, s.home, s.away);
     const fw = s.strat?.followWhale, fb = s.strat?.followBig;
-    lines.push(`${fw?.win ? "✅" : "❌"} ${esc(s.match)} <b>${s.score}</b> → ${esc(actualLabel)}勝`);
+    const score = s.score ? ` <b>${s.score}</b>` : "";
+    lines.push(`${fw?.win ? "✅" : "❌"} ${esc(s.match)}${score} → ${esc(resultLabel(s))}`);
     lines.push(`   巨鯨押 ${esc(sideLabel(s.whaleSide, s.home, s.away))} ${fw?.win ? "✅" : "❌"} · 最大戶 ${fb ? (fb.win ? "✅" : "❌") : "—"}`);
   }
   lines.push("");
@@ -600,13 +680,12 @@ async function pollOnce() {
     saveDigest(d);
   }
 
-  // 赛果追踪(体育赛道): 捕捉巨鲸方向 + 结算完赛 + 推送总结
-  if (RESULTS_ON) {
-    try {
-      await trackResults();
-    } catch (e) {
-      console.error("赛果追踪出错:", e.message);
-    }
+  // 赛果追踪: 体育(ESPN结算) / 加密(市场解析结算) 各走一套, 共用策略ROI+置顶
+  try {
+    if (RESULTS_ON) await trackResults();
+    else if (TAG === "crypto") await trackResultsCrypto();
+  } catch (e) {
+    console.error("赛果追踪出错:", e.message);
   }
 
   return whalesPost.length + watchPost.length;
