@@ -326,8 +326,10 @@ function fmtTrackRecord(res) {
     `（賽前預判 vs 賽果 · 按下注價算 · 共 <b>${settled.length}</b> 場已結算）`,
     "",
   ];
+  const HIDE = new Set(["fadeFav"]); // 置顶只展示正向策略; fade 持续垫底、对频道形象无益, 但底层仍照常追踪做诚实对照
   let any = false, best = null;
   for (const { key, label } of STRATS) {
+    if (HIDE.has(key)) continue;
     const s = res.strategies[key];
     if (!s || !s.bets) {
       lines.push(`${label}: 暫無`);
@@ -751,6 +753,14 @@ async function main() {
       console.log(`  ${label}: ${s.bets}场 命中${Math.round((s.wins / s.bets) * 100)}% ROI ${roiPct(s) >= 0 ? "+" : ""}${roiPct(s)}%`);
     }
     r.settled.slice(-10).forEach((s) => console.log(`    ${s.strat?.followWhale?.win ? "✅" : "❌"} ${s.match} ${s.score} 实际${s.actual}`));
+    return;
+  }
+
+  if (process.argv.includes("--refresh-pin")) {
+    const r = loadResults();
+    await postOrUpdateTrackRecord(r);
+    saveResults(r);
+    console.log(`📌 已刷新置顶战绩 → ${CHANNEL} (msgId ${r.pinnedMsgId})`);
     return;
   }
 
