@@ -27,7 +27,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V3.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V3.10"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -226,6 +226,8 @@ async function trackResults() {
     }
   }
 
+  // 置顶战绩定期刷新(即使无新结算也保持新鲜; 时间戳变化故 edit 不会"未修改")
+  if (Date.now() - (res.trackUpdatedAt || 0) >= 30 * 60000) await postOrUpdateTrackRecord(res);
   saveResults(res);
 }
 
@@ -297,6 +299,7 @@ async function trackResultsCrypto() {
       console.log(`  → 加密今日预判(${upcoming.length})`);
     }
   }
+  if (Date.now() - (res.trackUpdatedAt || 0) >= 30 * 60000) await postOrUpdateTrackRecord(res);
   saveResults(res);
 }
 
@@ -317,8 +320,13 @@ function bestStrategy(res) {
 
 // 置顶用: 策略战绩(简洁, 持续更新)
 function fmtTrackRecord(res) {
-  const lines = ["📌 <b>策略戰績 Track Record</b>（持續更新）", ""];
-  let any = false;
+  const settled = res.settled || [];
+  const lines = [
+    "📌 <b>策略戰績 Track Record</b>",
+    `（賽前預判 vs 賽果 · 按下注價算 · 共 <b>${settled.length}</b> 場已結算）`,
+    "",
+  ];
+  let any = false, best = null;
   for (const { key, label } of STRATS) {
     const s = res.strategies[key];
     if (!s || !s.bets) {
@@ -326,12 +334,21 @@ function fmtTrackRecord(res) {
       continue;
     }
     any = true;
+    const losses = s.bets - s.wins;
+    const wr = Math.round((s.wins / s.bets) * 100);
     const roi = roiPct(s);
-    lines.push(`${label}: ${s.bets}場 命中${Math.round((s.wins / s.bets) * 100)}% · ROI <b>${roi >= 0 ? "+" : ""}${roi}%</b>`);
+    const d = Math.round(s.profit * 100); // 假设每注 $100 的累计盈亏
+    const dStr = (d >= 0 ? "+$" : "-$") + Math.abs(d);
+    const form = settled.filter((x) => x.strat?.[key]).slice(-6).map((x) => (x.strat[key].win ? "✅" : "❌")).join("");
+    lines.push(`<b>${label}</b>`);
+    lines.push(`   ${s.wins}勝${losses}負 · 命中 ${wr}% · ROI <b>${roi >= 0 ? "+" : ""}${roi}%</b> · 累計 ${dStr}`);
+    if (form) lines.push(`   近期 ${form}`);
+    if (!best || roi > best.roi) best = { label, roi };
   }
-  lines.push("", any ? "⚠️ 樣本越多越可信" : "⏳ 等待首批賽果結算");
-  lines.push(`更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
-  lines.push(`🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
+  lines.push("");
+  if (best && any) lines.push(`🏆 目前最佳: ${best.label} (ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%)`);
+  lines.push(any ? `⚠️ 樣本仍小(${settled.length}場)、噪聲大; 跑滿幾十場才有統計意義` : "⏳ 等待首批賽果結算中…");
+  lines.push(`🔭 累計按每注$100計 · 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
   return lines.join("\n");
 }
 
@@ -630,6 +647,7 @@ async function editMsg(id, text) {
 }
 // 置顶一条"策略战绩"并持续更新(就地编辑; 不存在则重发+置顶)
 async function postOrUpdateTrackRecord(res) {
+  res.trackUpdatedAt = Date.now();
   const text = fmtTrackRecord(res);
   if (res.pinnedMsgId && (await editMsg(res.pinnedMsgId, text))) return;
   const id = await sendReturn(text);
