@@ -337,18 +337,20 @@ function fmtTrackRecord(res) {
     const losses = s.bets - s.wins;
     const wr = Math.round((s.wins / s.bets) * 100);
     const roi = roiPct(s);
-    const d = Math.round(s.profit * 100); // 假设每注 $100 的累计盈亏
-    const dStr = (d >= 0 ? "+$" : "-$") + Math.abs(d);
-    const form = settled.filter((x) => x.strat?.[key]).slice(-6).map((x) => (x.strat[key].win ? "✅" : "❌")).join("");
+    const mine = settled.filter((x) => x.strat?.[key]);
+    const prices = mine.map((x) => x.strat[key].price).filter((p) => p > 0);
+    const avgOdds = prices.length ? 1 / (prices.reduce((a, b) => a + b, 0) / prices.length) : null; // 入场价隐含赔率(押中赔几倍)
+    const form = mine.slice(-6).map((x) => (x.strat[key].win ? "✅" : "❌")).join("");
     lines.push(`<b>${label}</b>`);
-    lines.push(`   ${s.wins}勝${losses}負 · 命中 ${wr}% · ROI <b>${roi >= 0 ? "+" : ""}${roi}%</b> · 累計 ${dStr}`);
-    if (form) lines.push(`   近期 ${form}`);
+    lines.push(`   ${s.wins}勝${losses}負 · 命中 ${wr}% · ROI <b>${roi >= 0 ? "+" : ""}${roi}%</b>`);
+    const sub = [avgOdds ? `均入場賠率 ${avgOdds.toFixed(2)}x` : "", form ? `近期 ${form}` : ""].filter(Boolean).join(" · ");
+    if (sub) lines.push(`   ${sub}`);
     if (!best || roi > best.roi) best = { label, roi };
   }
   lines.push("");
   if (best && any) lines.push(`🏆 目前最佳: ${best.label} (ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%)`);
   lines.push(any ? `⚠️ 樣本仍小(${settled.length}場)、噪聲大; 跑滿幾十場才有統計意義` : "⏳ 等待首批賽果結算中…");
-  lines.push(`🔭 累計按每注$100計 · 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
+  lines.push(`🔭 ROI=每$1淨回報 · 賠率=入場價隱含倍數 · 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
   return lines.join("\n");
 }
 
