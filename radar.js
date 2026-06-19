@@ -422,24 +422,24 @@ async function marketSentiment(opts = {}) {
     const breakdown = [...byOut.entries()]
       .map(([outcome, v]) => ({ outcome, usd: v.usd, wallets: v.wallets.size, pct: total ? Math.round((v.usd / total) * 100) : 0 }))
       .sort((a, b) => b.usd - a.usd);
-    // 最大单大户: 在该市场下注金额最大的钱包 + 他主押哪一边
-    let topWhale = null;
-    for (const [w, wr] of byWallet) {
-      if (!topWhale || wr.usd > topWhale.usd) {
-        const side = [...wr.byOut.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-        topWhale = { wallet: w, name: wr.name, usd: wr.usd, outcome: side };
-      }
-    }
-    return { title: mk.title, eventSlug: mk.eventSlug, total, wallets: allWallets.size, breakdown, topWhale };
+    // 金额最大的前几个大户(待 PnL 评分后再选"最赚的"与"最大注的")
+    const topWallets = [...byWallet.entries()]
+      .map(([w, wr]) => ({ wallet: w, name: wr.name, usd: wr.usd, outcome: [...wr.byOut.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] }))
+      .sort((a, b) => b.usd - a.usd)
+      .slice(0, 6);
+    return { title: mk.title, eventSlug: mk.eventSlug, total, wallets: allWallets.size, breakdown, topWallets };
   });
 
   const markets = enriched.filter((m) => m.total > 0).sort((a, b) => b.total - a.total).slice(0, topN);
-  // A: 给每个盘的最大单大户标注"历史战绩"(交叉 user-pnl), 只查展示的几个, 带缓存
+  // A: 给每个盘"前几大户"标注历史战绩(交叉 user-pnl, 缓存), 选出"最赚大户"和"最大注大户"
   await mapLimit(markets, CONFIG.WALLET_CONCURRENCY, async (m) => {
-    if (m.topWhale?.wallet) {
-      const sc = await getWalletScore(m.topWhale.wallet).catch(() => null);
-      m.topWhale.allTimePnl = sc ? sc.allTimePnl : null;
+    for (const tw of m.topWallets || []) {
+      const sc = await getWalletScore(tw.wallet).catch(() => null);
+      tw.allTimePnl = sc ? sc.allTimePnl : null;
     }
+    m.topWhale = m.topWallets?.[0] || null; // 最大注(按金额)
+    const winners = (m.topWallets || []).filter((w) => w.allTimePnl != null && w.allTimePnl >= 50000);
+    m.topWinner = winners.length ? winners.reduce((a, b) => (b.allTimePnl > a.allTimePnl ? b : a)) : null; // 最赚(proven winner)
   });
   return { markets, threshold: minUsd };
 }

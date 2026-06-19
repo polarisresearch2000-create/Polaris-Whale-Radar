@@ -4116,6 +4116,84 @@
         }
       },
       "capturedAt": "2026-06-19T06:38:02.236Z"
+    },
+    "0x418f25fe40f4077383a01f3464d299ce51afeb74e39663070b265699c693fcfa": {
+      "match": "Will the price of Bitcoin be above $70,000 on June 21?",
+      "slug": "bitcoin-above-on-june-21-2026",
+      "gammaId": "2544118",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x9a671cc6f3fe664dc6cba7e29e79f80188ca46e7",
+        "side": "No",
+        "usd": 4176.999759,
+        "entryPrice": 0.9980000000000001,
+        "betTs": 1781860100,
+        "leadMin": null
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.007
+        },
+        "No": {
+          "usd": 4176.999759,
+          "price": 0.993
+        }
+      },
+      "capturedAt": "2026-06-19T09:09:59.548Z"
+    },
+    "0x7f1bdc71872693ad0e74f35b4b6c6bdc66d1651c089f8f2beb7e3c53530477b7": {
+      "match": "Will Ethereum dip to $500 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "2468461",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x94d0e41f0c13e54baa2eaec0ec7af18dcc354177",
+        "side": "Yes",
+        "usd": 731.6,
+        "entryPrice": 0.09442924260416129,
+        "betTs": 1781856179,
+        "leadMin": null
+      },
+      "sides": {
+        "Yes": {
+          "usd": 731.6,
+          "price": 0.105
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.895
+        }
+      },
+      "capturedAt": "2026-06-19T09:10:00.086Z"
+    },
+    "0x010ed52e56f8d402ea70a80929aa425441b290024972a354089c3d101294390f": {
+      "match": "Will Bitcoin dip to $59,000 on June 19?",
+      "slug": "what-price-will-bitcoin-hit-on-june-19",
+      "gammaId": "2603353",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 591,
+        "entryPrice": 0.985,
+        "betTs": 1781848396,
+        "leadMin": null
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0135
+        },
+        "No": {
+          "usd": 591,
+          "price": 0.9865
+        }
+      },
+      "capturedAt": "2026-06-19T11:11:55.301Z"
     }
   },
   "settled": [

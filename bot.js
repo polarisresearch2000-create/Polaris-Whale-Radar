@@ -27,7 +27,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V3.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V3.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -559,18 +559,24 @@ function fmtPositioning(markets, threshold) {
       const ocz = ocZh(b.outcome) ? `（${ocZh(b.outcome)}）` : "";
       cn.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}${ocz}  ${fmtUSD(b.usd)} · ${b.wallets}人 · ${b.pct}%`);
     });
-    if (m.topWhale) {
-      const bb = m.topWhale;
-      const ocz = ocZh(bb.outcome) ? `（${ocZh(bb.outcome)}）` : "";
-      const pnl = bb.allTimePnl;
-      const badge =
-        pnl == null ? ""
-        : pnl >= 50000 ? ` · 💎贏家 歷史盈利 ${fmtUSD(pnl)}`
-        : pnl <= -50000 ? ` · ⚠️輸家 歷史虧損 ${fmtUSD(Math.abs(pnl))}`
-        : pnl > 0 ? ` · 🟢 歷史小賺 ${fmtUSD(pnl)}`
-        : ` · 🔴 歷史小虧 ${fmtUSD(Math.abs(pnl))}`;
-      cn.push(`   🐋 最大單大戶 押 ${esc(String(bb.outcome))}${ocz} · ${fmtUSD(bb.usd)}${badge}`);
-      cn.push(`      <code>${esc(bb.wallet)}</code>`);
+    // 💎 主推"最赚大户"(proven winner); 没有则退回最大注大户
+    if (m.topWinner) {
+      const w = m.topWinner;
+      const ocz = ocZh(w.outcome) ? `（${ocZh(w.outcome)}）` : "";
+      cn.push(`   💎 最賺大戶 押 ${esc(String(w.outcome))}${ocz} · ${fmtUSD(w.usd)} · 歷史盈利 ${fmtUSD(w.allTimePnl)}`);
+      cn.push(`      <code>${esc(w.wallet)}</code>`);
+    } else if (m.topWhale) {
+      const tw = m.topWhale;
+      const ocz = ocZh(tw.outcome) ? `（${ocZh(tw.outcome)}）` : "";
+      const pnl = tw.allTimePnl;
+      const tag = pnl == null ? "" : pnl > 0 ? ` · 歷史盈利 ${fmtUSD(pnl)}` : pnl < 0 ? ` · 歷史虧損 ${fmtUSD(Math.abs(pnl))}` : "";
+      cn.push(`   🐋 最大注大戶 押 ${esc(String(tw.outcome))}${ocz} · ${fmtUSD(tw.usd)}${tag}`);
+      cn.push(`      <code>${esc(tw.wallet)}</code>`);
+    }
+    // ⚠️ 反向提示: 若"最大注"是大输家(且不是上面展示的赢家)
+    const big = m.topWhale;
+    if (big && big.allTimePnl != null && big.allTimePnl <= -50000 && (!m.topWinner || big.wallet !== m.topWinner.wallet)) {
+      cn.push(`   ⚠️ 最大注卻是輸家 押 ${esc(String(big.outcome))} · ${fmtUSD(big.usd)} (歷史虧損 ${fmtUSD(Math.abs(big.allTimePnl))})`);
     }
     cn.push("");
   }

@@ -111,6 +111,130 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-18T11:19:17.635Z"
+    },
+    "760442": {
+      "match": "United States vs Australia",
+      "home": "United States",
+      "away": "Australia",
+      "whaleSide": "home",
+      "consensusPct": 0.8834138707664417,
+      "bigBettor": {
+        "wallet": "0x84cfffc3f16dcc353094de30d4a45226eccd2f63",
+        "side": "home",
+        "usd": 137285.34769999998,
+        "entryPrice": 0.6101376036028002,
+        "betTs": 1781419704,
+        "leadMin": 7932
+      },
+      "sides": {
+        "home": {
+          "usd": 373044.6453089997,
+          "price": 0.605
+        },
+        "draw": {
+          "usd": 2602.519998,
+          "price": 0.215
+        },
+        "away": {
+          "usd": 46629.02669499999,
+          "price": 0.175
+        }
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-19T07:01:12.236Z"
+    },
+    "760443": {
+      "match": "Türkiye vs Paraguay",
+      "home": "Türkiye",
+      "away": "Paraguay",
+      "whaleSide": "home",
+      "consensusPct": 0.9566000162255148,
+      "bigBettor": {
+        "wallet": "0xd88139efbecc8641892e17171afcced35315af24",
+        "side": "home",
+        "usd": 18709.5156,
+        "entryPrice": 0.4699999999999999,
+        "betTs": 1781844701,
+        "leadMin": 1328
+      },
+      "sides": {
+        "home": {
+          "usd": 89650.757573,
+          "price": 0.465
+        },
+        "draw": {
+          "usd": 699.9999990000001,
+          "price": 0.285
+        },
+        "away": {
+          "usd": 3367.365,
+          "price": 0.245
+        }
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-19T07:01:12.973Z"
+    },
+    "760444": {
+      "match": "Brazil vs Haiti",
+      "home": "Brazil",
+      "away": "Haiti",
+      "whaleSide": "home",
+      "consensusPct": 0.8836385840433246,
+      "bigBettor": {
+        "wallet": "0xa3a39a3746dbd55f3a33ae38bd27ae2804c2c2f9",
+        "side": "home",
+        "usd": 10812.346,
+        "entryPrice": 0.92,
+        "betTs": 1781382538,
+        "leadMin": 8881
+      },
+      "sides": {
+        "home": {
+          "usd": 102665.457343,
+          "price": 0.885
+        },
+        "draw": {
+          "usd": 13519.439058,
+          "price": 0.0825
+        },
+        "away": {
+          "usd": 0,
+          "price": 0.0335
+        }
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-19T07:01:12.727Z"
+    },
+    "760445": {
+      "match": "Scotland vs Morocco",
+      "home": "Scotland",
+      "away": "Morocco",
+      "whaleSide": "away",
+      "consensusPct": 0.8723683434023449,
+      "bigBettor": {
+        "wallet": "0x4bf6b33cdca575ba646f172d2d9d1477be71432f",
+        "side": "away",
+        "usd": 21620.189998,
+        "entryPrice": 0.5599999999896393,
+        "betTs": 1781845981,
+        "leadMin": 1007
+      },
+      "sides": {
+        "home": {
+          "usd": 11764.999993999998,
+          "price": 0.175
+        },
+        "draw": {
+          "usd": 10311.879597,
+          "price": 0.265
+        },
+        "away": {
+          "usd": 150896.5047520001,
+          "price": 0.555
+        }
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-19T07:01:12.478Z"
     }
   },
   "settled": [
