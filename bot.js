@@ -27,7 +27,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V3.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V3.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -45,6 +45,7 @@ const SEEN_FILE = path.join(__dirname, "data", `seen_${TAG}.json`); // 每个赛
 // 定时摘要：持仓快照 + 赢家风格
 const DIGESTS = (process.env.DIGESTS || "on") !== "off";
 const PROFILES_ENABLED = (process.env.PROFILES_ENABLED || "on") !== "off"; // 顶级赢家风格榜(全站; 体育频道可关)
+const SIGNALS_ENABLED = (process.env.SIGNALS_ENABLED || "on") !== "off"; // 逐条实时信号; off=整合进精华版, 不再逐条刷屏
 const POSITIONING_MIN = Number(process.env.POSITIONING_MIN || 120); // 持仓快照间隔(分钟)
 const PROFILES_MIN = Number(process.env.PROFILES_MIN || 1440); // 赢家风格榜间隔(分钟)
 const DIGEST_FILE = path.join(__dirname, "data", `digest_${TAG}.json`);
@@ -559,9 +560,17 @@ function fmtPositioning(markets, threshold) {
       cn.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}${ocz}  ${fmtUSD(b.usd)} · ${b.wallets}人 · ${b.pct}%`);
     });
     if (m.topWhale) {
-      const ocz = ocZh(m.topWhale.outcome) ? `（${ocZh(m.topWhale.outcome)}）` : "";
-      cn.push(`   🐋 最大單大戶: <code>${esc(m.topWhale.wallet)}</code>`);
-      cn.push(`      押 ${esc(String(m.topWhale.outcome))}${ocz} · ${fmtUSD(m.topWhale.usd)}`);
+      const bb = m.topWhale;
+      const ocz = ocZh(bb.outcome) ? `（${ocZh(bb.outcome)}）` : "";
+      const pnl = bb.allTimePnl;
+      const badge =
+        pnl == null ? ""
+        : pnl >= 50000 ? ` · 💎贏家 歷史盈利 ${fmtUSD(pnl)}`
+        : pnl <= -50000 ? ` · ⚠️輸家 歷史虧損 ${fmtUSD(Math.abs(pnl))}`
+        : pnl > 0 ? ` · 🟢 歷史小賺 ${fmtUSD(pnl)}`
+        : ` · 🔴 歷史小虧 ${fmtUSD(Math.abs(pnl))}`;
+      cn.push(`   🐋 最大單大戶 押 ${esc(String(bb.outcome))}${ocz} · ${fmtUSD(bb.usd)}${badge}`);
+      cn.push(`      <code>${esc(bb.wallet)}</code>`);
     }
     cn.push("");
   }
@@ -627,37 +636,32 @@ async function postOrUpdateTrackRecord(res) {
 async function pollOnce() {
   const seen = loadSeen();
 
-  // 1) 大额交易信号(按聪明钱盈利排序，优先推最强的)
-  const { signals, stats } = await scan({ whaleTradesToPull: WHALE_PULL, maxAgeMinutes: MAX_AGE_MIN });
-  const freshWhalesAll = signals
-    .filter((s) => !seen.has(s.key))
-    .sort((a, b) => (b.allTimePnl || 0) - (a.allTimePnl || 0));
-
-  // 2) 观察名单信号(榜首赢家的动作，任何金额)
-  let freshWatchAll = [];
-  let watchStats = { watchSize: 0 };
-  try {
-    const wl = await scanWatchlist({ maxAgeMinutes: WATCH_MAX_AGE_MIN });
-    watchStats = wl.stats;
-    freshWatchAll = wl.hits.filter((s) => !seen.has(s.key));
-  } catch (e) {
-    console.error("观察名单扫描出错:", e.message);
+  // 逐条信号(大额交易 + 观察名单): 可整体关闭, 整合进精华版(SIGNALS_ENABLED=off)
+  let posted = 0;
+  if (SIGNALS_ENABLED) {
+    const { signals, stats } = await scan({ whaleTradesToPull: WHALE_PULL, maxAgeMinutes: MAX_AGE_MIN });
+    const freshWhalesAll = signals.filter((s) => !seen.has(s.key)).sort((a, b) => (b.allTimePnl || 0) - (a.allTimePnl || 0));
+    let freshWatchAll = [];
+    let watchStats = { watchSize: 0 };
+    try {
+      const wl = await scanWatchlist({ maxAgeMinutes: WATCH_MAX_AGE_MIN });
+      watchStats = wl.stats;
+      freshWatchAll = wl.hits.filter((s) => !seen.has(s.key));
+    } catch (e) {
+      console.error("观察名单扫描出错:", e.message);
+    }
+    const whalesPost = freshWhalesAll.slice(0, SIGNAL_MAX_PER_RUN);
+    const watchPost = freshWatchAll.slice(0, WATCH_MAX_PER_RUN);
+    console.log(`[${new Date().toISOString()}] 大单 ${stats.cryptoWhaleCount}/新${freshWhalesAll.length}/推${whalesPost.length} ｜ 名单 ${watchStats.watchSize}人/新${freshWatchAll.length}/推${watchPost.length}`);
+    for (const s of whalesPost) await send(fmtSignal(s));
+    for (const s of watchPost) await send(fmtWatchlistSignal(s));
+    for (const s of freshWhalesAll) seen.add(s.key);
+    for (const s of freshWatchAll) seen.add(s.key);
+    saveSeen(seen);
+    posted = whalesPost.length + watchPost.length;
+  } else {
+    console.log(`[${new Date().toISOString()}] 逐条信号已关(整合进精华版)`);
   }
-
-  // 每轮限量推送(防刷屏)；未推送的也标记已读，避免之后涓滴式补推
-  const whalesPost = freshWhalesAll.slice(0, SIGNAL_MAX_PER_RUN);
-  const watchPost = freshWatchAll.slice(0, WATCH_MAX_PER_RUN);
-
-  console.log(
-    `[${new Date().toISOString()}] 大单 ${stats.cryptoWhaleCount}/新${freshWhalesAll.length}/推${whalesPost.length} ｜ 名单 ${watchStats.watchSize}人/新${freshWatchAll.length}/推${watchPost.length}`
-  );
-
-  for (const s of whalesPost) await send(fmtSignal(s));
-  for (const s of watchPost) await send(fmtWatchlistSignal(s));
-
-  for (const s of freshWhalesAll) seen.add(s.key);
-  for (const s of freshWatchAll) seen.add(s.key);
-  saveSeen(seen);
 
   // 定时摘要：持仓快照 / 赢家风格(到点才推)
   if (DIGESTS) {
@@ -698,7 +702,7 @@ async function pollOnce() {
     console.error("赛果追踪出错:", e.message);
   }
 
-  return whalesPost.length + watchPost.length;
+  return posted;
 }
 
 // ---------- 入口 ----------

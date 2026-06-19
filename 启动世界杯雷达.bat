@@ -15,8 +15,10 @@ rem push the positioning analysis every 15 minutes
 set POSITIONING_MIN=15
 rem turn off the global Top-Traders profiles (off-topic for World Cup)
 set PROFILES_ENABLED=off
+rem turn off per-signal spam; consolidate into the positioning digest
+set SIGNALS_ENABLED=off
 echo ==========================================
-echo   Polaris Radar V3.7 - World Cup (Sports) 20s
+echo   Polaris Radar V3.8 - World Cup (Sports) 20s
 echo   Close this window to STOP.
 echo ==========================================
 echo.

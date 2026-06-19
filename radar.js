@@ -434,6 +434,13 @@ async function marketSentiment(opts = {}) {
   });
 
   const markets = enriched.filter((m) => m.total > 0).sort((a, b) => b.total - a.total).slice(0, topN);
+  // A: 给每个盘的最大单大户标注"历史战绩"(交叉 user-pnl), 只查展示的几个, 带缓存
+  await mapLimit(markets, CONFIG.WALLET_CONCURRENCY, async (m) => {
+    if (m.topWhale?.wallet) {
+      const sc = await getWalletScore(m.topWhale.wallet).catch(() => null);
+      m.topWhale.allTimePnl = sc ? sc.allTimePnl : null;
+    }
+  });
   return { markets, threshold: minUsd };
 }
 
