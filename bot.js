@@ -27,7 +27,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V3.10"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V4.1"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -326,10 +326,22 @@ function fmtTrackRecord(res) {
     `（賽前預判 vs 賽果 · 按下注價算 · 共 <b>${settled.length}</b> 場已結算）`,
     "",
   ];
-  const HIDE = new Set(["fadeFav"]); // 置顶只展示正向策略; fade 持续垫底、对频道形象无益, 但底层仍照常追踪做诚实对照
+  // 置顶只展示正向策略; fade 持续垫底、对频道形象无益, 但底层仍照常追踪做诚实对照
+  let rows = STRATS.filter((s) => s.key !== "fadeFav");
+  // 「跟巨鲸多数方」与「跟最大单大户」若每场都同侧 → 数据雷同, 合并成一行(免得被当凑数); 一旦分歧自动拆回两行
+  const wbDiverged = settled.some((x) => {
+    const a = x.strat?.followWhale, b = x.strat?.followBig;
+    if (!a && !b) return false;
+    if (!a || !b) return true;
+    return a.side !== b.side;
+  });
+  if (!wbDiverged && res.strategies.followWhale?.bets && res.strategies.followBig?.bets) {
+    rows = rows.flatMap((s) =>
+      s.key === "followBig" ? [] : s.key === "followWhale" ? [{ key: "followWhale", label: "🐋👑 跟巨鯨多數方／最大單大戶（同側）" }] : [s]
+    );
+  }
   let any = false, best = null;
-  for (const { key, label } of STRATS) {
-    if (HIDE.has(key)) continue;
+  for (const { key, label } of rows) {
     const s = res.strategies[key];
     if (!s || !s.bets) {
       lines.push(`${label}: 暫無`);
@@ -570,8 +582,8 @@ function fmtPositioning(markets, threshold) {
   const url = (m) => (m.eventSlug ? `https://polymarket.com/event/${m.eventSlug}` : "https://polymarket.com");
 
   const cn = [
-    "📊 <b>巨鯨持倉分析（精華版）</b>",
-    `（大戶下注的多空分布 · 錢往哪押）`,
+    "📊 <b>巨鯨持倉分析</b>",
+    `（大戶下注的多空分布）`,
     "",
   ];
   for (const m of top) {
