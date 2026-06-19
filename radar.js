@@ -489,6 +489,7 @@ async function getWcResults() {
       id: ev.id, home: home.team.displayName, away: away.team.displayName,
       homeTokens: teamToks(home.team.displayName), awayTokens: teamToks(away.team.displayName),
       state: ev.status?.type?.state, completed, homeScore: hs, awayScore: as,
+      kickoffMs: ev.date ? Date.parse(ev.date) : null, // 开赛时间, 算大户下注领先量
       actual: completed ? (hs > as ? "home" : hs < as ? "away" : "draw") : null,
     });
   }
@@ -533,7 +534,11 @@ async function matchPrediction(m, pmEvents) {
       if (!walletAgg.has(t.proxyWallet)) walletAgg.set(t.proxyWallet, { usd: 0, bySide: new Map() });
       const w = walletAgg.get(t.proxyWallet);
       w.usd += u;
-      w.bySide.set(mm.side, (w.bySide.get(mm.side) || 0) + u);
+      let bs = w.bySide.get(mm.side);
+      if (!bs) { bs = { usd: 0, shares: 0, minTs: Infinity }; w.bySide.set(mm.side, bs); }
+      bs.usd += u;
+      bs.shares += t.size || 0;
+      if (t.timestamp && t.timestamp < bs.minTs) bs.minTs = t.timestamp;
     }
   }
   const totalUsd = sides.home.usd + sides.draw.usd + sides.away.usd;
@@ -543,8 +548,12 @@ async function matchPrediction(m, pmEvents) {
   let bigBettor = null;
   for (const [w, wr] of walletAgg) {
     if (!bigBettor || wr.usd > bigBettor.usd) {
-      const side = [...wr.bySide.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-      bigBettor = { wallet: w, side, usd: wr.usd };
+      const side = [...wr.bySide.entries()].sort((a, b) => b[1].usd - a[1].usd)[0]?.[0];
+      const bs = wr.bySide.get(side);
+      const entryPrice = bs && bs.shares > 0 ? bs.usd / bs.shares : null;
+      const betTs = bs && Number.isFinite(bs.minTs) ? bs.minTs : null;
+      const leadMin = betTs && m.kickoffMs ? Math.round((m.kickoffMs - betTs * 1000) / 60000) : null;
+      bigBettor = { wallet: w, side, usd: wr.usd, entryPrice, betTs, leadMin };
     }
   }
   return { whaleSide, consensusPct, bigBettor, sides };
@@ -576,7 +585,11 @@ async function cryptoPrediction(mk) {
     if (!walletAgg.has(t.proxyWallet)) walletAgg.set(t.proxyWallet, { usd: 0, bySide: new Map() });
     const w = walletAgg.get(t.proxyWallet);
     w.usd += u;
-    w.bySide.set(o, (w.bySide.get(o) || 0) + u);
+    let bs = w.bySide.get(o);
+    if (!bs) { bs = { usd: 0, shares: 0, minTs: Infinity }; w.bySide.set(o, bs); }
+    bs.usd += u;
+    bs.shares += t.size || 0;
+    if (t.timestamp && t.timestamp < bs.minTs) bs.minTs = t.timestamp;
   }
   const total = Object.values(sides).reduce((s, v) => s + v.usd, 0);
   if (total <= 0) return null;
@@ -585,8 +598,11 @@ async function cryptoPrediction(mk) {
   let bigBettor = null;
   for (const [w, wr] of walletAgg) {
     if (!bigBettor || wr.usd > bigBettor.usd) {
-      const side = [...wr.bySide.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-      bigBettor = { wallet: w, side, usd: wr.usd };
+      const side = [...wr.bySide.entries()].sort((a, b) => b[1].usd - a[1].usd)[0]?.[0];
+      const bs = wr.bySide.get(side);
+      const entryPrice = bs && bs.shares > 0 ? bs.usd / bs.shares : null;
+      const betTs = bs && Number.isFinite(bs.minTs) ? bs.minTs : null;
+      bigBettor = { wallet: w, side, usd: wr.usd, entryPrice, betTs, leadMin: null };
     }
   }
   return { whaleSide, consensusPct, bigBettor, sides };

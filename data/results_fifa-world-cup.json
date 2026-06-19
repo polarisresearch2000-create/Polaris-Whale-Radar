@@ -224,18 +224,50 @@
         }
       },
       "settledAt": "2026-06-19T00:02:39.952Z"
+    },
+    {
+      "espnId": "760441",
+      "match": "Mexico vs South Korea",
+      "home": "Mexico",
+      "away": "South Korea",
+      "actual": "home",
+      "score": "1-0",
+      "whaleSide": "home",
+      "bigBettorSide": "home",
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.475,
+          "win": true,
+          "profit": 1.105263157894737
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.475,
+          "win": true,
+          "profit": 1.105263157894737
+        },
+        "highConsensus": null,
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.525,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T02:57:22.115Z"
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 3,
-      "wins": 2,
-      "profit": -0.09281045751633993
+      "bets": 4,
+      "wins": 3,
+      "profit": 1.012452700378397
     },
     "followBig": {
-      "bets": 3,
-      "wins": 2,
-      "profit": -0.09281045751633993
+      "bets": 4,
+      "wins": 3,
+      "profit": 1.012452700378397
     },
     "highConsensus": {
       "bets": 3,
@@ -243,9 +275,9 @@
       "profit": -0.09281045751633993
     },
     "fadeFav": {
-      "bets": 3,
+      "bets": 4,
       "wins": 1,
-      "profit": -0.894736842105263
+      "profit": -1.894736842105263
     }
   },
   "previewDay": "2026-06-19",

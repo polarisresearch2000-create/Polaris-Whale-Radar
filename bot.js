@@ -27,7 +27,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V3.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V3.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -111,6 +111,15 @@ const resultLabel = (s) => {
   if (/^no$/i.test(s.actual)) return "否 ✗";
   return sideLabel(s.actual, s.home, s.away) + "勝";
 };
+const leadStr = (min) => (min == null ? "" : min < 0 ? "賽後" : min < 60 ? `賽前${min}分鐘` : `賽前${(min / 60).toFixed(1)}小時`);
+// 最大单大户一行: 押哪边 + 入场价 + 距开赛多久下注 (+可选输赢)
+const bigLine = (bb, home, away, win) => {
+  if (!bb) return "最大戶 —";
+  const p = bb.entryPrice != null ? ` @${bb.entryPrice.toFixed(2)}` : "";
+  const lead = bb.leadMin != null ? ` · ${leadStr(bb.leadMin)}下注` : "";
+  const mark = win === true ? " ✅" : win === false ? " ❌" : "";
+  return `最大戶押 ${sideLabel(bb.side, home, away)}${p}${lead}${mark}`;
+};
 
 // 并行前向测试的 4 条策略
 const STRATS = [
@@ -160,9 +169,9 @@ async function trackResults() {
     console.error("赛果追踪取数出错:", e.message);
     return;
   }
-  // 1) 捕捉/补全预测(尽量赛前; 缺 sides/价 的旧记录自动升级补全)
+  // 1) 捕捉预测: 只在【赛前 state=pre】捕捉, 杜绝赛中追涨的前视偏差(回测教训)
   for (const m of wc) {
-    if (m.completed) continue;
+    if (m.completed || m.state !== "pre") continue;
     const ex = res.predictions[m.id];
     if (ex && ex.sides) continue;
     const pred = await matchPrediction(m, pmEvents).catch(() => null);
@@ -191,7 +200,7 @@ async function trackResults() {
     }
     res.settled.push({
       espnId: m.id, match: p.match, home: p.home, away: p.away, actual: m.actual,
-      score: `${m.homeScore}-${m.awayScore}`, whaleSide: p.whaleSide, bigBettorSide: p.bigBettor?.side,
+      score: `${m.homeScore}-${m.awayScore}`, whaleSide: p.whaleSide, bigBettor: p.bigBettor,
       strat, settledAt: new Date().toISOString(),
     });
     newSettle++;
@@ -264,7 +273,7 @@ async function trackResultsCrypto() {
       if (r.win) s.wins++;
       s.profit += r.profit;
     }
-    res.settled.push({ espnId: id, match: p.match, slug: p.slug, actual, whaleSide: p.whaleSide, bigBettorSide: p.bigBettor?.side, strat, settledAt: new Date().toISOString() });
+    res.settled.push({ espnId: id, match: p.match, slug: p.slug, actual, whaleSide: p.whaleSide, bigBettor: p.bigBettor, strat, settledAt: new Date().toISOString() });
     newSettle++;
   }
   if (newSettle > 0) {
@@ -333,9 +342,9 @@ function fmtDailyPreview(matches, res) {
     const p = res.predictions[m.id];
     if (!p) continue;
     const cons = Math.round((p.consensusPct || 0) * 100);
-    const big = p.bigBettor ? sideLabel(p.bigBettor.side, p.home, p.away) : "—";
     lines.push(`${p.home ? "🆚" : "🔥"} ${esc(p.match)}`);
-    lines.push(`   巨鯨預判: <b>${esc(sideLabel(p.whaleSide, p.home, p.away))}</b> (共識 ${cons}%) · 最大戶押 ${esc(big)}`);
+    lines.push(`   巨鯨預判: <b>${esc(sideLabel(p.whaleSide, p.home, p.away))}</b> (共識 ${cons}%)`);
+    lines.push(`   🐋 ${esc(bigLine(p.bigBettor, p.home, p.away))}`);
   }
   const best = bestStrategy(res);
   if (best) lines.push("", `📊 目前最佳策略: ${best.label} ${best.bets}場 ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%`);
@@ -349,7 +358,8 @@ function fmtResultSummary(res) {
     const fw = s.strat?.followWhale, fb = s.strat?.followBig;
     const score = s.score ? ` <b>${s.score}</b>` : "";
     lines.push(`${fw?.win ? "✅" : "❌"} ${esc(s.match)}${score} → ${esc(resultLabel(s))}`);
-    lines.push(`   巨鯨押 ${esc(sideLabel(s.whaleSide, s.home, s.away))} ${fw?.win ? "✅" : "❌"} · 最大戶 ${fb ? (fb.win ? "✅" : "❌") : "—"}`);
+    lines.push(`   巨鯨押 ${esc(sideLabel(s.whaleSide, s.home, s.away))} ${fw?.win ? "✅" : "❌"}`);
+    lines.push(`   🐋 ${esc(bigLine(s.bigBettor, s.home, s.away, fb?.win))}`);
   }
   lines.push("");
   lines.push("📊 <b>策略累計戰績（前向測試 · ROI）</b>");

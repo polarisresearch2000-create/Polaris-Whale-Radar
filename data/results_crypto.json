@@ -1,0 +1,4457 @@
+{
+  "predictions": {
+    "0xccc51cccefaae9546754ac4785db8fa14e617573d86da599c0ac8f36850eae9f": {
+      "match": "Will Bitcoin reach $90,000 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410562",
+      "whaleSide": "No",
+      "consensusPct": 0.9765342799543706,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "No",
+        "usd": 10084.65204
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1237.9999990000001,
+          "price": 0.004
+        },
+        "No": {
+          "usd": 51519.809972,
+          "price": 0.996
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:58.326Z"
+    },
+    "0xc3c410d20641575d5e87f5cf03d83e6ea6d681d0ca9b4c409653d50eb7127dc2": {
+      "match": "Will Bitcoin reach $82,500 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410565",
+      "whaleSide": "No",
+      "consensusPct": 0.9753925904886739,
+      "bigBettor": {
+        "wallet": "0x2e0b70d482e6b389e81dea528be57d825dd48070",
+        "side": "No",
+        "usd": 19951.19022
+      },
+      "sides": {
+        "Yes": {
+          "usd": 2526.209189,
+          "price": 0.0065
+        },
+        "No": {
+          "usd": 100134.29994900001,
+          "price": 0.9935
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:58.405Z"
+    },
+    "0x2e539df5355cdb2ea8340beb000a0c6689957e1bb58f748abd18b4c7485a363a": {
+      "match": "Will Bitcoin reach $77,500 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410567",
+      "whaleSide": "No",
+      "consensusPct": 0.9568812209511139,
+      "bigBettor": {
+        "wallet": "0x4f315c1f2fcfbcbccc31fa28ae086babf309efa3",
+        "side": "No",
+        "usd": 22184.149953
+      },
+      "sides": {
+        "Yes": {
+          "usd": 7267.9246,
+          "price": 0.0095
+        },
+        "No": {
+          "usd": 161287.97517999998,
+          "price": 0.9905
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:58.487Z"
+    },
+    "0x6992fdf39435fb8aa0b765e24f98cb621fd1f7b6458865387c0ea303da2f0003": {
+      "match": "Will Bitcoin dip to $57,500 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410575",
+      "whaleSide": "No",
+      "consensusPct": 0.7595879094548934,
+      "bigBettor": {
+        "wallet": "0x92318178c4b81150570b7f780183048631d82212",
+        "side": "No",
+        "usd": 77387.42177499997
+      },
+      "sides": {
+        "Yes": {
+          "usd": 87651.61260000004,
+          "price": 0.2635
+        },
+        "No": {
+          "usd": 276937.4245039998,
+          "price": 0.7365
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:58.576Z"
+    },
+    "0xadebd6bbf401c9509dd2e78b65a16b567f1f386dccd8cac86cd389bb53ec3a58": {
+      "match": "Will Bitcoin dip to $55,000 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410576",
+      "whaleSide": "No",
+      "consensusPct": 0.785317549340506,
+      "bigBettor": {
+        "wallet": "0x324aed2a00c8f485f636b7d5916fcf44c9a53721",
+        "side": "No",
+        "usd": 53593.27987500001
+      },
+      "sides": {
+        "Yes": {
+          "usd": 78201.06743500002,
+          "price": 0.1085
+        },
+        "No": {
+          "usd": 286062.835808,
+          "price": 0.8915
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:58.665Z"
+    },
+    "0xce6f2c7437b15b808a6be3ea61fc125077e35ce7cc55b66fdbf15f7ce22493ea": {
+      "match": "Will Bitcoin reach $70,000 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2420093",
+      "whaleSide": "No",
+      "consensusPct": 0.8070636664340162,
+      "bigBettor": {
+        "wallet": "0xf17add1f7ac10b0078a5a3b016218c8b05237b1f",
+        "side": "No",
+        "usd": 51219.99995799999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 37384.629492,
+          "price": 0.095
+        },
+        "No": {
+          "usd": 156382.0333290001,
+          "price": 0.905
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:58.751Z"
+    },
+    "0x32f5e88162b712d8a1706451b4b52832193b2e961fe49095f873bbf44e492229": {
+      "match": "Will Bitcoin reach $100,000 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410560",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x78ad03d27582cd1b5255d364ff8f093b6cf745cc",
+        "side": "No",
+        "usd": 57298.15158
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0015
+        },
+        "No": {
+          "usd": 766289.2524809995,
+          "price": 0.9985
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:58.851Z"
+    },
+    "0x6f8263712dd5d445a99f3cc161be8b605d71c6f90e0e3be46889a5cab255aee6": {
+      "match": "Will Bitcoin reach $92,500 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410561",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xdcc9d68a4bad9fc8becd27a03ee5b2b4feda4534",
+        "side": "No",
+        "usd": 16842.840640000002
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0035
+        },
+        "No": {
+          "usd": 76904.043153,
+          "price": 0.9965
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:58.930Z"
+    },
+    "0xc6d651e1f7f9fc47f0079c1fba2fc18290cd8a45644f76f73ef7a1ae35f8d65f": {
+      "match": "Will Bitcoin dip to $52,500 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410577",
+      "whaleSide": "No",
+      "consensusPct": 0.8744107224451233,
+      "bigBettor": {
+        "wallet": "0x324aed2a00c8f485f636b7d5916fcf44c9a53721",
+        "side": "No",
+        "usd": 65155.92311
+      },
+      "sides": {
+        "Yes": {
+          "usd": 28683.802054,
+          "price": 0.0795
+        },
+        "No": {
+          "usd": 199709.916044,
+          "price": 0.9205
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.012Z"
+    },
+    "0xd61673fdbb2e2ceeeeb7ec4fbaba10859e59cbb4abc311779c114e18dbadfb1b": {
+      "match": "Will Bitcoin dip to $50,000 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410578",
+      "whaleSide": "No",
+      "consensusPct": 0.9652566756627408,
+      "bigBettor": {
+        "wallet": "0x9bbf8abf929eddbb4da10535cf4c02db33f4c59f",
+        "side": "No",
+        "usd": 82433.19672
+      },
+      "sides": {
+        "Yes": {
+          "usd": 12468.489667999998,
+          "price": 0.0435
+        },
+        "No": {
+          "usd": 346405.91011500015,
+          "price": 0.9565
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.094Z"
+    },
+    "0xe8c4faf45974a68fa5b72d7bb52012a249357454f17235f14e310dc4bb526a99": {
+      "match": "Will Bitcoin dip to $47,500 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410579",
+      "whaleSide": "No",
+      "consensusPct": 0.9864401197247558,
+      "bigBettor": {
+        "wallet": "0xc97b0b2a2547bb3ed57167092ef8a6e816c347e5",
+        "side": "No",
+        "usd": 112128.90784999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 3686.0729289999995,
+          "price": 0.0235
+        },
+        "No": {
+          "usd": 268150.6139870001,
+          "price": 0.9765
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.193Z"
+    },
+    "0x28799fda784f6b7f9e838c80d03389973167f102fd1db3f4efb5af6ea19b32ad": {
+      "match": "Will Bitcoin reach $80,000 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410566",
+      "whaleSide": "No",
+      "consensusPct": 0.9749655448015333,
+      "bigBettor": {
+        "wallet": "0x9bbf8abf929eddbb4da10535cf4c02db33f4c59f",
+        "side": "No",
+        "usd": 94920.27661999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 5156.990848,
+          "price": 0.0075
+        },
+        "No": {
+          "usd": 200838.7381229999,
+          "price": 0.9925
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.275Z"
+    },
+    "0x6122f0e541331c3324121a6377d6dbd898d4b472b1840ddaab570ed607477744": {
+      "match": "Will Bitcoin reach $87,500 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410563",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x2e0b70d482e6b389e81dea528be57d825dd48070",
+        "side": "No",
+        "usd": 28354.98604
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0035
+        },
+        "No": {
+          "usd": 81103.964898,
+          "price": 0.9965
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.353Z"
+    },
+    "0x9bfe6966da5da12dc39dec67b22375fd5bf21f3c6e9cbaae28d926708eac222f": {
+      "match": "Will Bitcoin reach $85,000 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410564",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xbd43ee245b37222e44e5d444e51325e483a4dbba",
+        "side": "No",
+        "usd": 20946.8074
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0065
+        },
+        "No": {
+          "usd": 79646.90070800002,
+          "price": 0.9935
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.432Z"
+    },
+    "0x99e5c683143a52e9f129ba97bd9d05a44435008296ac5f148735109a215e5c92": {
+      "match": "Will Bitcoin reach $75,000 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410568",
+      "whaleSide": "No",
+      "consensusPct": 0.9297592198483439,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 30556.139999999996
+      },
+      "sides": {
+        "Yes": {
+          "usd": 15550.312995999999,
+          "price": 0.0245
+        },
+        "No": {
+          "usd": 205835.51105700008,
+          "price": 0.9755
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.515Z"
+    },
+    "0x04fe95ce83c8fbb73697063c6339a2a1b65d27a5d8b495898a84d5ba67627aed": {
+      "match": "Will Bitcoin reach $72,500 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2410569",
+      "whaleSide": "No",
+      "consensusPct": 0.8423887512165027,
+      "bigBettor": {
+        "wallet": "0x0fe40e887acbd0022f89d996acce26ab428501b7",
+        "side": "No",
+        "usd": 15545.851
+      },
+      "sides": {
+        "Yes": {
+          "usd": 21585.598092999997,
+          "price": 0.0435
+        },
+        "No": {
+          "usd": 115369.08159899995,
+          "price": 0.9565
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.597Z"
+    },
+    "0x75a50ed92507226816900d6da63984b4db752ad3a3f73e691514416cc5ccd980": {
+      "match": "Will Bitcoin reach $67,500 in June?",
+      "slug": "what-price-will-bitcoin-hit-in-june-2026",
+      "gammaId": "2436557",
+      "whaleSide": "No",
+      "consensusPct": 0.5562469729695695,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 47609.55599899999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 73177.50018700001,
+          "price": 0.265
+        },
+        "No": {
+          "usd": 91728.41758599998,
+          "price": 0.735
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.685Z"
+    },
+    "0xe6e4dbb471a97b1deacb19455b2868d4d54a30c0e10286b50e09f01e25630a22": {
+      "match": "Will the price of Bitcoin be above $64,000 on June 19?",
+      "slug": "bitcoin-above-on-june-19-2026",
+      "gammaId": "2518256",
+      "whaleSide": "Yes",
+      "consensusPct": 0.5430203886675725,
+      "bigBettor": {
+        "wallet": "0xe9c6312464b52aa3eff13d822b003282075995c9",
+        "side": "No",
+        "usd": 1215.6804
+      },
+      "sides": {
+        "Yes": {
+          "usd": 2553.949996,
+          "price": 0.155
+        },
+        "No": {
+          "usd": 2149.280397,
+          "price": 0.845
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.766Z"
+    },
+    "0x6f59964d9f5f774c29cded18ff1a2e22395e1292d2ea8a94a479c977f3b4665b": {
+      "match": "Will the price of Bitcoin be above $66,000 on June 19?",
+      "slug": "bitcoin-above-on-june-19-2026",
+      "gammaId": "2518259",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x966c6111c3313981ac88d35bcafad955eb76fd62",
+        "side": "No",
+        "usd": 6950.3517999999995
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0065
+        },
+        "No": {
+          "usd": 36356.18473899999,
+          "price": 0.9935
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.844Z"
+    },
+    "0x8acf7a4ce4ae0575245088662a5ab04f4f030864bb9d203524ce2f2c31b74c8f": {
+      "match": "Will the price of Bitcoin be above $68,000 on June 19?",
+      "slug": "bitcoin-above-on-june-19-2026",
+      "gammaId": "2518262",
+      "whaleSide": "No",
+      "consensusPct": 0.9921928709672261,
+      "bigBettor": {
+        "wallet": "0x23222038e8255625fff4fff060af8fff89833ede",
+        "side": "No",
+        "usd": 46849.8033
+      },
+      "sides": {
+        "Yes": {
+          "usd": 782.5224000000001,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 99449.25252200002,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:15:59.955Z"
+    },
+    "0xf37210b19acbb2f20a9696d7c1ca12ad601641dc555a5d35fc0e46b76e302aab": {
+      "match": "Will the price of Bitcoin be above $72,000 on June 19?",
+      "slug": "bitcoin-above-on-june-19-2026",
+      "gammaId": "2518268",
+      "whaleSide": "No",
+      "consensusPct": 0.9735861155121919,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "No",
+        "usd": 6811.052
+      },
+      "sides": {
+        "Yes": {
+          "usd": 843.049999,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 31073.876093000003,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:00.043Z"
+    },
+    "0x1a662360d58e9d23f9f887ad2b79e7c729aad6d5b13aee3abc0c5b774254eb96": {
+      "match": "Will the price of Bitcoin be above $74,000 on June 19?",
+      "slug": "bitcoin-above-on-june-19-2026",
+      "gammaId": "2518270",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x78ad03d27582cd1b5255d364ff8f093b6cf745cc",
+        "side": "No",
+        "usd": 47456.36213
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 61848.48372899999,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:00.117Z"
+    },
+    "0x517388959486937e1554cd2f198afffc37fe99791325245b3df5447c3362fb56": {
+      "match": "Will the price of Bitcoin be above $56,000 on June 19?",
+      "slug": "bitcoin-above-on-june-19-2026",
+      "gammaId": "2518244",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x78ad03d27582cd1b5255d364ff8f093b6cf745cc",
+        "side": "Yes",
+        "usd": 14011.90276
+      },
+      "sides": {
+        "Yes": {
+          "usd": 25625.929958,
+          "price": 0.9995
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.0005
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:00.237Z"
+    },
+    "0x61e5ccf1ff689ac5ab6a968ebe684ec14f3bf7c1a196946c216b5fa627ec8653": {
+      "match": "Will the price of Bitcoin be above $58,000 on June 19?",
+      "slug": "bitcoin-above-on-june-19-2026",
+      "gammaId": "2518247",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x78ad03d27582cd1b5255d364ff8f093b6cf745cc",
+        "side": "Yes",
+        "usd": 36594.755
+      },
+      "sides": {
+        "Yes": {
+          "usd": 69550.425515,
+          "price": 0.996
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.004
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:00.507Z"
+    },
+    "0x8392df4eb83b16b7737c10ff848deb25757eeed4d4a5db88a510086034520743": {
+      "match": "Will the price of Bitcoin be above $60,000 on June 19?",
+      "slug": "bitcoin-above-on-june-19-2026",
+      "gammaId": "2518249",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "Yes",
+        "usd": 18285.03629
+      },
+      "sides": {
+        "Yes": {
+          "usd": 39081.84965,
+          "price": 0.982
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.018
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:00.589Z"
+    },
+    "0xb4cadb6865ad8c66a980f8ef78740690e01b1c4afcf3a1e925875bf76eb1e787": {
+      "match": "Will the price of Bitcoin be above $62,000 on June 19?",
+      "slug": "bitcoin-above-on-june-19-2026",
+      "gammaId": "2518252",
+      "whaleSide": "Yes",
+      "consensusPct": 0.949923573864127,
+      "bigBettor": {
+        "wallet": "0x55be7aa03ecfbe37aa5460db791205f7ac9ddca3",
+        "side": "Yes",
+        "usd": 4347.419
+      },
+      "sides": {
+        "Yes": {
+          "usd": 18969.476183000002,
+          "price": 0.8555
+        },
+        "No": {
+          "usd": 999.9999989999999,
+          "price": 0.1445
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:33.254Z"
+    },
+    "0x6fc6804e7a3fcd040dbb7dde246c61d0af2b5be1a2e3af42a880042c080ee304": {
+      "match": "Will the price of Bitcoin be above $54,000 on June 19?",
+      "slug": "bitcoin-above-on-june-19-2026",
+      "gammaId": "2518241",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x78ad03d27582cd1b5255d364ff8f093b6cf745cc",
+        "side": "Yes",
+        "usd": 10389.480119999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 13905.560019999997,
+          "price": 0.9995
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.0005
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:33.331Z"
+    },
+    "0xd3042c0b588c129550fe163ed58e2d5800f315c5efcd728978c4b498b800d73a": {
+      "match": "Will the price of Bitcoin be above $70,000 on June 19?",
+      "slug": "bitcoin-above-on-june-19-2026",
+      "gammaId": "2518265",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "No",
+        "usd": 15942.13486
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 32551.290794999997,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:33.410Z"
+    },
+    "0x5752f9e36a380e26e1986b3e30f8cbced4cb573a6f2ab35960401cbc32d29ca9": {
+      "match": "Will Bitcoin dip to $59,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "gammaId": "2591805",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf3a31a7ab52f576bd1c25cfb3c023a0eef159084",
+        "side": "No",
+        "usd": 2248.4985899999997
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 2248.4985899999997,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:33.489Z"
+    },
+    "0x58e423c53d07214e0c56d62d1b277556ec00c448f969f6d9a3b53f5271203b40": {
+      "match": "Will Bitcoin dip to $58,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "gammaId": "2591809",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x23222038e8255625fff4fff060af8fff89833ede",
+        "side": "No",
+        "usd": 1294.18452
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.001
+        },
+        "No": {
+          "usd": 2779.55852,
+          "price": 0.999
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:33.592Z"
+    },
+    "0xda24af6c15774fd526bc8eff819cdb1b9db69a3a82e95bbcc6a1fe6ebe24e802": {
+      "match": "Will Bitcoin reach $66,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "gammaId": "2591795",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x46992d0e547e3822a9c28723f51bfa804ae4e03c",
+        "side": "No",
+        "usd": 5728.82
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 7587.889999999999,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:33.879Z"
+    },
+    "0xc183c956e24d0c4d755b21816909d1ec0681aed0185f331516697e456a7e3fb1": {
+      "match": "Will Bitcoin reach $65,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "gammaId": "2591796",
+      "whaleSide": "No",
+      "consensusPct": 0.9674509066108115,
+      "bigBettor": {
+        "wallet": "0xe95f74d1457af3376e98b962739b09fcef521a57",
+        "side": "Yes",
+        "usd": 2785.5319999999997
+      },
+      "sides": {
+        "Yes": {
+          "usd": 2785.5319999999997,
+          "price": 0.006
+        },
+        "No": {
+          "usd": 82793.87160100002,
+          "price": 0.994
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:33.959Z"
+    },
+    "0xf111a4618168da1bb941aa5b21e10a2152dc4a1f2fc13e9f3db7b1ed34607cb0": {
+      "match": "Will Bitcoin reach $68,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "gammaId": "2591793",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x8eeb7381fbdf0ca19e84a3dc138e8d16cb1fa4d1",
+        "side": "No",
+        "usd": 599.4
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 1131.49737,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:34.269Z"
+    },
+    "0xd618e7e5eb19690d00fbc5be901507b85481d1325f79abc7a1bef9cc0de950f0": {
+      "match": "Will Bitcoin reach $67,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "gammaId": "2591794",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x23222038e8255625fff4fff060af8fff89833ede",
+        "side": "No",
+        "usd": 1937.8601999999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 2447.1608,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:34.344Z"
+    },
+    "0xaecee2443fdc3136ed443153f98b477f4c74092edaff82905b28b8dea5c213bc": {
+      "match": "Will Bitcoin dip to $62,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "gammaId": "2591800",
+      "whaleSide": "No",
+      "consensusPct": 0.7310285469436925,
+      "bigBettor": {
+        "wallet": "0x4d5e88373a4441fb1f57985561af9cbdf0357f71",
+        "side": "No",
+        "usd": 1699.9999979999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1649.999998,
+          "price": 0.0155
+        },
+        "No": {
+          "usd": 4484.4799969999995,
+          "price": 0.9845
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:34.423Z"
+    },
+    "0x66533f0d80c6f3f89cc8ddfd2691292037fdcdb2b64a0db691d8486609c875eb": {
+      "match": "Will Bitcoin dip to $61,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "gammaId": "2591801",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x239a14ee87dfcbd800e77499975aa23cb603a949",
+        "side": "No",
+        "usd": 1799.28135
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.005
+        },
+        "No": {
+          "usd": 1799.28135,
+          "price": 0.995
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:34.503Z"
+    },
+    "0xfef6b45a995f606b1fe36e0b5829e071dcab156561828a43ef3623ce3475c5b9": {
+      "match": "Will Bitcoin dip to $60,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "gammaId": "2591803",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x03581c2c9ade62c348932b58ce96fa115744f4db",
+        "side": "No",
+        "usd": 2060.87
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.003
+        },
+        "No": {
+          "usd": 2577.649983,
+          "price": 0.997
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:34.580Z"
+    },
+    "0x706a5e882aafec2e97985e63014380d43850d1fc090057ec22eafc650800ea60": {
+      "match": "Will the price of Bitcoin be above $66,000 on June 20?",
+      "slug": "bitcoin-above-on-june-20-2026",
+      "gammaId": "2532420",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x966c6111c3313981ac88d35bcafad955eb76fd62",
+        "side": "No",
+        "usd": 2700
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.024
+        },
+        "No": {
+          "usd": 6181.9608,
+          "price": 0.976
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:34.657Z"
+    },
+    "0x8ff46046670cb36486dcbdaebf281dcdfa83ec18a0a09ae08463d2a15e4bc188": {
+      "match": "Will the price of Bitcoin be above $68,000 on June 20?",
+      "slug": "bitcoin-above-on-june-20-2026",
+      "gammaId": "2532423",
+      "whaleSide": "No",
+      "consensusPct": 0.7571292311073473,
+      "bigBettor": {
+        "wallet": "0x409367ef0150830a411b4731d8ed8a3324075749",
+        "side": "No",
+        "usd": 1700.7299589999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 999.999999,
+          "price": 0.0055
+        },
+        "No": {
+          "usd": 3117.4160389999997,
+          "price": 0.9945
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:34.732Z"
+    },
+    "0x8c5a60f6ef14f0ec0414ba99c7189950a492265491cc7d8fc3a1df104a18f94a": {
+      "match": "Will the price of Bitcoin be above $70,000 on June 20?",
+      "slug": "bitcoin-above-on-june-20-2026",
+      "gammaId": "2532429",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xd311b521443be9d5d441b27e5a16102678bc8145",
+        "side": "No",
+        "usd": 896.49483
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.003
+        },
+        "No": {
+          "usd": 1442.83241,
+          "price": 0.997
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:34.807Z"
+    },
+    "0xc4569c1a4da5845a2bbb14195cfb31aee79e438c6c0c8fe6f0b1dbb922e1c3b0": {
+      "match": "Will the price of Bitcoin be above $58,000 on June 20?",
+      "slug": "bitcoin-above-on-june-20-2026",
+      "gammaId": "2532401",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "Yes",
+        "usd": 778.3979999999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 778.3979999999999,
+          "price": 0.986
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.014
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:34.883Z"
+    },
+    "0x95d49855ec54b6536043d552d1191e8d27b0824c5e15efeeff82bb6faeda45bd": {
+      "match": "Will the price of Bitcoin be above $56,000 on June 20?",
+      "slug": "bitcoin-above-on-june-20-2026",
+      "gammaId": "2532399",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x5b74579e0486aac6d7939dc0ab0deb28a7125ab5",
+        "side": "Yes",
+        "usd": 2186.2200000000003
+      },
+      "sides": {
+        "Yes": {
+          "usd": 3886.4917960000002,
+          "price": 0.9955
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.0045
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:34.961Z"
+    },
+    "0xf548709e796d4e2812879a9aa9a8658a129b0aa508b858fb7d9f6d5cc64e72b1": {
+      "match": "Will the price of Bitcoin be above $60,000 on June 20?",
+      "slug": "bitcoin-above-on-june-20-2026",
+      "gammaId": "2532403",
+      "whaleSide": "Yes",
+      "consensusPct": 0.9418412531181375,
+      "bigBettor": {
+        "wallet": "0xe744913c0033c55203ce64dbd960fe816b70f96e",
+        "side": "Yes",
+        "usd": 5586.9472
+      },
+      "sides": {
+        "Yes": {
+          "usd": 8097.1591,
+          "price": 0.967
+        },
+        "No": {
+          "usd": 500,
+          "price": 0.033
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:35.038Z"
+    },
+    "0x1c93487557afbd12db2e1bff2461bfb53726298d0f51b9ed2de7c8f345eadac8": {
+      "match": "Will the price of Bitcoin be above $62,000 on June 20?",
+      "slug": "bitcoin-above-on-june-20-2026",
+      "gammaId": "2532409",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x966c6111c3313981ac88d35bcafad955eb76fd62",
+        "side": "Yes",
+        "usd": 3896.47762
+      },
+      "sides": {
+        "Yes": {
+          "usd": 5994.62818,
+          "price": 0.763
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.237
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:35.114Z"
+    },
+    "0xa88d1a26e257a58a73fe7a3032e301b2cc82d49fd3aae836dbb86602d874419a": {
+      "match": "Will the price of Bitcoin be above $74,000 on June 20?",
+      "slug": "bitcoin-above-on-june-20-2026",
+      "gammaId": "2532438",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf67e09f19d4485f297457f9ad6f70a03112ba55c",
+        "side": "No",
+        "usd": 24170.231460000003
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 24170.231460000003,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:35.190Z"
+    },
+    "0x2cce8908af0526897643df4e6a278b21c560cbaa43b96161e79847def934b524": {
+      "match": "Will the price of Bitcoin be above $72,000 on June 20?",
+      "slug": "bitcoin-above-on-june-20-2026",
+      "gammaId": "2532435",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x9a671cc6f3fe664dc6cba7e29e79f80188ca46e7",
+        "side": "No",
+        "usd": 4148.169678
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 11736.977674000002,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:51.221Z"
+    },
+    "0x251aab6fcf5eb4aa54ef70673c55532c74aaaf5b983dab29f2f5f92fdd7c5b00": {
+      "match": "Will the price of Bitcoin be above $54,000 on June 20?",
+      "slug": "bitcoin-above-on-june-20-2026",
+      "gammaId": "2532393",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf67e09f19d4485f297457f9ad6f70a03112ba55c",
+        "side": "Yes",
+        "usd": 10220.739029999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 22136.733107999997,
+          "price": 0.9995
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.0005
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:51.303Z"
+    },
+    "0x56c09f3b1aa61d0d76b66286eaf9459022b2f51ddc346dc9b2c63972a81fb9b1": {
+      "match": "Will the price of Bitcoin be above $64,000 on June 20?",
+      "slug": "bitcoin-above-on-june-20-2026",
+      "gammaId": "2532415",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "Yes",
+        "usd": 991.02
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1565.895,
+          "price": 0.235
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.765
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:51.383Z"
+    },
+    "0xc29af0d9ef82e17ea3b60b720bcd468dae3586af4d4205ca4569a300ba71e6e6": {
+      "match": "Will Bitcoin dip to $58,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549223",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 5682.283941
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0415
+        },
+        "No": {
+          "usd": 6354.283941,
+          "price": 0.9585
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:51.463Z"
+    },
+    "0x031362ad8b0ced1c3716f82737295af13bfa2d54f24631460fc6ec87024f7ee0": {
+      "match": "Will Bitcoin reach $78,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549202",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xeb1d1cd1b31070fb34b1d1de20d700f59c9959b0",
+        "side": "No",
+        "usd": 1340.09586
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.001
+        },
+        "No": {
+          "usd": 2340.095859,
+          "price": 0.999
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:51.620Z"
+    },
+    "0x0be3241221a1fa1a2a0061da39abb22326bda62b5592ff0aaa1a0898a4931edf": {
+      "match": "Will Bitcoin reach $70,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549210",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 3053.7380000000003
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0085
+        },
+        "No": {
+          "usd": 8246.91194,
+          "price": 0.9915
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:51.699Z"
+    },
+    "0x95724e9465b99bd8faf3f834c9583a78799548aa897b6e1826b35ceaef246085": {
+      "match": "Will Bitcoin dip to $62,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549217",
+      "whaleSide": "No",
+      "consensusPct": 0.7785693500078443,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 16881.568499999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 5293.43,
+          "price": 0.575
+        },
+        "No": {
+          "usd": 18612.158499999998,
+          "price": 0.425
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:51.782Z"
+    },
+    "0xa246ee27d3b5cdd75693c036066a98251e50f75ce95cff969d5c0c2e4ae716f1": {
+      "match": "Will Bitcoin dip to $54,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549232",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 572.4599979999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0075
+        },
+        "No": {
+          "usd": 572.4599979999999,
+          "price": 0.9925
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:51.865Z"
+    },
+    "0x64609f20109ef2212e70ce0b995cae17a01b3eb792d607e234e4a31cf3f02c77": {
+      "match": "Will Bitcoin reach $76,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549203",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xeb1d1cd1b31070fb34b1d1de20d700f59c9959b0",
+        "side": "No",
+        "usd": 1657.538
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0015
+        },
+        "No": {
+          "usd": 1657.538,
+          "price": 0.9985
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:51.945Z"
+    },
+    "0xccd5beb8ea778d510d974b05bbf814d53e1253322de6ecb88a4c730afc6557a4": {
+      "match": "Will Bitcoin reach $74,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549205",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xeb1d1cd1b31070fb34b1d1de20d700f59c9959b0",
+        "side": "No",
+        "usd": 1541.02
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0065
+        },
+        "No": {
+          "usd": 4568.058919,
+          "price": 0.9935
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:52.026Z"
+    },
+    "0x6cc1d5fa1114f2160d045e98d392b5be5dcc63079cf81572592b1170e50de063": {
+      "match": "Will Bitcoin reach $72,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549208",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 1421.459999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.005
+        },
+        "No": {
+          "usd": 1421.459999,
+          "price": 0.995
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:52.109Z"
+    },
+    "0x6c808273f0851259b3811784a9522461f15494c1bc7ec3a22414d381790722c2": {
+      "match": "Will Bitcoin reach $68,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549212",
+      "whaleSide": "No",
+      "consensusPct": 0.7686898560423306,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "No",
+        "usd": 17513.940000000002
+      },
+      "sides": {
+        "Yes": {
+          "usd": 6121.96,
+          "price": 0.0185
+        },
+        "No": {
+          "usd": 20344.497092,
+          "price": 0.9815
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:52.192Z"
+    },
+    "0xa8ed8b2fb14800b418a4a3228a4474c38503389e76d2340964fece6ddcae09f1": {
+      "match": "Will Bitcoin dip to $60,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549219",
+      "whaleSide": "No",
+      "consensusPct": 0.9094557314482045,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 9526.375540000001
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1207.19464,
+          "price": 0.179
+        },
+        "No": {
+          "usd": 12125.450918999999,
+          "price": 0.821
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:52.280Z"
+    },
+    "0x5306eadf524146e4abfe785179535bfbab2b720d0d78294fce682571d214df8b": {
+      "match": "Will Bitcoin dip to $56,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549226",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 2696.819998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0175
+        },
+        "No": {
+          "usd": 4824.859998,
+          "price": 0.9825
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:52.363Z"
+    },
+    "0x4d4cf262ba750f7db5a418fe818acb758f7da088c317da4b4f02f7c903efb266": {
+      "match": "Will Bitcoin dip to $52,000 June 15-21?",
+      "slug": "what-price-will-bitcoin-hit-june-15-21-2026",
+      "gammaId": "2549235",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x279a710788b04694a8835b196c3fe0d7187610c7",
+        "side": "No",
+        "usd": 536.22
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0055
+        },
+        "No": {
+          "usd": 1050.2199930000002,
+          "price": 0.9945
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:52.446Z"
+    },
+    "0x275584924ee9468372a5fdd69d19859e612072ef458c8208854706a75db7269e": {
+      "match": "Will Ethereum reach $2,500 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410584",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xbd43ee245b37222e44e5d444e51325e483a4dbba",
+        "side": "No",
+        "usd": 44723.30988
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.003
+        },
+        "No": {
+          "usd": 84259.123293,
+          "price": 0.997
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:52.529Z"
+    },
+    "0x0ce5643cb51f9e3ecdd37905e0676789acff6b053894c97aadeb8958390cee89": {
+      "match": "Will Ethereum reach $2,100 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410588",
+      "whaleSide": "No",
+      "consensusPct": 0.8897796867439329,
+      "bigBettor": {
+        "wallet": "0x5371f1b6954e31c502064614649cea3568cb76eb",
+        "side": "No",
+        "usd": 22325.879911999997
+      },
+      "sides": {
+        "Yes": {
+          "usd": 12196.609977999999,
+          "price": 0.03
+        },
+        "No": {
+          "usd": 98460.03413500001,
+          "price": 0.97
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:52.612Z"
+    },
+    "0x614732ba7a1fe13aa24f5ca67f8e42564178a6f769fb296a017fdb71f82533f9": {
+      "match": "Will Ethereum dip to $1,500 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410594",
+      "whaleSide": "No",
+      "consensusPct": 0.5181672823214406,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "Yes",
+        "usd": 20247.601098
+      },
+      "sides": {
+        "Yes": {
+          "usd": 36649.500292000004,
+          "price": 0.23
+        },
+        "No": {
+          "usd": 39413.205596,
+          "price": 0.77
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:52.695Z"
+    },
+    "0x757ad347115f28ab9923a3d12a8f046534a87728f9be27c2f666de39983a99eb": {
+      "match": "Will Ethereum dip to $1,300 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410596",
+      "whaleSide": "No",
+      "consensusPct": 0.8955236486830007,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 11098.946757000002
+      },
+      "sides": {
+        "Yes": {
+          "usd": 2404.8220389999997,
+          "price": 0.0505
+        },
+        "No": {
+          "usd": 20613.038066999998,
+          "price": 0.9495
+        }
+      },
+      "capturedAt": "2026-06-19T02:16:52.777Z"
+    },
+    "0x439c0d4ac57a116e6d90d39971356de7ecec8d7c78dcb1f3f10b6a37aebe7c4c": {
+      "match": "Will Ethereum dip to $1,100 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410598",
+      "whaleSide": "No",
+      "consensusPct": 0.9265959748658034,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "No",
+        "usd": 5297.30874
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1927.73,
+          "price": 0.016
+        },
+        "No": {
+          "usd": 24334.181339000002,
+          "price": 0.984
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:10.124Z"
+    },
+    "0x7a09ff4d212b2d0033ec914bac41ea76cc0fb4dd62d9f2303d4d5d097cf2761a": {
+      "match": "Will Ethereum dip to $1,000 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410599",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x0fe40e887acbd0022f89d996acce26ab428501b7",
+        "side": "No",
+        "usd": 18027.45094
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.007
+        },
+        "No": {
+          "usd": 68411.322634,
+          "price": 0.993
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:10.199Z"
+    },
+    "0xde3e7102cefdf2706cb2a926e8c40ecd9dc6cec0a99d5b9add79ab4f24c9e547": {
+      "match": "Will Ethereum reach $2,000 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2420111",
+      "whaleSide": "No",
+      "consensusPct": 0.9819547211228943,
+      "bigBettor": {
+        "wallet": "0x8ca6e59babbb4a02fd17ffd6f95973f5e8eb241e",
+        "side": "No",
+        "usd": 7480.363299999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 500,
+          "price": 0.085
+        },
+        "No": {
+          "usd": 27208.078295999996,
+          "price": 0.915
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:10.279Z"
+    },
+    "0x1f3ddc62310927da6bf2840a298d3134903bfa3cbeaeec559ca8956a4ad4be34": {
+      "match": "Will Ethereum reach $2,200 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410587",
+      "whaleSide": "No",
+      "consensusPct": 0.9799812170745692,
+      "bigBettor": {
+        "wallet": "0x5371f1b6954e31c502064614649cea3568cb76eb",
+        "side": "No",
+        "usd": 14053.989853
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1127.3248,
+          "price": 0.018
+        },
+        "No": {
+          "usd": 55186.028724,
+          "price": 0.982
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:10.357Z"
+    },
+    "0x3308828f5d36a21237095189bc679fa5ddfc06fe88d4f8d50e7c6be2de9cf796": {
+      "match": "Will Ethereum reach $2,700 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410582",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xea79e388b22b28d29996547323270f716bd3e4b5",
+        "side": "No",
+        "usd": 4972
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.005
+        },
+        "No": {
+          "usd": 12451.69025,
+          "price": 0.995
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:10.434Z"
+    },
+    "0x7a6867395b98399205a2811a45d76d4a21f188301683ae0c3d69236765b1abad": {
+      "match": "Will Ethereum reach $2,600 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410583",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 3113.74
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0035
+        },
+        "No": {
+          "usd": 17964.639079999997,
+          "price": 0.9965
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:10.514Z"
+    },
+    "0xafc5d04cc813311b842e632e1f2e02e5fb3b4cb022c53fd24eb55cf268e4fc87": {
+      "match": "Will Ethereum reach $2,400 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410585",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x5371f1b6954e31c502064614649cea3568cb76eb",
+        "side": "No",
+        "usd": 43784.55985599999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0055
+        },
+        "No": {
+          "usd": 60588.620248,
+          "price": 0.9945
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:10.592Z"
+    },
+    "0xc10aa56ec9922432a9c834f79935f3110ba66a87073947a61ceaf65042bbb893": {
+      "match": "Will Ethereum dip to $1,200 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410597",
+      "whaleSide": "No",
+      "consensusPct": 0.9471746328018362,
+      "bigBettor": {
+        "wallet": "0x0fe40e887acbd0022f89d996acce26ab428501b7",
+        "side": "No",
+        "usd": 28263.119219999997
+      },
+      "sides": {
+        "Yes": {
+          "usd": 4151.616368,
+          "price": 0.0275
+        },
+        "No": {
+          "usd": 74439.723138,
+          "price": 0.9725
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:10.676Z"
+    },
+    "0xa93a3a655d98a7de2027f9947bdaba90009ae18e0ffe022f901f3feaa21b39b0": {
+      "match": "Will Ethereum reach $3,000 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410580",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x1c4f729bb55675cf8cbb863f5ebc9c3074e32852",
+        "side": "No",
+        "usd": 21599.999154999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0035
+        },
+        "No": {
+          "usd": 71842.85034,
+          "price": 0.9965
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:10.787Z"
+    },
+    "0x99b63a43c6b21070fd308f5246feb561eea0051ce5df96a7b9906d896fc8e62e": {
+      "match": "Will Ethereum reach $2,800 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410581",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x4c1d57a5e77835277acf645261ef73d19742ea89",
+        "side": "No",
+        "usd": 4996.79998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0035
+        },
+        "No": {
+          "usd": 26360.97409,
+          "price": 0.9965
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:10.863Z"
+    },
+    "0xec186c5585abfff6a7b9d8090e6412cf613fc6cb745e25da24a21e30448c1017": {
+      "match": "Will Ethereum reach $2,300 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410586",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x4f315c1f2fcfbcbccc31fa28ae086babf309efa3",
+        "side": "No",
+        "usd": 26799.259966999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.007
+        },
+        "No": {
+          "usd": 45076.23588,
+          "price": 0.993
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:10.940Z"
+    },
+    "0xbe2161199ecb28cda126451733b5d83e62af60bf36617c5502e21402002cd8df": {
+      "match": "Will Ethereum dip to $1,400 in June?",
+      "slug": "what-price-will-ethereum-hit-in-june-2026",
+      "gammaId": "2410595",
+      "whaleSide": "No",
+      "consensusPct": 0.8817741610948827,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 10435.279998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 4573.691929,
+          "price": 0.109
+        },
+        "No": {
+          "usd": 34112.368338,
+          "price": 0.891
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:11.021Z"
+    },
+    "0xb29413f5081833bb7bf8c058ef087646c9f7f6ba00894bf024863fef52f75bb3": {
+      "match": "Will the price of Ethereum be above $1,200 on June 19?",
+      "slug": "ethereum-above-on-june-19-2026",
+      "gammaId": "2518162",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "Yes",
+        "usd": 1933.6034
+      },
+      "sides": {
+        "Yes": {
+          "usd": 2785.6032969999997,
+          "price": 0.9995
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.0005
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:11.096Z"
+    },
+    "0x4e85e2fcfe159cf57650febe5804e3ffc468e8b288faf48e0b69329526d429b8": {
+      "match": "Will the price of Ethereum be above $1,300 on June 19?",
+      "slug": "ethereum-above-on-june-19-2026",
+      "gammaId": "2518164",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x1c55ee8c3de9518680e237289c754057107a0a62",
+        "side": "Yes",
+        "usd": 1354.839804
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1354.839804,
+          "price": 0.9995
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.0005
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:11.171Z"
+    },
+    "0x0981af9da77dcb864c99c9b7121fad2fb851698e6abcab199287b17c07c9d013": {
+      "match": "Will the price of Ethereum be above $1,500 on June 19?",
+      "slug": "ethereum-above-on-june-19-2026",
+      "gammaId": "2518174",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x2858dff9853b7d063d3754909dcd35a92958119d",
+        "side": "Yes",
+        "usd": 5048.12255
+      },
+      "sides": {
+        "Yes": {
+          "usd": 20932.9201,
+          "price": 0.9975
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.0025
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:11.249Z"
+    },
+    "0x18e7562616c90f03d470cb02ae7276edb45541de3fd1b9da4bb20f388628f79a": {
+      "match": "Will the price of Ethereum be above $1,600 on June 19?",
+      "slug": "ethereum-above-on-june-19-2026",
+      "gammaId": "2518178",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xa96aee1506d720308808664d42d59e4dc3941377",
+        "side": "Yes",
+        "usd": 500.33999800000004
+      },
+      "sides": {
+        "Yes": {
+          "usd": 500.33999800000004,
+          "price": 0.986
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.014
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:11.325Z"
+    },
+    "0x7011d3ed983fe4849d59ba5ae97cc51a0827e19d5ae72593e2d4d637a75a2bb2": {
+      "match": "Will the price of Ethereum be above $1,800 on June 19?",
+      "slug": "ethereum-above-on-june-19-2026",
+      "gammaId": "2518183",
+      "whaleSide": "No",
+      "consensusPct": 0.7857872772022141,
+      "bigBettor": {
+        "wallet": "0xe9c6312464b52aa3eff13d822b003282075995c9",
+        "side": "No",
+        "usd": 16985.3852
+      },
+      "sides": {
+        "Yes": {
+          "usd": 4983.0952,
+          "price": 0.0255
+        },
+        "No": {
+          "usd": 18279.272856000003,
+          "price": 0.9745
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:11.399Z"
+    },
+    "0x04826d16814ced71680e208de7d3ae1a8e9d74f9c1afa7691f32e6f1210a16aa": {
+      "match": "Will the price of Ethereum be above $1,900 on June 19?",
+      "slug": "ethereum-above-on-june-19-2026",
+      "gammaId": "2518187",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x1c4f729bb55675cf8cbb863f5ebc9c3074e32852",
+        "side": "No",
+        "usd": 5499.999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 6235.489998,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:11.481Z"
+    },
+    "0xcd08c69aa7b410712ab75065b31d2de0aa922e93a29f8f8d8f455319a2f6db1c": {
+      "match": "Will the price of Ethereum be above $2,200 on June 19?",
+      "slug": "ethereum-above-on-june-19-2026",
+      "gammaId": "2518202",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x1aec8a0566a702d5aa47993ded82e0ea951814c2",
+        "side": "No",
+        "usd": 3213.97488
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 3213.97488,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:30.104Z"
+    },
+    "0x506375305fcfb90367483fe18fdd6b22d193ae0453d48dc79a80657d4a631cf8": {
+      "match": "Will the price of Ethereum be above $1,400 on June 19?",
+      "slug": "ethereum-above-on-june-19-2026",
+      "gammaId": "2518169",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x81e1dfcf464e85d0388ede7f5772a4334a0e5d5f",
+        "side": "Yes",
+        "usd": 2149.999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 3894.997883,
+          "price": 0.999
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.001
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:30.182Z"
+    },
+    "0xde054b8dcdb48f1a41f9a26eff252d468a4e8c473e9186ffe61e744b064e67f1": {
+      "match": "Will the price of Ethereum be above $1,700 on June 19?",
+      "slug": "ethereum-above-on-june-19-2026",
+      "gammaId": "2518181",
+      "whaleSide": "No",
+      "consensusPct": 0.792009862650293,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "No",
+        "usd": 4194.576
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1244.4,
+          "price": 0.645
+        },
+        "No": {
+          "usd": 4738.576,
+          "price": 0.355
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:30.258Z"
+    },
+    "0xac32e73aa9e0dae801d88d4f81efd2ef3fa0f04b815f3a0e74426f0762e668cd": {
+      "match": "Will Bitcoin reach $200,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701486",
+      "whaleSide": "No",
+      "consensusPct": 0.9543222507223864,
+      "bigBettor": {
+        "wallet": "0x6765c1c000e3b99c7fffea752c561cb868f1fa0d",
+        "side": "No",
+        "usd": 32960.0333
+      },
+      "sides": {
+        "Yes": {
+          "usd": 15450.755046,
+          "price": 0.0215
+        },
+        "No": {
+          "usd": 322804.857158,
+          "price": 0.9785
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:30.424Z"
+    },
+    "0x799c35de1e5f3ebd75053643e020e6df9e9a3f477e3d6066eb0a8565f65d547f": {
+      "match": "Will Bitcoin reach $180,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701488",
+      "whaleSide": "No",
+      "consensusPct": 0.9845324421892855,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "No",
+        "usd": 18153.924
+      },
+      "sides": {
+        "Yes": {
+          "usd": 2565.1407990000002,
+          "price": 0.028
+        },
+        "No": {
+          "usd": 163274.92460699994,
+          "price": 0.972
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:30.504Z"
+    },
+    "0x472c9035786b390c08e674fc60bddda488957e1b8aecad3f5480cc531a0754b0": {
+      "match": "Will Bitcoin reach $160,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701490",
+      "whaleSide": "No",
+      "consensusPct": 0.8999088667543552,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "No",
+        "usd": 30741.4934
+      },
+      "sides": {
+        "Yes": {
+          "usd": 14088.670796999999,
+          "price": 0.037
+        },
+        "No": {
+          "usd": 126669.75944699999,
+          "price": 0.963
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:30.584Z"
+    },
+    "0xf0a4c0bc8a8162f0ac95b5a5af7fa665d20a19ca0db03b9117514dafc695f15e": {
+      "match": "Will Bitcoin reach $140,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701492",
+      "whaleSide": "No",
+      "consensusPct": 0.8753863639946261,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "No",
+        "usd": 29375.337799999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 28243.445394,
+          "price": 0.044
+        },
+        "No": {
+          "usd": 198404.66711900008,
+          "price": 0.956
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:30.673Z"
+    },
+    "0xf9b6b5c3c6e07afe4aad6ed9ce4fa7545f9c2baa9f1dc632cd81a085c99acfe4": {
+      "match": "Will Bitcoin reach $120,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701494",
+      "whaleSide": "No",
+      "consensusPct": 0.8224694085048835,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "No",
+        "usd": 46776.45039900001
+      },
+      "sides": {
+        "Yes": {
+          "usd": 45096.810389,
+          "price": 0.085
+        },
+        "No": {
+          "usd": 208925.94709300002,
+          "price": 0.915
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:30.758Z"
+    },
+    "0xdaa4866bae18be58c5a79d2aeeffd035ec78f1bb49dbd88f72993997778a990f": {
+      "match": "Will Bitcoin reach $100,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701496",
+      "whaleSide": "No",
+      "consensusPct": 0.5757109008237774,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "Yes",
+        "usd": 68486.47950000002
+      },
+      "sides": {
+        "Yes": {
+          "usd": 183131.88395800008,
+          "price": 0.165
+        },
+        "No": {
+          "usd": 248488.64156000008,
+          "price": 0.835
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:30.859Z"
+    },
+    "0x024b68f77bfc019341ee3db8f57c103334e4b9430bba4746d8c94aafd8b36fee": {
+      "match": "Will Bitcoin dip to $45,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701502",
+      "whaleSide": "No",
+      "consensusPct": 0.602603497255026,
+      "bigBettor": {
+        "wallet": "0x1465b79bff7992bc703e1aafb3683b1089647072",
+        "side": "No",
+        "usd": 74103.5783
+      },
+      "sides": {
+        "Yes": {
+          "usd": 213906.3677279999,
+          "price": 0.405
+        },
+        "No": {
+          "usd": 324363.00870199996,
+          "price": 0.595
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:30.962Z"
+    },
+    "0xe326d1abf5fb59b82ecfdff3348e75f90561eace327ba1bdc8d38d045ddbe775": {
+      "match": "Will Bitcoin dip to $25,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701504",
+      "whaleSide": "No",
+      "consensusPct": 0.9032128563373696,
+      "bigBettor": {
+        "wallet": "0x94d3892fc345af2b86b5190e649d253cb5219e93",
+        "side": "No",
+        "usd": 29250.0134
+      },
+      "sides": {
+        "Yes": {
+          "usd": 17121.906696,
+          "price": 0.095
+        },
+        "No": {
+          "usd": 159780.78975800003,
+          "price": 0.905
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:31.045Z"
+    },
+    "0xe71b9d788ce662d967ff2c90749ff8b26cee290455ef6cb84f33d1393ffae115": {
+      "match": "Will Bitcoin reach $190,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701487",
+      "whaleSide": "No",
+      "consensusPct": 0.985871557555108,
+      "bigBettor": {
+        "wallet": "0xfea31bc088000ff909be1dfd8d0e3f2c7ef2d227",
+        "side": "No",
+        "usd": 44771.416840000005
+      },
+      "sides": {
+        "Yes": {
+          "usd": 2786.789699,
+          "price": 0.026
+        },
+        "No": {
+          "usd": 194459.98466199994,
+          "price": 0.974
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:31.130Z"
+    },
+    "0x9affeb38bce1e9a6de30e9ecada1ecfaf636574d3961cf3b9177299786214234": {
+      "match": "Will Bitcoin reach $170,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701489",
+      "whaleSide": "No",
+      "consensusPct": 0.9343194551319989,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "No",
+        "usd": 23248.0097
+      },
+      "sides": {
+        "Yes": {
+          "usd": 5265.914599000001,
+          "price": 0.0335
+        },
+        "No": {
+          "usd": 74908.733915,
+          "price": 0.9665
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:31.207Z"
+    },
+    "0xa7b594ae07d5c1590fa86028fcc2f8705990437237416556c05837a08b2e1cda": {
+      "match": "Will Bitcoin reach $150,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701491",
+      "whaleSide": "No",
+      "consensusPct": 0.8966534465101631,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "No",
+        "usd": 30974.9562
+      },
+      "sides": {
+        "Yes": {
+          "usd": 25576.419997,
+          "price": 0.0415
+        },
+        "No": {
+          "usd": 221905.6597949999,
+          "price": 0.9585
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:31.291Z"
+    },
+    "0x885a6abefad122348b4fbd503473d7fd1f9035d0438cf988a7591620f316a859": {
+      "match": "Will Bitcoin reach $130,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701493",
+      "whaleSide": "No",
+      "consensusPct": 0.834430715780483,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "No",
+        "usd": 43356.4351
+      },
+      "sides": {
+        "Yes": {
+          "usd": 39849.379196,
+          "price": 0.055
+        },
+        "No": {
+          "usd": 200831.610541,
+          "price": 0.945
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:31.376Z"
+    },
+    "0x63eaf41ce1f475323e2202d7dfa3b1def8b82cd166f7007c50bfbf47615c7b01": {
+      "match": "Will Bitcoin reach $110,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701495",
+      "whaleSide": "No",
+      "consensusPct": 0.6971322698075707,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "No",
+        "usd": 49071.7923
+      },
+      "sides": {
+        "Yes": {
+          "usd": 67461.357197,
+          "price": 0.115
+        },
+        "No": {
+          "usd": 155280.62047799997,
+          "price": 0.885
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:31.464Z"
+    },
+    "0x752fa61c93f16c4b15e85b0bd438d9c684176b0ea7b319a84c8aca34616e8a8c": {
+      "match": "Will Bitcoin dip to $55,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701501",
+      "whaleSide": "No",
+      "consensusPct": 0.5062294565727326,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "Yes",
+        "usd": 72716.07569799999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 219519.87364199993,
+          "price": 0.72
+        },
+        "No": {
+          "usd": 225058.84123699993,
+          "price": 0.28
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:31.560Z"
+    },
+    "0x2745c38ff0617cb345c1d2df19b4f74ea777508e07411e88eeb6ab3affcda2a2": {
+      "match": "Will Bitcoin dip to $35,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "701503",
+      "whaleSide": "No",
+      "consensusPct": 0.9049681653124436,
+      "bigBettor": {
+        "wallet": "0x1465b79bff7992bc703e1aafb3683b1089647072",
+        "side": "No",
+        "usd": 105516.76999999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 69375.11858499997,
+          "price": 0.19
+        },
+        "No": {
+          "usd": 660644.6565049997,
+          "price": 0.81
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:50.177Z"
+    },
+    "0x6fefc0438c7598b23531457c8c60541990d0786bd4bd9dfc3eabc8d95c291092": {
+      "match": "Will Bitcoin reach $250,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "1057883",
+      "whaleSide": "No",
+      "consensusPct": 0.9921718891352982,
+      "bigBettor": {
+        "wallet": "0x6765c1c000e3b99c7fffea752c561cb868f1fa0d",
+        "side": "No",
+        "usd": 48969.94449899999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 11162.480115,
+          "price": 0.0195
+        },
+        "No": {
+          "usd": 1414785.658322,
+          "price": 0.9805
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:50.279Z"
+    },
+    "0xa885bfe10688056a9d0f4e9a1523bfa18f66fda065f0400d714ba54776083713": {
+      "match": "Will Bitcoin dip to $15,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "1057916",
+      "whaleSide": "No",
+      "consensusPct": 0.9969999708231961,
+      "bigBettor": {
+        "wallet": "0x94d3892fc345af2b86b5190e649d253cb5219e93",
+        "side": "No",
+        "usd": 27704.75481
+      },
+      "sides": {
+        "Yes": {
+          "usd": 6523.904398,
+          "price": 0.0405
+        },
+        "No": {
+          "usd": 2168089.7455099993,
+          "price": 0.9595
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:50.517Z"
+    },
+    "0xce3c54c3e773e8b3bf73e4c12af93205b21195d03b9c386e22f274b9acfc2c56": {
+      "match": "Will Bitcoin dip to $50,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "1339767",
+      "whaleSide": "No",
+      "consensusPct": 0.5164094901046022,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "Yes",
+        "usd": 66896.4453
+      },
+      "sides": {
+        "Yes": {
+          "usd": 221442.284134,
+          "price": 0.555
+        },
+        "No": {
+          "usd": 236470.51523399982,
+          "price": 0.445
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:50.613Z"
+    },
+    "0x1e5564c1a2a6839cc2780a889437c63786a2c2ec5e95569b710ee659a3e8baa2": {
+      "match": "Will Bitcoin dip to $40,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "1339768",
+      "whaleSide": "No",
+      "consensusPct": 0.7097918142946951,
+      "bigBettor": {
+        "wallet": "0x1465b79bff7992bc703e1aafb3683b1089647072",
+        "side": "No",
+        "usd": 41168.1148
+      },
+      "sides": {
+        "Yes": {
+          "usd": 70121.67598199999,
+          "price": 0.285
+        },
+        "No": {
+          "usd": 171503.74823399997,
+          "price": 0.715
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:50.697Z"
+    },
+    "0x903a1387e6414be5529efc8f7757e30371e6698de9d68fa4ce33252009db69ef": {
+      "match": "Will Bitcoin dip to $30,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "1339769",
+      "whaleSide": "No",
+      "consensusPct": 0.748363794504201,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "No",
+        "usd": 21455.4911
+      },
+      "sides": {
+        "Yes": {
+          "usd": 31223.115587999997,
+          "price": 0.125
+        },
+        "No": {
+          "usd": 92857.26277600002,
+          "price": 0.875
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:50.779Z"
+    },
+    "0x23fb92bb72604ff35bfe591b5506de47f1bf6632ed55c388baa4843118bf69fc": {
+      "match": "Will Bitcoin dip to $20,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "1343219",
+      "whaleSide": "No",
+      "consensusPct": 0.7982786470608766,
+      "bigBettor": {
+        "wallet": "0x94d3892fc345af2b86b5190e649d253cb5219e93",
+        "side": "No",
+        "usd": 12922.417300000001
+      },
+      "sides": {
+        "Yes": {
+          "usd": 6955.057998,
+          "price": 0.065
+        },
+        "No": {
+          "usd": 27523.483300000004,
+          "price": 0.935
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:50.855Z"
+    },
+    "0xd8a5843555ba95455a28d895660c07c59b615184bf4ae64893992f3504797d29": {
+      "match": "Will Bitcoin dip to $10,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "1343220",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xcc500cbcc8b7cf5bd21975ebbea34f21b5644c82",
+        "side": "No",
+        "usd": 8042.688
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0345
+        },
+        "No": {
+          "usd": 17128.601467,
+          "price": 0.9655
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:50.934Z"
+    },
+    "0xe681a6326237f3b17ce8622728b6cd104281dfe4d2b38f4520fd7f1734cf3469": {
+      "match": "Will Bitcoin dip to $5,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "1343228",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x393e0fbd13b1b2c021d2f6c3b66967314fd2c17d",
+        "side": "No",
+        "usd": 2550.169
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0265
+        },
+        "No": {
+          "usd": 19767.178723999998,
+          "price": 0.9735
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:51.010Z"
+    },
+    "0xbb379a14cd03f68c35c279ddbd928a6326f4fd2e21827f8cdaaf59715d6df50e": {
+      "match": "Will Bitcoin reach $90,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "1345531",
+      "whaleSide": "No",
+      "consensusPct": 0.5730669433054528,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "Yes",
+        "usd": 27874.201600000004
+      },
+      "sides": {
+        "Yes": {
+          "usd": 114074.17160800002,
+          "price": 0.245
+        },
+        "No": {
+          "usd": 153120.344767,
+          "price": 0.755
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:51.097Z"
+    },
+    "0xf3519e50e99fa353443d45060813453b1b717e463b5b76c306e85e8f5b026116": {
+      "match": "Will Bitcoin reach $500,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "1393068",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xad6092f0ab7cda2a84977d18cabecbdbe4e397f4",
+        "side": "No",
+        "usd": 27146.367190000004
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0145
+        },
+        "No": {
+          "usd": 145509.58544700002,
+          "price": 0.9855
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:51.186Z"
+    },
+    "0xa7d7ed69cfd6107e5e005556730dcf45727c1cdd1001f0378f5e471526181c47": {
+      "match": "Will Bitcoin reach $1,000,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "1393070",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xe864cadf3bb8ca35ae036070b6da40e56a21ce58",
+        "side": "No",
+        "usd": 19543.953719999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0135
+        },
+        "No": {
+          "usd": 228945.78914399992,
+          "price": 0.9865
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:51.275Z"
+    },
+    "0xa157e53c8320fcd217eaa4ae32e1af69baa8a4268e8143b61961238f21a747d6": {
+      "match": "Will Bitcoin dip to $60,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "2463847",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x9b4b5976118558b4b9c8051c4ab156294ef67a73",
+        "side": "Yes",
+        "usd": 1621.739996
+      },
+      "sides": {
+        "Yes": {
+          "usd": 3621.739982,
+          "price": 0.87
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.13
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:51.353Z"
+    },
+    "0xc564e47b7a853f3e52ea7b8e28d69ed99fcb284929364fd0f8024c2bca03ea96": {
+      "match": "Will Bitcoin reach $80,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "2467208",
+      "whaleSide": "Yes",
+      "consensusPct": 0.8545646857898971,
+      "bigBettor": {
+        "wallet": "0x5b6331e7ff0831a3fe2ed12004747db1a9c911a4",
+        "side": "Yes",
+        "usd": 3748.8299980000006
+      },
+      "sides": {
+        "Yes": {
+          "usd": 3748.8299980000006,
+          "price": 0.49
+        },
+        "No": {
+          "usd": 637.999999,
+          "price": 0.51
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:51.429Z"
+    },
+    "0xacec7e5b90ccb1ac4c950e3aff18156d6ce1bb7b0c87c001a281279412dca784": {
+      "match": "Will Bitcoin reach $95,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "2467206",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xa0966ef13e00d0dd63f22ce09e2881899e41aa97",
+        "side": "No",
+        "usd": 2999.999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.175
+        },
+        "No": {
+          "usd": 10793.949992,
+          "price": 0.825
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:51.508Z"
+    },
+    "0x84fdc3f917e34acca874f93d978e84ed0c08969903ddf40a5d65274b3a5b4fdf": {
+      "match": "Will Bitcoin reach $75,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "2467209",
+      "whaleSide": "Yes",
+      "consensusPct": 0.702592580030162,
+      "bigBettor": {
+        "wallet": "0x45bc74efa620b45c02308acaecdff1f7c06f978b",
+        "side": "Yes",
+        "usd": 3682.9674000000005
+      },
+      "sides": {
+        "Yes": {
+          "usd": 3682.9674000000005,
+          "price": 0.605
+        },
+        "No": {
+          "usd": 1559,
+          "price": 0.395
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:51.584Z"
+    },
+    "0x7b9072e6a9cdcf022c4f098564e8ee612d544e179e4a33dcc2790fbaa778daa8": {
+      "match": "Will Bitcoin reach $70,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "2467210",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "No",
+        "usd": 1306.1949999999997
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.745
+        },
+        "No": {
+          "usd": 1306.1949999999997,
+          "price": 0.255
+        }
+      },
+      "capturedAt": "2026-06-19T02:17:51.661Z"
+    },
+    "0x1239389645c8a73b170b78ef3a83d69b6cf1d2711d412829ea8836660b08fc93": {
+      "match": "Will Bitcoin reach $85,000 by December 31, 2026?",
+      "slug": "what-price-will-bitcoin-hit-before-2027",
+      "gammaId": "2467207",
+      "whaleSide": "Yes",
+      "consensusPct": 0.5049504952994804,
+      "bigBettor": {
+        "wallet": "0x66d75f659e20e1b1894e52e3c6ad52c9a51d5b7b",
+        "side": "Yes",
+        "usd": 1020.0000000000001
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1020.0000000000001,
+          "price": 0.325
+        },
+        "No": {
+          "usd": 999.9999990000001,
+          "price": 0.675
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:10.153Z"
+    },
+    "0x7620b4ea9faaeaae29500418e4d1da31ab10e27747e1f29ea2dcd47d07fdc7ad": {
+      "match": "Will Solana reach $160 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410600",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "No",
+        "usd": 18329.9902
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0015
+        },
+        "No": {
+          "usd": 42133.06988,
+          "price": 0.9985
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:10.237Z"
+    },
+    "0x82cb1fdae15ffbbaabf331519a9e8c089a3a3c6f3ad20c6547ae181fc204c815": {
+      "match": "Will Solana reach $110 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410605",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 6049.37485
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0035
+        },
+        "No": {
+          "usd": 14205.278518999998,
+          "price": 0.9965
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:10.320Z"
+    },
+    "0x4f41b32697c168a854bc73cf2aaae6f9a4d575eb97c6d171b3e4ad5f111a3458": {
+      "match": "Will Solana reach $100 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410606",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x5371f1b6954e31c502064614649cea3568cb76eb",
+        "side": "No",
+        "usd": 7525.089868000001
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0085
+        },
+        "No": {
+          "usd": 25407.892439,
+          "price": 0.9915
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:10.397Z"
+    },
+    "0x75989b322ce7fd748c88393634da157c43421417fed50e1942d5dc4e84df9416": {
+      "match": "Will Solana dip to $20 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410614",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "No",
+        "usd": 6535.51983
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.003
+        },
+        "No": {
+          "usd": 14005.281223999998,
+          "price": 0.997
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:10.475Z"
+    },
+    "0xccdf1b46bfbceb3dfd8562ffb5037927a2211f52e1879ee891fd3f5ef45190e4": {
+      "match": "Will Solana dip to $10 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410615",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xad57cb5f132cb420fffd4e9dea54c746416c07c8",
+        "side": "No",
+        "usd": 8696.295
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0015
+        },
+        "No": {
+          "usd": 10646.294995999999,
+          "price": 0.9985
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:10.550Z"
+    },
+    "0xba0d95de8b80d4e24c36bc05d1e12044f6b28bf5d8581795a27bb603904c0e9c": {
+      "match": "Will Solana reach $150 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410601",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xa65279634f9282ecc21e9724576aac2a1e2eff5a",
+        "side": "No",
+        "usd": 1318.358
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0015
+        },
+        "No": {
+          "usd": 2403.184,
+          "price": 0.9985
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:10.626Z"
+    },
+    "0x997e4f3d869940a9d245f5764b18ad0d66bb491e3f871e7067e12eb86f8073ff": {
+      "match": "Will Solana reach $130 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410603",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "No",
+        "usd": 11093.86731
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.002
+        },
+        "No": {
+          "usd": 24187.125867000002,
+          "price": 0.998
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:10.703Z"
+    },
+    "0xc80625eb8f1d48f9f976fce4e4d48f61b0919b63ba33af46fb66885b0ea71df3": {
+      "match": "Will Solana reach $120 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410604",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "No",
+        "usd": 7154.82193
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0015
+        },
+        "No": {
+          "usd": 12356.979021000001,
+          "price": 0.9985
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:10.781Z"
+    },
+    "0x55d885fdeba713cafd0be476feca82adc27d6c776c99fefaa2323fccacdf8bfd": {
+      "match": "Will Solana reach $90 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410607",
+      "whaleSide": "No",
+      "consensusPct": 0.972775774140026,
+      "bigBettor": {
+        "wallet": "0x5371f1b6954e31c502064614649cea3568cb76eb",
+        "side": "No",
+        "usd": 11591.779839000003
+      },
+      "sides": {
+        "Yes": {
+          "usd": 993.7599990000001,
+          "price": 0.022
+        },
+        "No": {
+          "usd": 35509.022637,
+          "price": 0.978
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:10.859Z"
+    },
+    "0x365f68301e1345bf5e9df39a6916919a02290ce3fc3a0339054b79e6ec790657": {
+      "match": "Will Solana reach $140 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410602",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x6e2c3937e6dd094a3a9f814ecbdc289d3fd5b7f8",
+        "side": "No",
+        "usd": 2385.6
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0015
+        },
+        "No": {
+          "usd": 10846.099999999997,
+          "price": 0.9985
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:10.936Z"
+    },
+    "0x632b7d45843e13ef17cbb981f7e1b7aa413357b285cd33ca5a5032ff03694c2d": {
+      "match": "Will Solana dip to $50 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410611",
+      "whaleSide": "No",
+      "consensusPct": 0.9436104946041941,
+      "bigBettor": {
+        "wallet": "0x5371f1b6954e31c502064614649cea3568cb76eb",
+        "side": "No",
+        "usd": 10273.329969999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1295.801,
+          "price": 0.0315
+        },
+        "No": {
+          "usd": 21683.669929999996,
+          "price": 0.9685
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:11.014Z"
+    },
+    "0xd1dc620688d04a4a1c1cdc457f5edb5954d47d3ef8846f74308ede1c85fe86bd": {
+      "match": "Will Solana dip to $40 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410612",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 6813.8086029999995
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.008
+        },
+        "No": {
+          "usd": 14802.728584,
+          "price": 0.992
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:11.091Z"
+    },
+    "0x0c4bbf8059303fc185182b3cde5c672e457d7987a76eefc88f932bbdfdb3f945": {
+      "match": "Will Solana dip to $60 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410610",
+      "whaleSide": "No",
+      "consensusPct": 0.5258229148441497,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 11751.130576999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 25130.937093000004,
+          "price": 0.2225
+        },
+        "No": {
+          "usd": 27868.117226,
+          "price": 0.7775
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:11.169Z"
+    },
+    "0xabe5705280fe8e7fdbf2e64e89cc6904288be0651e0f4715d9e97eb805c68e9e": {
+      "match": "Will Solana dip to $30 in June?",
+      "slug": "what-price-will-solana-hit-in-june-2026",
+      "gammaId": "2410613",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf705fa045201391d9632b7f3cde06a5e24453ca7",
+        "side": "No",
+        "usd": 5108.2385699999995
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0035
+        },
+        "No": {
+          "usd": 9074.018544,
+          "price": 0.9965
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:11.251Z"
+    },
+    "0x201f51d2d892c41c5bfa6568a0a2f93ab2ea426e87dddfd5fb0191f7ec34a441": {
+      "match": "Will Ethereum reach $10,000 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701539",
+      "whaleSide": "No",
+      "consensusPct": 0.9536244011009525,
+      "bigBettor": {
+        "wallet": "0x91996195263d04f0256a6717a69413abcec30269",
+        "side": "No",
+        "usd": 5410.0214
+      },
+      "sides": {
+        "Yes": {
+          "usd": 3926.8698,
+          "price": 0.0155
+        },
+        "No": {
+          "usd": 80748.47441599998,
+          "price": 0.9845
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:11.333Z"
+    },
+    "0x4fc8725f00ba06576d7c78131e4589cc93a4e133128e8ca50c8f7ba34efeaaa1": {
+      "match": "Will Ethereum reach $7,500 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701541",
+      "whaleSide": "No",
+      "consensusPct": 0.9853318339734951,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 17290.77906
+      },
+      "sides": {
+        "Yes": {
+          "usd": 840.0000000000001,
+          "price": 0.0265
+        },
+        "No": {
+          "usd": 56426.87293299999,
+          "price": 0.9735
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:11.410Z"
+    },
+    "0x0f0499d1049385b1d53ffee6c42a1de7424e551c765211ff2cc6d66329f43a80": {
+      "match": "Will Ethereum reach $6,500 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701543",
+      "whaleSide": "No",
+      "consensusPct": 0.8873746303476686,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 23376.338499999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 5602.3466,
+          "price": 0.0415
+        },
+        "No": {
+          "usd": 44140.85617299999,
+          "price": 0.9585
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:30.708Z"
+    },
+    "0xb75b8c777c5fd934d7fa43d4b3a3f630981b68a362a09471f9a6a6e36c38aac8": {
+      "match": "Will Ethereum reach $5,500 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701545",
+      "whaleSide": "No",
+      "consensusPct": 0.8090834585894667,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 22458.242299999998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 10545.207798,
+          "price": 0.065
+        },
+        "No": {
+          "usd": 44689.439342,
+          "price": 0.935
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:30.788Z"
+    },
+    "0xa3143f9c21ecc7a9b036b4e435f48264ff72019a9e3e60dacff4e615020e7e21": {
+      "match": "Will Ethereum reach $4,500 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701547",
+      "whaleSide": "No",
+      "consensusPct": 0.84928144853331,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 26501.976799999997
+      },
+      "sides": {
+        "Yes": {
+          "usd": 10725.569800000001,
+          "price": 0.075
+        },
+        "No": {
+          "usd": 60437.33414,
+          "price": 0.925
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:30.864Z"
+    },
+    "0x42945ea5657d6f6e77969a06661b29d6f6295083d1ef3479b42efd90647c9dfc": {
+      "match": "Will Ethereum reach $3,500 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701549",
+      "whaleSide": "No",
+      "consensusPct": 0.8084056089456367,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 14760.2989
+      },
+      "sides": {
+        "Yes": {
+          "usd": 18046.626588,
+          "price": 0.12
+        },
+        "No": {
+          "usd": 76145.20485699999,
+          "price": 0.88
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:30.943Z"
+    },
+    "0xacb33346b59a2a3770e2391b7d1b0e77d8dcdcf840a66f5fa01d28db43c4e369": {
+      "match": "Will Ethereum dip to $1,000 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701553",
+      "whaleSide": "No",
+      "consensusPct": 0.7164067128157154,
+      "bigBettor": {
+        "wallet": "0x1465b79bff7992bc703e1aafb3683b1089647072",
+        "side": "No",
+        "usd": 107595.03589199999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 73024.924492,
+          "price": 0.265
+        },
+        "No": {
+          "usd": 184473.85207300007,
+          "price": 0.735
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:31.029Z"
+    },
+    "0xac0b4316113b50e0e667918aee72fa0eb006342245a52ab6371f3732af5733c8": {
+      "match": "Will Ethereum reach $8,000 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701540",
+      "whaleSide": "No",
+      "consensusPct": 0.9794549131402929,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 18214.164599999996
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1579.027999,
+          "price": 0.0205
+        },
+        "No": {
+          "usd": 75277.69252899999,
+          "price": 0.9795
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:31.108Z"
+    },
+    "0x4ee2c6081e18cc0d1f3347f6219940bda986657f1d150d17de0677ffc2104de0": {
+      "match": "Will Ethereum reach $7,000 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701542",
+      "whaleSide": "No",
+      "consensusPct": 0.9360577674240049,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 25789.8954
+      },
+      "sides": {
+        "Yes": {
+          "usd": 2989.9549,
+          "price": 0.0285
+        },
+        "No": {
+          "usd": 43770.296963999994,
+          "price": 0.9715
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:31.184Z"
+    },
+    "0x6132cc91f7a0ad656e890b9040c159f4057f4c44359b3fb68085ec97156c918a": {
+      "match": "Will Ethereum reach $6,000 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701544",
+      "whaleSide": "No",
+      "consensusPct": 0.9605906377303717,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 31161.0085
+      },
+      "sides": {
+        "Yes": {
+          "usd": 3710.2153989999997,
+          "price": 0.055
+        },
+        "No": {
+          "usd": 90435.31716800002,
+          "price": 0.945
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:31.260Z"
+    },
+    "0x1c4fd67ab2a67f508672a69153559911244048b79a40cbe341d12f985ba90a13": {
+      "match": "Will Ethereum reach $5,000 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701546",
+      "whaleSide": "No",
+      "consensusPct": 0.8515527053881865,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 41645.946299999996
+      },
+      "sides": {
+        "Yes": {
+          "usd": 18902.7241,
+          "price": 0.065
+        },
+        "No": {
+          "usd": 108433.541269,
+          "price": 0.935
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:31.340Z"
+    },
+    "0x9775cd557a3cdba4f0478070afa399c0805761dd9aa0e7ce4435a71fed32621c": {
+      "match": "Will Ethereum reach $4,000 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701548",
+      "whaleSide": "No",
+      "consensusPct": 0.8822533779742459,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 16911.010800000004
+      },
+      "sides": {
+        "Yes": {
+          "usd": 6514.444298999999,
+          "price": 0.1
+        },
+        "No": {
+          "usd": 48811.51059400001,
+          "price": 0.9
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:31.416Z"
+    },
+    "0xcf25ccc8360f3952139fb5e3f14cb9bb0636cb53d0e30e947321ceccab7e9780": {
+      "match": "Will Ethereum dip to $1,500 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701552",
+      "whaleSide": "Yes",
+      "consensusPct": 0.6456982280342819,
+      "bigBettor": {
+        "wallet": "0xfa8fc6a3e706bc4aa7556d060564c154322ad61b",
+        "side": "Yes",
+        "usd": 79494.80099099998
+      },
+      "sides": {
+        "Yes": {
+          "usd": 237401.44030299998,
+          "price": 0.793
+        },
+        "No": {
+          "usd": 130264.80066800003,
+          "price": 0.207
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:31.504Z"
+    },
+    "0x717672a48c5f2938631f6e467b9a48aedb03fa380c0198704ef5acfc91721612": {
+      "match": "Will Ethereum dip to $800 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "701554",
+      "whaleSide": "No",
+      "consensusPct": 0.616394316178761,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 41585.015999999996
+      },
+      "sides": {
+        "Yes": {
+          "usd": 83105.11588700004,
+          "price": 0.17
+        },
+        "No": {
+          "usd": 133536.91886900004,
+          "price": 0.83
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:31.586Z"
+    },
+    "0xfab9157577726222d03cbd0e886c749e852a877d3e8ee92900ea3f180b79d778": {
+      "match": "Microstrategy delisted from MSCI index by June 30?",
+      "slug": "will-microstrategy-be-delisted-from-the-msci-index-by-march-31",
+      "gammaId": "1320795",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x93511d72d294f1478739bc38f578bf0306fd9e4d",
+        "side": "No",
+        "usd": 38940.971659999996
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.011
+        },
+        "No": {
+          "usd": 52060.420834,
+          "price": 0.989
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:51.058Z"
+    },
+    "0xa0f4c4924ea1a8b410b4ce821c2a9955fad21a1b19bdcfde90816732278b3dd5": {
+      "match": "Will Bitcoin hit $150k by June 30, 2026?",
+      "slug": "when-will-bitcoin-hit-150k",
+      "gammaId": "573655",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x8bdacdf818c9e87c12b8d6ac0a684822e9573b5d",
+        "side": "No",
+        "usd": 250468.40000000005
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0015
+        },
+        "No": {
+          "usd": 1765477.4152520013,
+          "price": 0.9985
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:51.634Z"
+    },
+    "0x02deb9538f5c123373adaa4ee6217b01745f1662bc902e46ac92f3fe6f8741e8": {
+      "match": "Will Bitcoin hit $150k by December 31, 2026?",
+      "slug": "when-will-bitcoin-hit-150k",
+      "gammaId": "573656",
+      "whaleSide": "No",
+      "consensusPct": 0.9896979377961771,
+      "bigBettor": {
+        "wallet": "0x393cbb62339d873c32ce973fc7cbb426e3caef0e",
+        "side": "No",
+        "usd": 778700
+      },
+      "sides": {
+        "Yes": {
+          "usd": 9540.089497,
+          "price": 0.055
+        },
+        "No": {
+          "usd": 916496.786252,
+          "price": 0.945
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:52.080Z"
+    },
+    "0xb955b812481fbfbec38206e2aad53621d3fc8085e09dc323a77fdfe955387fc3": {
+      "match": "Will the price of Bitcoin be above $54,000 on June 21?",
+      "slug": "bitcoin-above-on-june-21-2026",
+      "gammaId": "2544089",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xdb38cbc87f41a2b6b61229b3ee5f0480a8eb51ec",
+        "side": "Yes",
+        "usd": 7645.999855
+      },
+      "sides": {
+        "Yes": {
+          "usd": 7645.999855,
+          "price": 0.994
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.006
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:52.465Z"
+    },
+    "0xcd22a83fbfef49ea1d977210d0e33c96b4bc180768b0dd430b7b7a67c7de74b2": {
+      "match": "Will the price of Bitcoin be above $56,000 on June 21?",
+      "slug": "bitcoin-above-on-june-21-2026",
+      "gammaId": "2544092",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x8970b56535153baadee991ca25a178ac085636b5",
+        "side": "Yes",
+        "usd": 1099.5099519999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1907.869936,
+          "price": 0.9915
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.0085
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:52.835Z"
+    },
+    "0x824cc8f1baa2df76f3702e30b4b076a48755c7c5e7c4e2976ea23943f8be0b25": {
+      "match": "Will the price of Bitcoin be above $58,000 on June 21?",
+      "slug": "bitcoin-above-on-june-21-2026",
+      "gammaId": "2544096",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "Yes",
+        "usd": 755.37
+      },
+      "sides": {
+        "Yes": {
+          "usd": 755.37,
+          "price": 0.985
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.015
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:53.239Z"
+    },
+    "0x139f5883b968adc664294f4d98d2accee292fcb674abba04479bcbff5595072b": {
+      "match": "Will the price of Bitcoin be above $60,000 on June 21?",
+      "slug": "bitcoin-above-on-june-21-2026",
+      "gammaId": "2544099",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xd3d22e6e50f2f25b021371b503c6f119494efe85",
+        "side": "No",
+        "usd": 632.66213
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.9415
+        },
+        "No": {
+          "usd": 632.66213,
+          "price": 0.0585
+        }
+      },
+      "capturedAt": "2026-06-19T02:18:53.625Z"
+    },
+    "0x9fdc100df26943708d31183bdccea84becda26b39ecdd7a51cfdbbf291bfb156": {
+      "match": "Will the price of Bitcoin be above $62,000 on June 21?",
+      "slug": "bitcoin-above-on-june-21-2026",
+      "gammaId": "2544101",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xe744913c0033c55203ce64dbd960fe816b70f96e",
+        "side": "Yes",
+        "usd": 950
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1841.1,
+          "price": 0.739
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.261
+        }
+      },
+      "capturedAt": "2026-06-19T02:19:12.476Z"
+    },
+    "0x84f73dd15660958d6f1375cf628bd1916ab1ab06548029d4041996f14b78ee27": {
+      "match": "Will the price of Bitcoin be above $66,000 on June 21?",
+      "slug": "bitcoin-above-on-june-21-2026",
+      "gammaId": "2544110",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xe744913c0033c55203ce64dbd960fe816b70f96e",
+        "side": "No",
+        "usd": 1045
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.045
+        },
+        "No": {
+          "usd": 1045,
+          "price": 0.955
+        }
+      },
+      "capturedAt": "2026-06-19T02:19:12.865Z"
+    },
+    "0x7d48bfa90f804cd3aa44ccdcb2cee505ecad70f71d22a003d096ab33cc889b22": {
+      "match": "Will the price of Bitcoin be above $64,000 on June 21?",
+      "slug": "bitcoin-above-on-june-21-2026",
+      "gammaId": "2544105",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "Yes",
+        "usd": 972.0000000000001
+      },
+      "sides": {
+        "Yes": {
+          "usd": 972.0000000000001,
+          "price": 0.285
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.715
+        }
+      },
+      "capturedAt": "2026-06-19T02:19:14.431Z"
+    },
+    "0x22d2850d4c2acef5afaaff4733bbbffca09cd9c8eba1c12f4c3c3005e40d792a": {
+      "match": "Will the price of Bitcoin be between $54,000 and $56,000 on June 19?",
+      "slug": "bitcoin-price-on-june-19-2026",
+      "gammaId": "2518161",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x88fa4ecd5784be92e604871fbec050bd3508f1a4",
+        "side": "No",
+        "usd": 2192.27553
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 2192.27553,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T02:19:31.663Z"
+    },
+    "0xda3821cac1e1be24ff9538a387ed1fea164c75b80a2a24ddd8382534118fefc7": {
+      "match": "Will the price of Bitcoin be between $58,000 and $60,000 on June 19?",
+      "slug": "bitcoin-price-on-june-19-2026",
+      "gammaId": "2518167",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 2239.821
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.01
+        },
+        "No": {
+          "usd": 2239.821,
+          "price": 0.99
+        }
+      },
+      "capturedAt": "2026-06-19T02:19:32.055Z"
+    },
+    "0xf05fa6963598fa85d7d9be9b53e22ddfa939231b1aee7950f8f3858760a99846": {
+      "match": "Will the price of Bitcoin be between $56,000 and $58,000 on June 19?",
+      "slug": "bitcoin-price-on-june-19-2026",
+      "gammaId": "2518163",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xf16fffe62432a3087b2a647df6cf05b566819f16",
+        "side": "No",
+        "usd": 3135.5164
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0025
+        },
+        "No": {
+          "usd": 3135.5164,
+          "price": 0.9975
+        }
+      },
+      "capturedAt": "2026-06-19T03:05:14.284Z"
+    },
+    "0x4aadbe9f2fd4017019e0d466adb1e0451a3e78e4bebb1c42a8cf0b3f90c077b3": {
+      "match": "Will the price of Bitcoin be less than $54,000 on June 19?",
+      "slug": "bitcoin-price-on-june-19-2026",
+      "gammaId": "2518160",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x81e1dfcf464e85d0388ede7f5772a4334a0e5d5f",
+        "side": "No",
+        "usd": 572.999427
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0005
+        },
+        "No": {
+          "usd": 572.999427,
+          "price": 0.9995
+        }
+      },
+      "capturedAt": "2026-06-19T03:05:33.514Z"
+    },
+    "0x9c7650bd3195129d15440b1a46cc3ddb1dace13367a4c5168fe37e9395c6b037": {
+      "match": "Will the price of Bitcoin be between $66,000 and $68,000 on June 19?",
+      "slug": "bitcoin-price-on-june-19-2026",
+      "gammaId": "2518182",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x8970b56535153baadee991ca25a178ac085636b5",
+        "side": "No",
+        "usd": 2635.5895790000004
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0035
+        },
+        "No": {
+          "usd": 2635.5895790000004,
+          "price": 0.9965
+        }
+      },
+      "capturedAt": "2026-06-19T03:05:52.898Z"
+    },
+    "0x8b4df57dc6f46003f0a70264243b617b007fda90999255bc6db6bc9ead1648e3": {
+      "match": "Will the price of Bitcoin be between $62,000 and $64,000 on June 19?",
+      "slug": "bitcoin-price-on-june-19-2026",
+      "gammaId": "2518177",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xab414374cb208942d2d55ea1305cdabab2386707",
+        "side": "No",
+        "usd": 2597.999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.715
+        },
+        "No": {
+          "usd": 2597.999999,
+          "price": 0.285
+        }
+      },
+      "capturedAt": "2026-06-19T03:10:34.741Z"
+    },
+    "0xb1f13874bd4083ae021176b54e636870b5fede5f9d0a08914e01d34ef59c4489": {
+      "match": "Will the price of Bitcoin be between $64,000 and $66,000 on June 19?",
+      "slug": "bitcoin-price-on-june-19-2026",
+      "gammaId": "2518179",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 714.501
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.105
+        },
+        "No": {
+          "usd": 714.501,
+          "price": 0.895
+        }
+      },
+      "capturedAt": "2026-06-19T03:15:33.862Z"
+    },
+    "0x8bcbc39541f2d12c9e4ec1ac4d181d6aada34852301c38d64cf5db3929b7c327": {
+      "match": "Puffpaw FDV above $50M one day after launch?",
+      "slug": "puffpaw-fdv-above-one-day-after-launch",
+      "gammaId": "1005343",
+      "whaleSide": "Yes",
+      "consensusPct": 0.9030717906013798,
+      "bigBettor": {
+        "wallet": "0x1bf0c895a302ba17da80a32004912e4f07870a7b",
+        "side": "Yes",
+        "usd": 17325
+      },
+      "sides": {
+        "Yes": {
+          "usd": 168405.77696400002,
+          "price": 0.625
+        },
+        "No": {
+          "usd": 18075.274395,
+          "price": 0.375
+        }
+      },
+      "capturedAt": "2026-06-19T04:17:35.538Z"
+    },
+    "0x300c5d497f713edd1c2cc30754b7ae6f1f05f2e8e1ca03c6d3e28eee7ff9e729": {
+      "match": "Puffpaw FDV above $300M one day after launch?",
+      "slug": "puffpaw-fdv-above-one-day-after-launch",
+      "gammaId": "1005346",
+      "whaleSide": "No",
+      "consensusPct": 0.8889036508003816,
+      "bigBettor": {
+        "wallet": "0x2acf7cad05fdbaac3e83d293b9db8f9b2bb1ba8a",
+        "side": "Yes",
+        "usd": 1940
+      },
+      "sides": {
+        "Yes": {
+          "usd": 1940,
+          "price": 0.127
+        },
+        "No": {
+          "usd": 15522.319995,
+          "price": 0.873
+        }
+      },
+      "capturedAt": "2026-06-19T04:17:35.954Z"
+    },
+    "0x23969ec06514ad241fda435742187a08c1b2b2d0b5080f0c0751c9dc0f2d886b": {
+      "match": "Puffpaw FDV above $100M one day after launch?",
+      "slug": "puffpaw-fdv-above-one-day-after-launch",
+      "gammaId": "1005344",
+      "whaleSide": "No",
+      "consensusPct": 0.8197383574188295,
+      "bigBettor": {
+        "wallet": "0xdbae8cfb7c437de99e84d4255f8a3cad19aa5abd",
+        "side": "No",
+        "usd": 17940
+      },
+      "sides": {
+        "Yes": {
+          "usd": 33893.474282999996,
+          "price": 0.51
+        },
+        "No": {
+          "usd": 154130.29937000002,
+          "price": 0.49
+        }
+      },
+      "capturedAt": "2026-06-19T04:17:36.430Z"
+    },
+    "0x62b44acd817f0133bda1c8d05e396ed56ab6af72d1f25b8c5ea50f0344379d05": {
+      "match": "Puffpaw FDV above $200M one day after launch?",
+      "slug": "puffpaw-fdv-above-one-day-after-launch",
+      "gammaId": "1005345",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x15ce9a512f0d4475abb6dba71ae702e2dc1703c5",
+        "side": "No",
+        "usd": 10984.981099999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.205
+        },
+        "No": {
+          "usd": 57551.03936699999,
+          "price": 0.795
+        }
+      },
+      "capturedAt": "2026-06-19T04:17:36.891Z"
+    },
+    "0x88a19761fa049ae36da8a403464db9f356a7ea7d0163415052ed748bf72a20bf": {
+      "match": "Puffpaw FDV above $400M one day after launch?",
+      "slug": "puffpaw-fdv-above-one-day-after-launch",
+      "gammaId": "1302781",
+      "whaleSide": "No",
+      "consensusPct": 0.8647951830359759,
+      "bigBettor": {
+        "wallet": "0xc3ead3f865c6cbc1f56509ff70b9fa6905c6ae3f",
+        "side": "No",
+        "usd": 3818.1
+      },
+      "sides": {
+        "Yes": {
+          "usd": 2795,
+          "price": 0.044
+        },
+        "No": {
+          "usd": 17877.340399999997,
+          "price": 0.956
+        }
+      },
+      "capturedAt": "2026-06-19T04:17:56.005Z"
+    },
+    "0x196ce9d41a03ca4f8592c897a6fe45f9d9edbd0738ac1a700aed534a0cbaf412": {
+      "match": "Will Ethereum reach $2,300 June 15-21?",
+      "slug": "what-price-will-ethereum-hit-june-15-21-2026",
+      "gammaId": "2549247",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x1c4f729bb55675cf8cbb863f5ebc9c3074e32852",
+        "side": "No",
+        "usd": 2199.9997980000003
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0015
+        },
+        "No": {
+          "usd": 2199.9997980000003,
+          "price": 0.9985
+        }
+      },
+      "capturedAt": "2026-06-19T05:03:59.940Z"
+    },
+    "0x9f6f9a5bbbe52a92684cdf75e886d051903e27bae0091c12d3c750018b4d1ef2": {
+      "match": "Will Ethereum reach $2,100 June 15-21?",
+      "slug": "what-price-will-ethereum-hit-june-15-21-2026",
+      "gammaId": "2549255",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x35838f8a784872f9303884c7d9a0a7548aca0c79",
+        "side": "No",
+        "usd": 1537.9995119999999
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0045
+        },
+        "No": {
+          "usd": 1537.9995119999999,
+          "price": 0.9955
+        }
+      },
+      "capturedAt": "2026-06-19T05:04:00.741Z"
+    },
+    "0x40406507f36517b5109a73e86a9e497d13dbfddea10ab316267c35e927b16750": {
+      "match": "Will Ethereum reach $2,000 June 15-21?",
+      "slug": "what-price-will-ethereum-hit-june-15-21-2026",
+      "gammaId": "2549258",
+      "whaleSide": "Yes",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "Yes",
+        "usd": 918.0000000000001
+      },
+      "sides": {
+        "Yes": {
+          "usd": 918.0000000000001,
+          "price": 0.005
+        },
+        "No": {
+          "usd": 0,
+          "price": 0.995
+        }
+      },
+      "capturedAt": "2026-06-19T05:04:16.265Z"
+    },
+    "0x9f5045f35d3b92af1a4bea2e7e0f20734425cb5587bcece7d89554d3adc19535": {
+      "match": "Will Ethereum reach $1,900 June 15-21?",
+      "slug": "what-price-will-ethereum-hit-june-15-21-2026",
+      "gammaId": "2549260",
+      "whaleSide": "Yes",
+      "consensusPct": 0.6041298298102763,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "Yes",
+        "usd": 4543.9765
+      },
+      "sides": {
+        "Yes": {
+          "usd": 3665.6099990000002,
+          "price": 0.02
+        },
+        "No": {
+          "usd": 2401.9764999999998,
+          "price": 0.98
+        }
+      },
+      "capturedAt": "2026-06-19T05:04:16.670Z"
+    },
+    "0x7cac24fbf89995711d071be7a455f50d802ef58ce3d7461553a809c63bc96918": {
+      "match": "Will Ethereum dip to $1,600 June 15-21?",
+      "slug": "what-price-will-ethereum-hit-june-15-21-2026",
+      "gammaId": "2549268",
+      "whaleSide": "No",
+      "consensusPct": 0.8640225739122269,
+      "bigBettor": {
+        "wallet": "0x252d7bae5ec87553dcafb23e275c202ac0d3c456",
+        "side": "No",
+        "usd": 4536.9185
+      },
+      "sides": {
+        "Yes": {
+          "usd": 616.9185,
+          "price": 0.205
+        },
+        "No": {
+          "usd": 3919.9999999999995,
+          "price": 0.795
+        }
+      },
+      "capturedAt": "2026-06-19T05:04:36.038Z"
+    },
+    "0x351d6cb3ed9b62f77d62925ef2c3612773c3bf5c68d0480258be2385de751d61": {
+      "match": "Will Ethereum dip to $1,500 June 15-21?",
+      "slug": "what-price-will-ethereum-hit-june-15-21-2026",
+      "gammaId": "2549270",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+        "side": "No",
+        "usd": 838.1
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.035
+        },
+        "No": {
+          "usd": 1973.1599999999999,
+          "price": 0.965
+        }
+      },
+      "capturedAt": "2026-06-19T05:04:36.422Z"
+    },
+    "0x5070faece2442c944e9b639b2ba3e264b3959dbf3edbdf30a3c27de3a7f5c319": {
+      "match": "Will Ethereum reach $2,200 June 15-21?",
+      "slug": "what-price-will-ethereum-hit-june-15-21-2026",
+      "gammaId": "2549250",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x4a306d36c03e85cc0cdb17166931070ceb5186a3",
+        "side": "No",
+        "usd": 3735.99028
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0025
+        },
+        "No": {
+          "usd": 3735.99028,
+          "price": 0.9975
+        }
+      },
+      "capturedAt": "2026-06-19T05:51:18.219Z"
+    },
+    "0x27df0831c5b2d45eee560c0e87797f63ffdccd7334671cb6ebb60e03d09fcc86": {
+      "match": "Will the price of Bitcoin be above $72,000 on June 21?",
+      "slug": "bitcoin-above-on-june-21-2026",
+      "gammaId": "2544119",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x580b464eca84d64ad757840e59a3424d3d0c72a3",
+        "side": "No",
+        "usd": 4386.9781299999995
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0095
+        },
+        "No": {
+          "usd": 9400.559529999999,
+          "price": 0.9905
+        }
+      },
+      "capturedAt": "2026-06-19T06:13:17.423Z"
+    },
+    "0xcec299d5a8826fe9beec5ea9c27a651a70de3181bf9ae52dfc36a7b3b50915e1": {
+      "match": "Will the price of Bitcoin be above $74,000 on June 21?",
+      "slug": "bitcoin-above-on-june-21-2026",
+      "gammaId": "2544125",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xeb4b775f274a6062999ede580754646a73061433",
+        "side": "No",
+        "usd": 4331.5441200000005
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.0035
+        },
+        "No": {
+          "usd": 13502.71377,
+          "price": 0.9965
+        }
+      },
+      "capturedAt": "2026-06-19T06:13:18.218Z"
+    },
+    "0x4129e9a63d603a4183c277d733ed51ffe55b0a3029c3a6352439c2bc00ae3352": {
+      "match": "Will Ethereum dip to $1,100 June 15-21?",
+      "slug": "what-price-will-ethereum-hit-june-15-21-2026",
+      "gammaId": "2549281",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x66a0254bc0314f740b80455ef678ddc7838e04d4",
+        "side": "No",
+        "usd": 2028.0599
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.001
+        },
+        "No": {
+          "usd": 2028.0599,
+          "price": 0.999
+        }
+      },
+      "capturedAt": "2026-06-19T06:13:38.205Z"
+    },
+    "0xa3181b1de835713e41c8e7ffd673d910fd82cc201495d32cbddb427a6d39c8f9": {
+      "match": "Will Ethereum dip to $1,000 June 15-21?",
+      "slug": "what-price-will-ethereum-hit-june-15-21-2026",
+      "gammaId": "2549286",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0x71afaf5a5992739e51fa11caadd52109091ac057",
+        "side": "No",
+        "usd": 1099.88901
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.001
+        },
+        "No": {
+          "usd": 2098.80901,
+          "price": 0.999
+        }
+      },
+      "capturedAt": "2026-06-19T06:13:38.613Z"
+    },
+    "0x9edfa758bc6a6c5885119173a76bfde542641a870b747af43f0103f231e14f67": {
+      "match": "Will Ethereum dip to $700 by December 31, 2026?",
+      "slug": "what-price-will-ethereum-hit-before-2027",
+      "gammaId": "2468459",
+      "whaleSide": "No",
+      "consensusPct": 1,
+      "bigBettor": {
+        "wallet": "0xa82c6d29bc9af5c8e9932a07240013f38cb8dd71",
+        "side": "No",
+        "usd": 666.6626
+      },
+      "sides": {
+        "Yes": {
+          "usd": 0,
+          "price": 0.1
+        },
+        "No": {
+          "usd": 666.6626,
+          "price": 0.9
+        }
+      },
+      "capturedAt": "2026-06-19T06:38:02.236Z"
+    }
+  },
+  "settled": [
+    {
+      "espnId": "0x5752f9e36a380e26e1986b3e30f8cbced4cb573a6f2ab35960401cbc32d29ca9",
+      "match": "Will Bitcoin dip to $59,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "actual": "No",
+      "whaleSide": "No",
+      "bigBettorSide": "No",
+      "strat": {
+        "followWhale": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "followBig": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "highConsensus": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "fadeFav": {
+          "side": "No(No)",
+          "price": 0.0004999999999999449,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T04:17:17.757Z"
+    },
+    {
+      "espnId": "0xda24af6c15774fd526bc8eff819cdb1b9db69a3a82e95bbcc6a1fe6ebe24e802",
+      "match": "Will Bitcoin reach $66,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "actual": "No",
+      "whaleSide": "No",
+      "bigBettorSide": "No",
+      "strat": {
+        "followWhale": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "followBig": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "highConsensus": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "fadeFav": {
+          "side": "No(No)",
+          "price": 0.0004999999999999449,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T04:18:16.663Z"
+    },
+    {
+      "espnId": "0x58e423c53d07214e0c56d62d1b277556ec00c448f969f6d9a3b53f5271203b40",
+      "match": "Will Bitcoin dip to $58,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "actual": "No",
+      "whaleSide": "No",
+      "bigBettorSide": "No",
+      "strat": {
+        "followWhale": {
+          "side": "No",
+          "price": 0.999,
+          "win": true,
+          "profit": 0.0010010010010010019
+        },
+        "followBig": {
+          "side": "No",
+          "price": 0.999,
+          "win": true,
+          "profit": 0.0010010010010010019
+        },
+        "highConsensus": {
+          "side": "No",
+          "price": 0.999,
+          "win": true,
+          "profit": 0.0010010010010010019
+        },
+        "fadeFav": {
+          "side": "No(No)",
+          "price": 0.0010000000000000009,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T04:18:37.265Z"
+    },
+    {
+      "espnId": "0xc183c956e24d0c4d755b21816909d1ec0681aed0185f331516697e456a7e3fb1",
+      "match": "Will Bitcoin reach $65,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "actual": "No",
+      "whaleSide": "No",
+      "bigBettorSide": "Yes",
+      "strat": {
+        "followWhale": {
+          "side": "No",
+          "price": 0.994,
+          "win": true,
+          "profit": 0.006036217303822943
+        },
+        "followBig": {
+          "side": "Yes",
+          "price": 0.006,
+          "win": false,
+          "profit": -1
+        },
+        "highConsensus": {
+          "side": "No",
+          "price": 0.994,
+          "win": true,
+          "profit": 0.006036217303822943
+        },
+        "fadeFav": {
+          "side": "No(No)",
+          "price": 0.006000000000000005,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T04:18:37.424Z"
+    },
+    {
+      "espnId": "0xf111a4618168da1bb941aa5b21e10a2152dc4a1f2fc13e9f3db7b1ed34607cb0",
+      "match": "Will Bitcoin reach $68,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "actual": "No",
+      "whaleSide": "No",
+      "bigBettorSide": "No",
+      "strat": {
+        "followWhale": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "followBig": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "highConsensus": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "fadeFav": {
+          "side": "No(No)",
+          "price": 0.0004999999999999449,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T04:18:56.606Z"
+    },
+    {
+      "espnId": "0xd618e7e5eb19690d00fbc5be901507b85481d1325f79abc7a1bef9cc0de950f0",
+      "match": "Will Bitcoin reach $67,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "actual": "No",
+      "whaleSide": "No",
+      "bigBettorSide": "No",
+      "strat": {
+        "followWhale": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "followBig": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "highConsensus": {
+          "side": "No",
+          "price": 0.9995,
+          "win": true,
+          "profit": 0.0005002501250624762
+        },
+        "fadeFav": {
+          "side": "No(No)",
+          "price": 0.0004999999999999449,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T04:18:56.679Z"
+    },
+    {
+      "espnId": "0xaecee2443fdc3136ed443153f98b477f4c74092edaff82905b28b8dea5c213bc",
+      "match": "Will Bitcoin dip to $62,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "actual": "No",
+      "whaleSide": "No",
+      "bigBettorSide": "No",
+      "strat": {
+        "followWhale": {
+          "side": "No",
+          "price": 0.9845,
+          "win": true,
+          "profit": 0.015744032503808996
+        },
+        "followBig": {
+          "side": "No",
+          "price": 0.9845,
+          "win": true,
+          "profit": 0.015744032503808996
+        },
+        "highConsensus": null,
+        "fadeFav": {
+          "side": "No(No)",
+          "price": 0.015499999999999958,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T04:19:18.469Z"
+    },
+    {
+      "espnId": "0x66533f0d80c6f3f89cc8ddfd2691292037fdcdb2b64a0db691d8486609c875eb",
+      "match": "Will Bitcoin dip to $61,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "actual": "No",
+      "whaleSide": "No",
+      "bigBettorSide": "No",
+      "strat": {
+        "followWhale": {
+          "side": "No",
+          "price": 0.995,
+          "win": true,
+          "profit": 0.005025125628140708
+        },
+        "followBig": {
+          "side": "No",
+          "price": 0.995,
+          "win": true,
+          "profit": 0.005025125628140708
+        },
+        "highConsensus": {
+          "side": "No",
+          "price": 0.995,
+          "win": true,
+          "profit": 0.005025125628140708
+        },
+        "fadeFav": {
+          "side": "No(No)",
+          "price": 0.0050000000000000044,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T04:19:57.279Z"
+    },
+    {
+      "espnId": "0xfef6b45a995f606b1fe36e0b5829e071dcab156561828a43ef3623ce3475c5b9",
+      "match": "Will Bitcoin dip to $60,000 on June 18?",
+      "slug": "what-price-will-bitcoin-hit-on-june-18",
+      "actual": "No",
+      "whaleSide": "No",
+      "bigBettorSide": "No",
+      "strat": {
+        "followWhale": {
+          "side": "No",
+          "price": 0.997,
+          "win": true,
+          "profit": 0.003009027081243734
+        },
+        "followBig": {
+          "side": "No",
+          "price": 0.997,
+          "win": true,
+          "profit": 0.003009027081243734
+        },
+        "highConsensus": {
+          "side": "No",
+          "price": 0.997,
+          "win": true,
+          "profit": 0.003009027081243734
+        },
+        "fadeFav": {
+          "side": "No(No)",
+          "price": 0.0030000000000000027,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T04:20:37.431Z"
+    }
+  ],
+  "strategies": {
+    "followWhale": {
+      "bets": 9,
+      "wins": 9,
+      "profit": 0.03281640401826729
+    },
+    "followBig": {
+      "bets": 9,
+      "wins": 8,
+      "profit": -0.9732198132855556
+    },
+    "highConsensus": {
+      "bets": 8,
+      "wins": 8,
+      "profit": 0.017072371514458295
+    },
+    "fadeFav": {
+      "bets": 9,
+      "wins": 0,
+      "profit": -9
+    }
+  },
+  "previewDay": "2026-06-19",
+  "pinnedMsgId": 398
+}
