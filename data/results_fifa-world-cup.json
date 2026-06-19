@@ -5,58 +5,247 @@
       "home": "Czechia",
       "away": "South Africa",
       "whaleSide": "home",
+      "consensusPct": 0.98349465325517,
       "bigBettor": {
         "wallet": "0xe5c215ac428d4143f9ebc817c9ac6e717a2e2ab0",
         "side": "home",
         "usd": 182836.762199
       },
+      "sides": {
+        "home": {
+          "usd": 831946.3609929996,
+          "price": 0.525
+        },
+        "draw": {
+          "usd": 6406.599996999999,
+          "price": 0.265
+        },
+        "away": {
+          "usd": 7555.410996999999,
+          "price": 0.205
+        }
+      },
       "state": "pre",
-      "capturedAt": "2026-06-18T11:16:38.382Z"
+      "capturedAt": "2026-06-18T11:19:16.978Z"
     },
     "760439": {
       "match": "Switzerland vs Bosnia-Herzegovina",
       "home": "Switzerland",
       "away": "Bosnia-Herzegovina",
       "whaleSide": "home",
+      "consensusPct": 0.9103365021249155,
       "bigBettor": {
         "wallet": "0x198a38b9704cf3a5ed321f28c8a7836559676762",
         "side": "home",
         "usd": 159853.709999
       },
+      "sides": {
+        "home": {
+          "usd": 239523.07457400006,
+          "price": 0.625
+        },
+        "draw": {
+          "usd": 18862.499997,
+          "price": 0.235
+        },
+        "away": {
+          "usd": 4729.3,
+          "price": 0.145
+        }
+      },
       "state": "pre",
-      "capturedAt": "2026-06-18T11:16:38.661Z"
+      "capturedAt": "2026-06-18T11:19:17.200Z"
     },
     "760440": {
       "match": "Canada vs Qatar",
       "home": "Canada",
       "away": "Qatar",
       "whaleSide": "home",
+      "consensusPct": 0.935389735185298,
       "bigBettor": {
         "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
         "side": "home",
         "usd": 115446.2496
       },
+      "sides": {
+        "home": {
+          "usd": 218560.9000740001,
+          "price": 0.765
+        },
+        "draw": {
+          "usd": 11190.999995999999,
+          "price": 0.165
+        },
+        "away": {
+          "usd": 3905.677999,
+          "price": 0.075
+        }
+      },
       "state": "pre",
-      "capturedAt": "2026-06-18T11:16:39.018Z"
+      "capturedAt": "2026-06-18T11:19:17.414Z"
     },
     "760441": {
       "match": "Mexico vs South Korea",
       "home": "Mexico",
       "away": "South Korea",
       "whaleSide": "home",
+      "consensusPct": 0.42040740206025085,
       "bigBettor": {
         "wallet": "0x84cfffc3f16dcc353094de30d4a45226eccd2f63",
         "side": "home",
         "usd": 14245.3272
       },
+      "sides": {
+        "home": {
+          "usd": 50224.218993,
+          "price": 0.475
+        },
+        "draw": {
+          "usd": 22271.344796,
+          "price": 0.295
+        },
+        "away": {
+          "usd": 46970.027793999994,
+          "price": 0.245
+        }
+      },
       "state": "pre",
-      "capturedAt": "2026-06-18T11:16:39.417Z"
+      "capturedAt": "2026-06-18T11:19:17.635Z"
     }
   },
-  "settled": [],
-  "stats": {
-    "total": 0,
-    "whaleWins": 0,
-    "bigWins": 0
+  "settled": [
+    {
+      "espnId": "760438",
+      "match": "Czechia vs South Africa",
+      "home": "Czechia",
+      "away": "South Africa",
+      "actual": "draw",
+      "score": "1-1",
+      "whaleSide": "home",
+      "bigBettorSide": "home",
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.525,
+          "win": false,
+          "profit": -1
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.525,
+          "win": false,
+          "profit": -1
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.525,
+          "win": false,
+          "profit": -1
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.475,
+          "win": true,
+          "profit": 1.105263157894737
+        }
+      },
+      "settledAt": "2026-06-18T17:59:10.374Z"
+    },
+    {
+      "espnId": "760439",
+      "match": "Switzerland vs Bosnia-Herzegovina",
+      "home": "Switzerland",
+      "away": "Bosnia-Herzegovina",
+      "actual": "home",
+      "score": "4-1",
+      "whaleSide": "home",
+      "bigBettorSide": "home",
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.625,
+          "win": true,
+          "profit": 0.6
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.625,
+          "win": true,
+          "profit": 0.6
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.625,
+          "win": true,
+          "profit": 0.6
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.375,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-18T20:57:35.038Z"
+    },
+    {
+      "espnId": "760440",
+      "match": "Canada vs Qatar",
+      "home": "Canada",
+      "away": "Qatar",
+      "actual": "home",
+      "score": "6-0",
+      "whaleSide": "home",
+      "bigBettorSide": "home",
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.765,
+          "win": true,
+          "profit": 0.3071895424836601
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.765,
+          "win": true,
+          "profit": 0.3071895424836601
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.765,
+          "win": true,
+          "profit": 0.3071895424836601
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.235,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T00:02:39.952Z"
+    }
+  ],
+  "strategies": {
+    "followWhale": {
+      "bets": 3,
+      "wins": 2,
+      "profit": -0.09281045751633993
+    },
+    "followBig": {
+      "bets": 3,
+      "wins": 2,
+      "profit": -0.09281045751633993
+    },
+    "highConsensus": {
+      "bets": 3,
+      "wins": 2,
+      "profit": -0.09281045751633993
+    },
+    "fadeFav": {
+      "bets": 3,
+      "wins": 1,
+      "profit": -0.894736842105263
+    }
   }
 }

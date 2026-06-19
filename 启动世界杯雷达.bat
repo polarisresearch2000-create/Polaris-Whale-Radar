@@ -16,7 +16,7 @@ set POSITIONING_MIN=15
 rem turn off the global Top-Traders profiles (off-topic for World Cup)
 set PROFILES_ENABLED=off
 echo ==========================================
-echo   Polaris Radar V3.3 - World Cup (Sports) 20s
+echo   Polaris Radar V3.4 - World Cup (Sports) 20s
 echo   Close this window to STOP.
 echo ==========================================
 echo.

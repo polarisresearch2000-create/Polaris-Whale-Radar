@@ -27,7 +27,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V3.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V3.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -51,6 +51,7 @@ const DIGEST_FILE = path.join(__dirname, "data", `digest_${TAG}.json`);
 // 赛果追踪(仅体育赛道自动开启)
 const RESULTS_ON = /world-cup|soccer|sports/.test(TAG);
 const RESULTS_FILE = path.join(__dirname, "data", `results_${TAG}.json`);
+const PREVIEW_HOUR = Number(process.env.PREVIEW_HOUR || 9); // 每天几点(HKT)推「今日巨鲸预判」
 
 if (!TOKEN) {
   console.error("❌ 缺少 TELEGRAM_BOT_TOKEN（请检查 .env）");
@@ -187,14 +188,80 @@ async function trackResults() {
     });
     newSettle++;
   }
-  saveResults(res);
+  // 有新结算: 推赛果总结 + 更新置顶战绩
   if (newSettle > 0) {
     await send(fmtResultSummary(res));
-    console.log(`  → 已推赛果总结(新结算 ${newSettle})`);
+    await postOrUpdateTrackRecord(res);
+    console.log(`  → 已推赛果总结+更新置顶(新结算 ${newSettle})`);
   }
+
+  // 每日固定节奏: 香港时间 PREVIEW_HOUR 点后首次, 推「今日巨鲸预判」(每天一次)
+  const hk = hkNow();
+  const hkDay = hk.toISOString().slice(0, 10);
+  if (hk.getUTCHours() >= PREVIEW_HOUR && res.previewDay !== hkDay) {
+    const upcoming = wc.filter((m) => !m.completed && res.predictions[m.id]);
+    if (upcoming.length) {
+      await send(fmtDailyPreview(upcoming, res));
+      res.previewDay = hkDay;
+      await postOrUpdateTrackRecord(res); // 顺手刷新置顶
+      console.log(`  → 已推今日巨鲸预判(${upcoming.length}场)`);
+    }
+  }
+
+  saveResults(res);
 }
 
 const roiPct = (s) => (s.bets ? Math.round((s.profit / s.bets) * 100) : 0);
+const hkNow = () => new Date(Date.now() + 8 * 3600 * 1000); // 香港时间
+
+// 目前 ROI 最高的策略(至少 1 场)
+function bestStrategy(res) {
+  let best = null;
+  for (const { key, label } of STRATS) {
+    const s = res.strategies[key];
+    if (!s || !s.bets) continue;
+    const roi = roiPct(s);
+    if (!best || roi > best.roi) best = { label, bets: s.bets, roi };
+  }
+  return best;
+}
+
+// 置顶用: 策略战绩(简洁, 持续更新)
+function fmtTrackRecord(res) {
+  const lines = ["📌 <b>策略戰績 Track Record</b>（持續更新）", ""];
+  let any = false;
+  for (const { key, label } of STRATS) {
+    const s = res.strategies[key];
+    if (!s || !s.bets) {
+      lines.push(`${label}: 暫無`);
+      continue;
+    }
+    any = true;
+    const roi = roiPct(s);
+    lines.push(`${label}: ${s.bets}場 命中${Math.round((s.wins / s.bets) * 100)}% · ROI <b>${roi >= 0 ? "+" : ""}${roi}%</b>`);
+  }
+  lines.push("", any ? "⚠️ 樣本越多越可信" : "⏳ 等待首批賽果結算");
+  lines.push(`更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
+  lines.push(`🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
+  return lines.join("\n");
+}
+
+// 每日固定: 今日巨鲸预判
+function fmtDailyPreview(matches, res) {
+  const lines = ["☀️ <b>今日巨鯨預判 Daily Preview</b>", "（今日世界盃 · 大戶押哪邊）", ""];
+  for (const m of matches) {
+    const p = res.predictions[m.id];
+    if (!p) continue;
+    const cons = Math.round((p.consensusPct || 0) * 100);
+    const big = p.bigBettor ? sideLabel(p.bigBettor.side, p.home, p.away) : "—";
+    lines.push(`🆚 ${esc(p.match)}`);
+    lines.push(`   巨鯨預判: <b>${esc(sideLabel(p.whaleSide, p.home, p.away))}</b> (共識 ${cons}%) · 最大戶押 ${esc(big)}`);
+  }
+  const best = bestStrategy(res);
+  if (best) lines.push("", `📊 目前最佳策略: ${best.label} ${best.bets}場 ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%`);
+  lines.push("", `🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
+  return lines.join("\n");
+}
 
 function fmtResultSummary(res) {
   const lines = ["🏁 <b>賽果總結 + 策略戰績</b>", "（巨鯨方向 vs 賽果 · 按下注價算 ROI）", ""];
@@ -439,6 +506,33 @@ async function send(text) {
   });
   await new Promise((r) => setTimeout(r, 1200)); // 避免触发限频
 }
+async function sendReturn(text) {
+  const r = await tg("sendMessage", { chat_id: CHANNEL, text, parse_mode: "HTML", disable_web_page_preview: true });
+  return r?.message_id;
+}
+async function pinMsg(id) {
+  try {
+    await tg("pinChatMessage", { chat_id: CHANNEL, message_id: id, disable_notification: true });
+  } catch {}
+}
+async function editMsg(id, text) {
+  try {
+    await tg("editMessageText", { chat_id: CHANNEL, message_id: id, text, parse_mode: "HTML", disable_web_page_preview: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+// 置顶一条"策略战绩"并持续更新(就地编辑; 不存在则重发+置顶)
+async function postOrUpdateTrackRecord(res) {
+  const text = fmtTrackRecord(res);
+  if (res.pinnedMsgId && (await editMsg(res.pinnedMsgId, text))) return;
+  const id = await sendReturn(text);
+  if (id) {
+    res.pinnedMsgId = id;
+    await pinMsg(id);
+  }
+}
 
 async function pollOnce() {
   const seen = loadSeen();
@@ -559,4 +653,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { translateTitle, titleBlock, fmtPositioning, fmtProfiles, fmtResultSummary, evalStrategies };
+module.exports = { translateTitle, titleBlock, fmtPositioning, fmtProfiles, fmtResultSummary, evalStrategies, fmtTrackRecord, fmtDailyPreview };
