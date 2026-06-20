@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V4.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V4.6"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -650,13 +650,14 @@ function fmtPositioning(markets, threshold) {
       // 体育: 整场三方分布(主胜 / 平 / 客胜)
       const topTeamUsd = Math.max(m.sides.home.usd, m.sides.away.usd);
       const rows = [["home", m.sides.home], ["draw", m.sides.draw], ["away", m.sides.away]]
-        .map(([oc, v]) => ({ oc, usd: v.usd, wallets: v.wallets }))
+        .map(([oc, v]) => ({ oc, usd: v.usd, wallets: v.wallets, price: v.price }))
         .filter((x) => x.usd > 0)
         .sort((a, b) => b.usd - a.usd);
       for (const x of rows) {
         const pct = m.total ? Math.round((x.usd / m.total) * 100) : 0;
         const icon = x.oc === "draw" ? "⚪" : x.usd === topTeamUsd ? "🟩" : "🟥";
-        cn.push(`   ${icon} ${esc(outLabel(x.oc, m.home, m.away))}  ${fmtUSD(x.usd)} · ${x.wallets}人 · ${pct}%`);
+        const odds = x.price != null ? `盤口${Math.round(x.price * 100)}¢ · ` : "";
+        cn.push(`   ${icon} ${esc(outLabel(x.oc, m.home, m.away))}  ${odds}${fmtUSD(x.usd)} · ${x.wallets}人 · 佔${pct}%`);
       }
       if (m.topWinner) {
         const w = m.topWinner;

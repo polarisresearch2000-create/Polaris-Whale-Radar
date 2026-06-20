@@ -407,7 +407,14 @@ async function marketSentiment(opts = {}) {
         else if (homeTok.some((t) => q.includes(t))) outcome = "home";
         else if (awayTok.some((t) => q.includes(t))) outcome = "away";
       }
-      targets.push({ cid: m.conditionId, title: m.question, eventSlug: ev.slug, eventTitle: ev.title, outcome, home: homeName, away: awayName });
+      let price = null; // 该结果的盘口价(Yes 隐含概率 0~1), 来自已拉取的 outcomePrices, 零额外请求
+      try {
+        const outs = JSON.parse(m.outcomes || "[]");
+        const px = JSON.parse(m.outcomePrices || "[]");
+        const yi = outs.findIndex((o) => /yes/i.test(o));
+        if (yi >= 0) price = Number(px[yi]);
+      } catch {}
+      targets.push({ cid: m.conditionId, title: m.question, eventSlug: ev.slug, eventTitle: ev.title, outcome, home: homeName, away: awayName, price });
     }
   }
 
@@ -451,7 +458,7 @@ async function marketSentiment(opts = {}) {
       .sort((a, b) => b.usd - a.usd)
       .slice(0, 6);
     const yesUsd = [...yesByWallet.values()].reduce((s, v) => s + v.usd, 0);
-    return { title: mk.title, eventSlug: mk.eventSlug, eventTitle: mk.eventTitle, outcome: mk.outcome, home: mk.home, away: mk.away, total, wallets: allWallets.size, breakdown, topWallets, yesUsd, yesByWallet };
+    return { title: mk.title, eventSlug: mk.eventSlug, eventTitle: mk.eventTitle, outcome: mk.outcome, home: mk.home, away: mk.away, price: mk.price, total, wallets: allWallets.size, breakdown, topWallets, yesUsd, yesByWallet };
   });
 
   // 给"前几大户"标注历史战绩(交叉 user-pnl, 缓存) → 选出 💎最赚大户 / 🐋最大注大户(两条路径共用)
@@ -481,10 +488,11 @@ async function marketSentiment(opts = {}) {
   for (const m of enriched) {
     if (!m.outcome || m.yesUsd <= 0) continue;
     if (!byEvent.has(m.eventSlug))
-      byEvent.set(m.eventSlug, { eventSlug: m.eventSlug, title: m.eventTitle, home: m.home, away: m.away, sides: { home: { usd: 0, wallets: 0 }, draw: { usd: 0, wallets: 0 }, away: { usd: 0, wallets: 0 } }, walletAgg: new Map() });
+      byEvent.set(m.eventSlug, { eventSlug: m.eventSlug, title: m.eventTitle, home: m.home, away: m.away, sides: { home: { usd: 0, wallets: 0, price: null }, draw: { usd: 0, wallets: 0, price: null }, away: { usd: 0, wallets: 0, price: null } }, walletAgg: new Map() });
     const ev = byEvent.get(m.eventSlug);
     ev.sides[m.outcome].usd += m.yesUsd;
     ev.sides[m.outcome].wallets += m.yesByWallet.size;
+    if (m.price != null) ev.sides[m.outcome].price = m.price; // 盘口价(隐含概率)
     for (const [w, wr] of m.yesByWallet) {
       if (!ev.walletAgg.has(w)) ev.walletAgg.set(w, { usd: 0, name: wr.name, byOutcome: new Map() });
       const a = ev.walletAgg.get(w);
