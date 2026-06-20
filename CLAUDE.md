@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V4.4**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V4.5**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -119,7 +119,7 @@ node index.js          # 命令行信号报告
 | 规则 | 现状 | 说明 / 代码位置 |
 |---|---|---|
 | **什么算聪明钱** | ✅ | all-time PnL ≥ $50k 记 💎(`getWalletScore` 交叉 user-pnl-api)。⚠️注意:高 PnL 也可能是**做市机器人**，未区分(见下) |
-| **聪明钱 vs 做市机器人** | ❌ | 高频双边挂单的 MM 会有高 PnL 但非方向性观点。TODO:按交易频率/双边持仓/avgPrice 接近 0.5 识别并排除 |
+| **聪明钱 vs 做市机器人** | ⚠️ | V4.5 上了**本场对冲过滤**:押注分散在多个互斥结果(集中度 `DIR_MIN`<80%)的钱包不当 💎/🐋(`marketSentiment` 用 `byOutcome` 算，零额外 API)。仍未做:全局 MM 识别(需拉钱包交易史看频率/breadth)、同一市场 Yes+No 对冲(三方只取 Yes 侧漏此型) |
 | **同一钱包多地址聚类** | ❌ | 一个人用多地址会虚增"人数/共识"。TODO:按出入金关联或行为指纹聚类 |
 | **赛前才算"提前聪明钱"** | ✅ | 赛果追踪(`capturePredictions`)只在 `state==="pre"` 捕捉；持仓分析(`marketSentiment`)按 `event.startTime` 过滤,**`now>=开赛`整场跳过**(V4.4 修复)。 |
 | **不碰的体育市场** | ✅ | 衍生盘(exact score/spread/O-U/corners/halftime/BTTS/player props)由 `SPORTS_NOISE` 正则排除，只统计主胜/平/客胜 |

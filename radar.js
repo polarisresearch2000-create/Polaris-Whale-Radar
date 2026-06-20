@@ -383,6 +383,7 @@ async function marketSentiment(opts = {}) {
   const events = await getMatchEvents(opts.maxEvents || 12);
 
   const isSports = TAG !== "crypto";
+  const DIR_MIN = 0.8; // 方向性集中度门槛: 主押结果占其本场总额 ≥80% 才算"有方向观点"; 否则=对冲/套利/做市, 不当聪明钱
   // 收集要统计的市场(主胜负/平, 排除衍生玩法); 体育额外标注该盘属于本场哪个结果(home/draw/away)
   const targets = [];
   for (const ev of events) {
@@ -460,8 +461,11 @@ async function marketSentiment(opts = {}) {
         const sc = await getWalletScore(tw.wallet).catch(() => null);
         tw.allTimePnl = sc ? sc.allTimePnl : null;
       }
-      m.topWhale = m.topWallets?.[0] || null; // 最大注(按金额)
-      const winners = (m.topWallets || []).filter((w) => w.allTimePnl != null && w.allTimePnl >= 50000);
+      // 只把"有方向观点"的钱包当聪明钱信号: 押注分散在多个互斥结果(对冲/套利/做市)的不算。
+      // 加密路径 topWallets 无 directional 字段 → 全部保留, 不受影响。
+      const dirOnly = (m.topWallets || []).filter((w) => w.directional !== false);
+      m.topWhale = dirOnly[0] || null; // 最大注(方向性·按金额)
+      const winners = dirOnly.filter((w) => w.allTimePnl != null && w.allTimePnl >= 50000);
       m.topWinner = winners.length ? winners.reduce((a, b) => (b.allTimePnl > a.allTimePnl ? b : a)) : null; // 最赚(proven winner)
     });
 
@@ -492,7 +496,11 @@ async function marketSentiment(opts = {}) {
     .map((ev) => {
       const total = ev.sides.home.usd + ev.sides.draw.usd + ev.sides.away.usd;
       const topWallets = [...ev.walletAgg.entries()]
-        .map(([w, wr]) => ({ wallet: w, name: wr.name, usd: wr.usd, outcome: [...wr.byOutcome.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] }))
+        .map(([w, wr]) => {
+          const ents = [...wr.byOutcome.entries()].sort((a, b) => b[1] - a[1]);
+          const dir = wr.usd > 0 ? (ents[0]?.[1] || 0) / wr.usd : 0; // 押注集中度: 主押结果占其本场总额
+          return { wallet: w, name: wr.name, usd: wr.usd, outcome: ents[0]?.[0], dir, directional: dir >= DIR_MIN };
+        })
         .sort((a, b) => b.usd - a.usd)
         .slice(0, 6);
       return { eventSlug: ev.eventSlug, title: ev.title, home: ev.home, away: ev.away, total, wallets: ev.walletAgg.size, sides: ev.sides, topWallets };
