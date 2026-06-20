@@ -680,31 +680,75 @@
         }
       },
       "settledAt": "2026-06-20T05:06:50.904Z"
+    },
+    {
+      "espnId": "760447",
+      "match": "Netherlands vs Sweden",
+      "home": "Netherlands",
+      "away": "Sweden",
+      "actual": "home",
+      "score": "5-1",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "home",
+        "usd": 199902.3915,
+        "entryPrice": 0.5700000000000001,
+        "betTs": 1781906299,
+        "leadMin": 1142
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.575,
+          "win": true,
+          "profit": 0.7391304347826089
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.575,
+          "win": true,
+          "profit": 0.7391304347826089
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.575,
+          "win": true,
+          "profit": 0.7391304347826089
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.42500000000000004,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-20T20:52:06.462Z"
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 8,
-      "wins": 6,
-      "profit": 1.5970905669885282
+      "bets": 9,
+      "wins": 7,
+      "profit": 2.336221001771137
     },
     "followBig": {
-      "bets": 8,
-      "wins": 6,
-      "profit": 1.5970905669885282
+      "bets": 9,
+      "wins": 7,
+      "profit": 2.336221001771137
     },
     "highConsensus": {
-      "bets": 7,
-      "wins": 5,
-      "profit": 0.4918274090937915
+      "bets": 8,
+      "wins": 6,
+      "profit": 1.2309578438764004
     },
     "fadeFav": {
-      "bets": 8,
+      "bets": 9,
       "wins": 2,
-      "profit": -4.02557796360059
+      "profit": -5.02557796360059
     }
   },
   "previewDay": "2026-06-20",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1781972855222
+  "trackUpdatedAt": 1781988727998
 }
