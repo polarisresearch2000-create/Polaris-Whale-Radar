@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V4.3**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V4.4**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -121,7 +121,7 @@ node index.js          # 命令行信号报告
 | **什么算聪明钱** | ✅ | all-time PnL ≥ $50k 记 💎(`getWalletScore` 交叉 user-pnl-api)。⚠️注意:高 PnL 也可能是**做市机器人**，未区分(见下) |
 | **聪明钱 vs 做市机器人** | ❌ | 高频双边挂单的 MM 会有高 PnL 但非方向性观点。TODO:按交易频率/双边持仓/avgPrice 接近 0.5 识别并排除 |
 | **同一钱包多地址聚类** | ❌ | 一个人用多地址会虚增"人数/共识"。TODO:按出入金关联或行为指纹聚类 |
-| **赛前才算"提前聪明钱"** | ⚠️ | 赛果追踪(`capturePredictions`)只在 `state==="pre"` 捕捉 ✅；但**持仓分析(`marketSentiment`)未排除已开赛比赛**，会把 in-play 的钱当成布局 ❌(见审查清单#7) |
+| **赛前才算"提前聪明钱"** | ✅ | 赛果追踪(`capturePredictions`)只在 `state==="pre"` 捕捉；持仓分析(`marketSentiment`)按 `event.startTime` 过滤,**`now>=开赛`整场跳过**(V4.4 修复)。 |
 | **不碰的体育市场** | ✅ | 衍生盘(exact score/spread/O-U/corners/halftime/BTTS/player props)由 `SPORTS_NOISE` 正则排除，只统计主胜/平/客胜 |
 | **流动性下限** | ❌ | 低流动性盘价格不可信。TODO:`liquidity < $X` 不发(gamma `liquidity` 字段已有) |
 | **价差(spread)上限** | ❌ | spread 过大=没真实价格。TODO:用 `clob/book` 买卖一档算 spread，`> X%` 不发 |
@@ -137,7 +137,7 @@ node index.js          # 命令行信号报告
 4. **价格单位** — `usd = size(股) × price(0~1 概率)`；`entryPrice = usd/shares`。别把概率当美元、别漏乘。
 5. **offset/limit 漏数据** — `/trades?limit=500`；极活跃盘 >500 笔合格成交会被截断而少算。事件分页 `2×100`。
 6. **maker/taker** — ✅已核实(2026-06-20):同一笔成交在 data-api `/trades` 只返回一行，`takerOnly=true` 与默认结果**完全一致**(245=245，按 tx+钱包+size+ts 全唯一)，**无重复计数**。
-7. **赛后交易误判** — 持仓分析目前**不排除已开赛**比赛，in-play 的钱会被当"提前布局聪明钱"。赛果追踪已按 `state==="pre"` 规避，持仓分析未规避。
+7. **赛后交易误判** — ✅已修(V4.4):持仓分析按 `event.startTime`(备用 `market.gameStartTime`)过滤,`now>=开赛`整场跳过,in-play 不再当"提前布局聪明钱"。改信号逻辑时勿回退此过滤。
 
 ## 13. 战略现状 & 下一步
 

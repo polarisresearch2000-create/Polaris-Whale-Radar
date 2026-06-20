@@ -388,6 +388,10 @@ async function marketSentiment(opts = {}) {
   for (const ev of events) {
     let homeName = null, awayName = null, homeTok = [], awayTok = [];
     if (isSports) {
+      // #7: 只统计【未开赛】比赛, 排除 in-play/已完赛 —— 开赛后场上的钱不算"赛前布局聪明钱"
+      const gs = ev.startTime || (ev.markets || []).find((x) => x.gameStartTime)?.gameStartTime;
+      const kickoff = gs ? Date.parse(String(gs).replace(" ", "T")) : null;
+      if (kickoff && Date.now() >= kickoff) continue;
       const parts = String(ev.title || "").split(/\s+vs\.?\s+/i);
       if (parts.length >= 2) { homeName = parts[0].trim(); awayName = parts[1].trim(); homeTok = teamToks(homeName); awayTok = teamToks(awayName); }
     }
