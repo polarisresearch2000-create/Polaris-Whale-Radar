@@ -3,6 +3,8 @@
 // 运行方式：
 //   node bot.js --test   只发一条连通性测试消息
 //   node bot.js --once    扫描一次并推送(不循环)，适合测试
+//   node bot.js --preview-now  手动推一次「持仓分析 + 今日预判」(改版后看效果)
+//   node bot.js --refresh-pin  只就地刷新置顶战绩(不跑完整轮询)
 //   node bot.js           持续运行，每 POLL_MINUTES 分钟扫描一次
 
 const fs = require("fs");
@@ -161,16 +163,8 @@ function evalStrategies(p, actual) {
 }
 
 // 捕捉(赛前/早段)预测 + 结算完赛 + 累计各策略 ROI + 推送
-async function trackResults() {
-  const res = loadResults();
-  let wc, pmEvents;
-  try {
-    [wc, pmEvents] = await Promise.all([getWcResults(), getMatchEvents(20)]);
-  } catch (e) {
-    console.error("赛果追踪取数出错:", e.message);
-    return;
-  }
-  // 1) 捕捉预测: 只在【赛前 state=pre】捕捉, 杜绝赛中追涨的前视偏差(回测教训)
+// 捕捉赛前预判: 只在【赛前 state=pre】捕捉(杜绝赛中追涨的前视偏差), 含准确比分概率榜。被 trackResults 与 --preview-now 复用。
+async function capturePredictions(res, wc, pmEvents) {
   for (const m of wc) {
     if (m.completed || m.state !== "pre") continue;
     const ex = res.predictions[m.id];
@@ -189,6 +183,19 @@ async function trackResults() {
       };
     }
   }
+}
+
+async function trackResults() {
+  const res = loadResults();
+  let wc, pmEvents;
+  try {
+    [wc, pmEvents] = await Promise.all([getWcResults(), getMatchEvents(20)]);
+  } catch (e) {
+    console.error("赛果追踪取数出错:", e.message);
+    return;
+  }
+  // 1) 捕捉赛前预判
+  await capturePredictions(res, wc, pmEvents);
   // 2) 结算完赛、有(带价)预测、未结算的
   let newSettle = 0;
   for (const m of wc) {
@@ -854,6 +861,28 @@ async function main() {
     await postOrUpdateTrackRecord(r);
     saveResults(r);
     console.log(`📌 已刷新置顶战绩 → ${CHANNEL} (msgId ${r.pinnedMsgId})`);
+    return;
+  }
+
+  if (process.argv.includes("--preview-now")) {
+    // 手动推一次: 持仓分析(实时) + 今日预判(强制, 不受 PREVIEW_HOUR/previewDay 限制), 用于改版后看效果
+    try {
+      const { markets, threshold } = await marketSentiment({ topMarkets: 5 });
+      if (markets.length) await send(fmtPositioning(markets, threshold));
+      console.log(`📊 持仓分析已推 (${markets.length} 条)`);
+    } catch (e) {
+      console.error("持仓分析出错:", e.message);
+    }
+    if (RESULTS_ON) {
+      const res = loadResults();
+      let wc = [], pmEvents = [];
+      try { [wc, pmEvents] = await Promise.all([getWcResults(), getMatchEvents(20)]); } catch (e) { console.error("取赛程出错:", e.message); }
+      await capturePredictions(res, wc, pmEvents); // 先捕捉今日赛前预判(含比分榜)
+      saveResults(res);
+      const upcoming = wc.filter((m) => !m.completed && res.predictions[m.id]);
+      if (upcoming.length) { await send(fmtDailyPreview(upcoming, res)); console.log(`☀️ 今日预判已推 (${upcoming.length} 场)`); }
+      else console.log("☀️ 今日预判: 暂无可推的赛前预判(可能今天暂无赛前场次)");
+    }
     return;
   }
 

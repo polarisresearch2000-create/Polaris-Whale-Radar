@@ -297,6 +297,68 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-20T07:04:33.435Z"
+    },
+    "760448": {
+      "match": "Germany vs Ivory Coast",
+      "home": "Germany",
+      "away": "Ivory Coast",
+      "whaleSide": "home",
+      "consensusPct": 0.9750806953727753,
+      "bigBettor": {
+        "wallet": "0x0346afae2603313d2bbee96b628536c8cbe352a5",
+        "side": "home",
+        "usd": 83361.9951,
+        "entryPrice": 0.6488656456046982,
+        "betTs": 1781902708,
+        "leadMin": 1382
+      },
+      "sides": {
+        "home": {
+          "usd": 521224.4596759996,
+          "price": 0.655
+        },
+        "draw": {
+          "usd": 7148.5219990000005,
+          "price": 0.205
+        },
+        "away": {
+          "usd": 6171.966398999999,
+          "price": 0.155
+        }
+      },
+      "eventSlug": "fifwc-ger-civ-2026-06-20",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.115
+          },
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.105
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.095
+          },
+          {
+            "home": 3,
+            "away": 0,
+            "prob": 0.075
+          }
+        ],
+        "other": 0.205
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-20T11:37:22.267Z"
     }
   },
   "settled": [
