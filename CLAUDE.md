@@ -136,7 +136,7 @@ node index.js          # 命令行信号报告
 3. **BUY/SELL 方向** — 统计只取 `t.side==="BUY"`；Yes/No 看 `t.outcome`。别把卖出当买入、别把押 No 当押 Yes。
 4. **价格单位** — `usd = size(股) × price(0~1 概率)`；`entryPrice = usd/shares`。别把概率当美元、别漏乘。
 5. **offset/limit 漏数据** — `/trades?limit=500`；极活跃盘 >500 笔合格成交会被截断而少算。事件分页 `2×100`。
-6. **maker/taker** — `takerOnly=false` 会同时带 maker 侧记录，**可能把同一笔成交计两次**(虚增金额/人数)。⚠️需核实是否去重。
+6. **maker/taker** — ✅已核实(2026-06-20):同一笔成交在 data-api `/trades` 只返回一行，`takerOnly=true` 与默认结果**完全一致**(245=245，按 tx+钱包+size+ts 全唯一)，**无重复计数**。
 7. **赛后交易误判** — 持仓分析目前**不排除已开赛**比赛，in-play 的钱会被当"提前布局聪明钱"。赛果追踪已按 `state==="pre"` 规避，持仓分析未规避。
 
 ## 13. 战略现状 & 下一步
