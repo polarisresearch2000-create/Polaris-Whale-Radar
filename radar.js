@@ -478,6 +478,13 @@ async function analyzeTopTraders(limit = 20) {
 // ---- 赛果追踪: 巨鲸方向 / 最大单大户 的命中率 ----
 const ESPN_SB_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
 const teamToks = (s) => String(s || "").toLowerCase().replace(/[^a-z\s]/g, " ").split(/\s+/).filter((w) => w.length >= 3 && w !== "the");
+// ESPN ↔ Polymarket 队名差异: 给某些 ESPN 名补"会出现在 Polymarket 标题里"的额外关键词。
+// 只新增 token、从不删除, 故不破坏既有匹配。键 = ESPN 名归一化(小写、去非字母)。新增差异往这里加即可。
+const TEAM_ALIAS_TOKENS = {
+  "ivory coast": ["ivoire"], // Polymarket 用 Côte d'Ivoire → 含子串 "ivoire"
+};
+const normName = (s) => String(s || "").toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
+const matchToks = (s) => [...teamToks(s), ...(TEAM_ALIAS_TOKENS[normName(s)] || [])];
 
 // ESPN 世界杯赛果(含完赛结果 home/draw/away)
 async function getWcResults() {
@@ -494,7 +501,7 @@ async function getWcResults() {
     const hs = Number(home.score), as = Number(away.score);
     out.push({
       id: ev.id, home: home.team.displayName, away: away.team.displayName,
-      homeTokens: teamToks(home.team.displayName), awayTokens: teamToks(away.team.displayName),
+      homeTokens: matchToks(home.team.displayName), awayTokens: matchToks(away.team.displayName),
       state: ev.status?.type?.state, completed, homeScore: hs, awayScore: as,
       kickoffMs: ev.date ? Date.parse(ev.date) : null, // 开赛时间, 算大户下注领先量
       actual: completed ? (hs > as ? "home" : hs < as ? "away" : "draw") : null,
