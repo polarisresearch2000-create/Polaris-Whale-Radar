@@ -112,7 +112,34 @@ node index.js          # 命令行信号报告
 
 升级 = 改代码 + 在**三处**同步版本号：`bot.js` 的 `const VERSION` + 两个 `.bat` 横幅 + `CHANGELOG.md` 加一条。
 
-## 11. 战略现状 & 下一步
+## 11. 信号质量规则（资金信号红线，持续沉淀）
+
+> 这是「什么能发/不能发」的判断依据。✅=已实现，⚠️=部分，❌=待做(TODO)。改代码涉及信号时务必对照。
+
+| 规则 | 现状 | 说明 / 代码位置 |
+|---|---|---|
+| **什么算聪明钱** | ✅ | all-time PnL ≥ $50k 记 💎(`getWalletScore` 交叉 user-pnl-api)。⚠️注意:高 PnL 也可能是**做市机器人**，未区分(见下) |
+| **聪明钱 vs 做市机器人** | ❌ | 高频双边挂单的 MM 会有高 PnL 但非方向性观点。TODO:按交易频率/双边持仓/avgPrice 接近 0.5 识别并排除 |
+| **同一钱包多地址聚类** | ❌ | 一个人用多地址会虚增"人数/共识"。TODO:按出入金关联或行为指纹聚类 |
+| **赛前才算"提前聪明钱"** | ⚠️ | 赛果追踪(`capturePredictions`)只在 `state==="pre"` 捕捉 ✅；但**持仓分析(`marketSentiment`)未排除已开赛比赛**，会把 in-play 的钱当成布局 ❌(见审查清单#7) |
+| **不碰的体育市场** | ✅ | 衍生盘(exact score/spread/O-U/corners/halftime/BTTS/player props)由 `SPORTS_NOISE` 正则排除，只统计主胜/平/客胜 |
+| **流动性下限** | ❌ | 低流动性盘价格不可信。TODO:`liquidity < $X` 不发(gamma `liquidity` 字段已有) |
+| **价差(spread)上限** | ❌ | spread 过大=没真实价格。TODO:用 `clob/book` 买卖一档算 spread，`> X%` 不发 |
+| **金额门槛** | ✅ | `MIN_NOTIONAL` 等(世界杯=$5000)；持仓快照独立低门槛 `POSITIONING_MIN_NOTIONAL=$500` |
+
+## 12. 代码审查清单（资金信号专项 · 每次改信号逻辑必查）
+
+改动 `radar.js`/`bot.js` 的信号/持仓/赛果逻辑后，逐条对照(也是 `/code-review` 与 code-review 插件应聚焦的点)：
+
+1. **重复推送** — 逐条信号靠 `seen_<tag>.json`(key=钱包+市场+时间戳+结果)；摘要靠 `digest_<tag>.json` 时间戳节流；**云端+本地勿同跑同频道**。
+2. **时间戳单位** — 成交 `t.timestamp`=秒；`kickoffMs`=毫秒；`leadMin=(kickoffMs - betTs*1000)/60000`。混用秒/毫秒会算错领先量。
+3. **BUY/SELL 方向** — 统计只取 `t.side==="BUY"`；Yes/No 看 `t.outcome`。别把卖出当买入、别把押 No 当押 Yes。
+4. **价格单位** — `usd = size(股) × price(0~1 概率)`；`entryPrice = usd/shares`。别把概率当美元、别漏乘。
+5. **offset/limit 漏数据** — `/trades?limit=500`；极活跃盘 >500 笔合格成交会被截断而少算。事件分页 `2×100`。
+6. **maker/taker** — `takerOnly=false` 会同时带 maker 侧记录，**可能把同一笔成交计两次**(虚增金额/人数)。⚠️需核实是否去重。
+7. **赛后交易误判** — 持仓分析目前**不排除已开赛**比赛，in-play 的钱会被当"提前布局聪明钱"。赛果追踪已按 `state==="pre"` 规避，持仓分析未规避。
+
+## 13. 战略现状 & 下一步
 
 - 功能已**基本完整，建议冻结**（避免复杂度蔓延）。
 - 真正瓶颈是**非功能**两件：① 加 `SPORTS_BOT_TOKEN` 密钥 → 世界杯 24h 云端(数据不漏)；② 发 Threads 引流（二维码在 `D:\STM\promo\worldcup-channel-qr.png`，文案见对话/记忆）。
