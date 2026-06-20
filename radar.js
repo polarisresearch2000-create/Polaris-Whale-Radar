@@ -382,14 +382,27 @@ async function marketSentiment(opts = {}) {
   const minUsd = opts.minNotional || CONFIG.POSITIONING_MIN_NOTIONAL;
   const events = await getMatchEvents(opts.maxEvents || 12);
 
-  // 收集要统计的市场(主胜负/平, 排除衍生玩法)
+  const isSports = TAG !== "crypto";
+  // 收集要统计的市场(主胜负/平, 排除衍生玩法); 体育额外标注该盘属于本场哪个结果(home/draw/away)
   const targets = [];
   for (const ev of events) {
+    let homeName = null, awayName = null, homeTok = [], awayTok = [];
+    if (isSports) {
+      const parts = String(ev.title || "").split(/\s+vs\.?\s+/i);
+      if (parts.length >= 2) { homeName = parts[0].trim(); awayName = parts[1].trim(); homeTok = teamToks(homeName); awayTok = teamToks(awayName); }
+    }
     for (const m of ev.markets || []) {
       if (!m.conditionId) continue;
       if (EXCLUDE_EXTRA && EXCLUDE_EXTRA.test(m.question || "")) continue;
       if (/spread|o\/u|over\/under|exact|corner|halftime|player|total/i.test(m.question || "")) continue;
-      targets.push({ cid: m.conditionId, title: m.question, eventSlug: ev.slug });
+      let outcome = null;
+      if (isSports) {
+        const q = (m.question || "").toLowerCase();
+        if (/draw/.test(q)) outcome = "draw";
+        else if (homeTok.some((t) => q.includes(t))) outcome = "home";
+        else if (awayTok.some((t) => q.includes(t))) outcome = "away";
+      }
+      targets.push({ cid: m.conditionId, title: m.question, eventSlug: ev.slug, eventTitle: ev.title, outcome, home: homeName, away: awayName });
     }
   }
 
@@ -405,6 +418,7 @@ async function marketSentiment(opts = {}) {
     const byOut = new Map();
     const byWallet = new Map();
     const allWallets = new Set();
+    const yesByWallet = new Map(); // 仅 Yes 一侧(供体育整场三方合并: 每盘 Yes = 押该结果发生)
     for (const t of buys) {
       const o = t.outcome || "?";
       const u = (t.size || 0) * (t.price || 0);
@@ -417,6 +431,10 @@ async function marketSentiment(opts = {}) {
       const wr = byWallet.get(t.proxyWallet);
       wr.usd += u;
       wr.byOut.set(o, (wr.byOut.get(o) || 0) + u);
+      if (/yes/i.test(o)) {
+        if (!yesByWallet.has(t.proxyWallet)) yesByWallet.set(t.proxyWallet, { usd: 0, name: t.name || t.pseudonym || "" });
+        yesByWallet.get(t.proxyWallet).usd += u;
+      }
     }
     const total = [...byOut.values()].reduce((s, v) => s + v.usd, 0);
     const breakdown = [...byOut.entries()]
@@ -427,21 +445,59 @@ async function marketSentiment(opts = {}) {
       .map(([w, wr]) => ({ wallet: w, name: wr.name, usd: wr.usd, outcome: [...wr.byOut.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] }))
       .sort((a, b) => b.usd - a.usd)
       .slice(0, 6);
-    return { title: mk.title, eventSlug: mk.eventSlug, total, wallets: allWallets.size, breakdown, topWallets };
+    const yesUsd = [...yesByWallet.values()].reduce((s, v) => s + v.usd, 0);
+    return { title: mk.title, eventSlug: mk.eventSlug, eventTitle: mk.eventTitle, outcome: mk.outcome, home: mk.home, away: mk.away, total, wallets: allWallets.size, breakdown, topWallets, yesUsd, yesByWallet };
   });
 
-  const markets = enriched.filter((m) => m.total > 0).sort((a, b) => b.total - a.total).slice(0, topN);
-  // A: 给每个盘"前几大户"标注历史战绩(交叉 user-pnl, 缓存), 选出"最赚大户"和"最大注大户"
-  await mapLimit(markets, CONFIG.WALLET_CONCURRENCY, async (m) => {
-    for (const tw of m.topWallets || []) {
-      const sc = await getWalletScore(tw.wallet).catch(() => null);
-      tw.allTimePnl = sc ? sc.allTimePnl : null;
+  // 给"前几大户"标注历史战绩(交叉 user-pnl, 缓存) → 选出 💎最赚大户 / 🐋最大注大户(两条路径共用)
+  const scorePnL = (arr) =>
+    mapLimit(arr, CONFIG.WALLET_CONCURRENCY, async (m) => {
+      for (const tw of m.topWallets || []) {
+        const sc = await getWalletScore(tw.wallet).catch(() => null);
+        tw.allTimePnl = sc ? sc.allTimePnl : null;
+      }
+      m.topWhale = m.topWallets?.[0] || null; // 最大注(按金额)
+      const winners = (m.topWallets || []).filter((w) => w.allTimePnl != null && w.allTimePnl >= 50000);
+      m.topWinner = winners.length ? winners.reduce((a, b) => (b.allTimePnl > a.allTimePnl ? b : a)) : null; // 最赚(proven winner)
+    });
+
+  if (!isSports) {
+    // 加密: 维持"逐个二元市场 Yes/No"视图
+    const markets = enriched.filter((m) => m.total > 0).sort((a, b) => b.total - a.total).slice(0, topN);
+    await scorePnL(markets);
+    return { markets, threshold: minUsd };
+  }
+
+  // 体育: 把同一场(eventSlug)的 主胜/平/客胜 三个 Yes 盘合并成「整场三方分布」, 每场只出一条
+  const byEvent = new Map();
+  for (const m of enriched) {
+    if (!m.outcome || m.yesUsd <= 0) continue;
+    if (!byEvent.has(m.eventSlug))
+      byEvent.set(m.eventSlug, { eventSlug: m.eventSlug, title: m.eventTitle, home: m.home, away: m.away, sides: { home: { usd: 0, wallets: 0 }, draw: { usd: 0, wallets: 0 }, away: { usd: 0, wallets: 0 } }, walletAgg: new Map() });
+    const ev = byEvent.get(m.eventSlug);
+    ev.sides[m.outcome].usd += m.yesUsd;
+    ev.sides[m.outcome].wallets += m.yesByWallet.size;
+    for (const [w, wr] of m.yesByWallet) {
+      if (!ev.walletAgg.has(w)) ev.walletAgg.set(w, { usd: 0, name: wr.name, byOutcome: new Map() });
+      const a = ev.walletAgg.get(w);
+      a.usd += wr.usd;
+      a.byOutcome.set(m.outcome, (a.byOutcome.get(m.outcome) || 0) + wr.usd);
     }
-    m.topWhale = m.topWallets?.[0] || null; // 最大注(按金额)
-    const winners = (m.topWallets || []).filter((w) => w.allTimePnl != null && w.allTimePnl >= 50000);
-    m.topWinner = winners.length ? winners.reduce((a, b) => (b.allTimePnl > a.allTimePnl ? b : a)) : null; // 最赚(proven winner)
-  });
-  return { markets, threshold: minUsd };
+  }
+  const matches = [...byEvent.values()]
+    .map((ev) => {
+      const total = ev.sides.home.usd + ev.sides.draw.usd + ev.sides.away.usd;
+      const topWallets = [...ev.walletAgg.entries()]
+        .map(([w, wr]) => ({ wallet: w, name: wr.name, usd: wr.usd, outcome: [...wr.byOutcome.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] }))
+        .sort((a, b) => b.usd - a.usd)
+        .slice(0, 6);
+      return { eventSlug: ev.eventSlug, title: ev.title, home: ev.home, away: ev.away, total, wallets: ev.walletAgg.size, sides: ev.sides, topWallets };
+    })
+    .filter((m) => m.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, topN);
+  await scorePnL(matches);
+  return { markets: matches, threshold: minUsd };
 }
 
 // ---- 顶级赢家风格画像 ----

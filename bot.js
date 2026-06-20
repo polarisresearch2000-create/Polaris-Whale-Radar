@@ -27,7 +27,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V4.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V4.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -515,6 +515,8 @@ const TEAMS = {
   wales: "威爾士", ukraine: "烏克蘭", "curaçao": "庫拉索", curacao: "庫拉索",
 };
 const tTeam = (s) => TEAMS[String(s).trim().toLowerCase()] || String(s).trim();
+// 整场三方: 把结果(home/draw/away)转成中文队名/平局
+const outLabel = (oc, home, away) => (oc === "draw" ? "平局" : oc === "home" ? tTeam(home) : oc === "away" ? tTeam(away) : String(oc));
 const STAGE = {
   final: "決賽", quarterfinals: "八強", "quarter-finals": "八強", semifinals: "四強",
   "semi-finals": "四強", "round of 16": "16強", "knockout stages": "淘汰賽",
@@ -634,7 +636,39 @@ function fmtPositioning(markets, threshold) {
     "",
   ];
   for (const m of top) {
-    cn.push(`🔥 <a href="${url(m)}">${esc(translateTitle(m.title))}</a>  <i>(共 ${m.wallets} 人 · ${fmtUSD(m.total)})</i>`);
+    const dm = (m.eventSlug || "").match(/(\d{4}-\d{2}-\d{2})$/);
+    const dateStr = dm ? `（${dm[1]}）` : "";
+    cn.push(`🔥 <a href="${url(m)}">${esc(translateTitle(m.title))}</a>${dateStr}  <i>(共 ${m.wallets} 人 · ${fmtUSD(m.total)})</i>`);
+    if (m.sides) {
+      // 体育: 整场三方分布(主胜 / 平 / 客胜)
+      const topTeamUsd = Math.max(m.sides.home.usd, m.sides.away.usd);
+      const rows = [["home", m.sides.home], ["draw", m.sides.draw], ["away", m.sides.away]]
+        .map(([oc, v]) => ({ oc, usd: v.usd, wallets: v.wallets }))
+        .filter((x) => x.usd > 0)
+        .sort((a, b) => b.usd - a.usd);
+      for (const x of rows) {
+        const pct = m.total ? Math.round((x.usd / m.total) * 100) : 0;
+        const icon = x.oc === "draw" ? "⚪" : x.usd === topTeamUsd ? "🟩" : "🟥";
+        cn.push(`   ${icon} ${esc(outLabel(x.oc, m.home, m.away))}  ${fmtUSD(x.usd)} · ${x.wallets}人 · ${pct}%`);
+      }
+      if (m.topWinner) {
+        const w = m.topWinner;
+        cn.push(`   💎 最賺大戶 押 ${esc(outLabel(w.outcome, m.home, m.away))} · ${fmtUSD(w.usd)} · 歷史盈利 ${fmtUSD(w.allTimePnl)}`);
+        cn.push(`      <code>${esc(w.wallet)}</code>`);
+      } else if (m.topWhale) {
+        const tw = m.topWhale, pnl = tw.allTimePnl;
+        const tag = pnl == null ? "" : pnl > 0 ? ` · 歷史盈利 ${fmtUSD(pnl)}` : pnl < 0 ? ` · 歷史虧損 ${fmtUSD(Math.abs(pnl))}` : "";
+        cn.push(`   🐋 最大注大戶 押 ${esc(outLabel(tw.outcome, m.home, m.away))} · ${fmtUSD(tw.usd)}${tag}`);
+        cn.push(`      <code>${esc(tw.wallet)}</code>`);
+      }
+      const big = m.topWhale;
+      if (big && big.allTimePnl != null && big.allTimePnl <= -50000 && (!m.topWinner || big.wallet !== m.topWinner.wallet)) {
+        cn.push(`   ⚠️ 最大注卻是輸家 押 ${esc(outLabel(big.outcome, m.home, m.away))} · ${fmtUSD(big.usd)} (歷史虧損 ${fmtUSD(Math.abs(big.allTimePnl))})`);
+      }
+      cn.push("");
+      continue;
+    }
+    // 加密: 逐个二元市场 Yes/No
     m.breakdown.slice(0, 3).forEach((b, i) => {
       const ocz = ocZh(b.outcome) ? `（${ocZh(b.outcome)}）` : "";
       cn.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}${ocz}  ${fmtUSD(b.usd)} · ${b.wallets}人 · ${b.pct}%`);
