@@ -7,7 +7,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getExactScoreBoard, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -27,7 +27,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V4.1"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V4.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -174,13 +174,18 @@ async function trackResults() {
   for (const m of wc) {
     if (m.completed || m.state !== "pre") continue;
     const ex = res.predictions[m.id];
-    if (ex && ex.sides) continue;
+    if (ex && ex.sides) {
+      // 回填准确比分榜: 仅在"从未尝试过"(undefined)时补一次, 失败置 null 不再每轮重试
+      if (ex.scoreBoard === undefined && ex.eventSlug) ex.scoreBoard = (await getExactScoreBoard(ex.eventSlug, 5).catch(() => null)) || null;
+      continue;
+    }
     const pred = await matchPrediction(m, pmEvents).catch(() => null);
     if (pred && pred.sides) {
+      const scoreBoard = await getExactScoreBoard(pred.eventSlug, 5).catch(() => null); // 准确比分市场概率榜
       res.predictions[m.id] = {
         match: `${m.home} vs ${m.away}`, home: m.home, away: m.away,
         whaleSide: pred.whaleSide, consensusPct: pred.consensusPct, bigBettor: pred.bigBettor,
-        sides: pred.sides, state: m.state, capturedAt: new Date().toISOString(),
+        sides: pred.sides, eventSlug: pred.eventSlug, scoreBoard, state: m.state, capturedAt: new Date().toISOString(),
       };
     }
   }
@@ -199,11 +204,22 @@ async function trackResults() {
       if (r.win) s.wins++;
       s.profit += r.profit;
     }
-    res.settled.push({
+    const rec = {
       espnId: m.id, match: p.match, home: p.home, away: p.away, actual: m.actual,
       score: `${m.homeScore}-${m.awayScore}`, whaleSide: p.whaleSide, bigBettor: p.bigBettor,
       strat, settledAt: new Date().toISOString(),
-    });
+    };
+    // 准确比分: 实际比分在赛前概率榜的名次 → 累计 Top3/榜首命中率
+    if (p.scoreBoard?.top?.length) {
+      const idx = p.scoreBoard.top.findIndex((e) => e.home === m.homeScore && e.away === m.awayScore);
+      const ss = (res.scoreStats = res.scoreStats || { n: 0, hit1: 0, hit3: 0 });
+      ss.n++;
+      if (idx === 0) ss.hit1++;
+      if (idx >= 0 && idx < 3) ss.hit3++;
+      rec.scoreBoard = p.scoreBoard.top.slice(0, 3);
+      rec.scoreRank = idx;
+    }
+    res.settled.push(rec);
     newSettle++;
   }
   // 有新结算: 推赛果总结 + 更新置顶战绩
@@ -363,9 +379,33 @@ function fmtTrackRecord(res) {
   }
   lines.push("");
   if (best && any) lines.push(`🏆 目前最佳: ${best.label} (ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%)`);
+  const shr = scoreHitRateLine(res);
+  if (shr) lines.push(shr);
   lines.push(any ? `⚠️ 樣本仍小(${settled.length}場)、噪聲大; 跑滿幾十場才有統計意義` : "⏳ 等待首批賽果結算中…");
   lines.push(`🔭 ROI=每$1淨回報 · 賠率=入場價隱含倍數 · 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
   return lines.join("\n");
+}
+
+// 准确比分概率榜(一行, 主-客视角): "2-1 12% · 1-1 12% · 1-0 11%"
+const scoreBoardInline = (board, topN = 3) =>
+  board && board.top && board.top.length
+    ? board.top.slice(0, topN).map((e) => `${e.home}-${e.away} ${Math.round(e.prob * 100)}%`).join(" · ")
+    : null;
+
+// 赛后: 赛前比分榜 → 实际比分 + 命中标签(榜首/Top3/未中)
+function scoreResultLine(s) {
+  if (!s.scoreBoard || !s.scoreBoard.length) return null;
+  const board = s.scoreBoard.map((e) => `${e.home}-${e.away} ${Math.round(e.prob * 100)}%`).join(" · ");
+  const r = s.scoreRank;
+  const tag = r === 0 ? "✅ 命中榜首" : r >= 1 && r <= 2 ? "✅ 命中Top3" : "❌ 未中Top3";
+  return `   🎯 賽前比分榜 ${board} → 實際 ${esc(s.score)} ${tag}`;
+}
+
+// 准确比分 Top3 累计命中率(一行, 用于赛果总结/置顶)
+function scoreHitRateLine(res) {
+  const ss = res.scoreStats;
+  if (!ss || !ss.n) return null;
+  return `🎯 準確比分 Top3 命中率: <b>${ss.hit3}/${ss.n}</b> (${Math.round((ss.hit3 / ss.n) * 100)}%) · 榜首 ${ss.hit1}/${ss.n}`;
 }
 
 // 每日固定: 今日巨鲸预判
@@ -379,7 +419,10 @@ function fmtDailyPreview(matches, res) {
     lines.push(`${p.home ? "🆚" : "🔥"} ${esc(p.match)}`);
     lines.push(`   巨鯨預判: <b>${esc(sideLabel(p.whaleSide, p.home, p.away))}</b> (共識 ${cons}%)`);
     lines.push(`   🐋 ${esc(bigLine(p.bigBettor, p.home, p.away))}`);
+    const sb = scoreBoardInline(p.scoreBoard);
+    if (sb) lines.push(`   🎯 市場比分榜(主-客): ${sb}`);
   }
+  if (matches.some((m) => res.predictions[m.id]?.scoreBoard)) lines.push("", "💡 比分榜=市場共識熱度(非穩贏)，準確比分本就難中");
   const best = bestStrategy(res);
   if (best) lines.push("", `📊 目前最佳策略: ${best.label} ${best.bets}場 ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%`);
   lines.push("", `🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
@@ -394,7 +437,11 @@ function fmtResultSummary(res) {
     lines.push(`${fw?.win ? "✅" : "❌"} ${esc(s.match)}${score} → ${esc(resultLabel(s))}`);
     lines.push(`   巨鯨押 ${esc(sideLabel(s.whaleSide, s.home, s.away))} ${fw?.win ? "✅" : "❌"}`);
     lines.push(`   🐋 ${esc(bigLine(s.bigBettor, s.home, s.away, fb?.win))}`);
+    const scoreLine = scoreResultLine(s);
+    if (scoreLine) lines.push(scoreLine);
   }
+  const shr = scoreHitRateLine(res);
+  if (shr) lines.push("", shr);
   lines.push("");
   lines.push("📊 <b>策略累計戰績（前向測試 · ROI）</b>");
   for (const { key, label } of STRATS) {

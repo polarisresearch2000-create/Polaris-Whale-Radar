@@ -235,6 +235,68 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-19T07:01:12.478Z"
+    },
+    "760446": {
+      "match": "Ecuador vs Curaçao",
+      "home": "Ecuador",
+      "away": "Curaçao",
+      "whaleSide": "home",
+      "consensusPct": 0.87588834522777,
+      "bigBettor": {
+        "wallet": "0x787969a140b71ad9ae68982a8ee69b6dab353653",
+        "side": "home",
+        "usd": 37119.509994,
+        "entryPrice": 0.8699999999873436,
+        "betTs": 1781933306,
+        "leadMin": 1112
+      },
+      "sides": {
+        "home": {
+          "usd": 118793.08605899998,
+          "price": 0.865
+        },
+        "draw": {
+          "usd": 14202.2966,
+          "price": 0.095
+        },
+        "away": {
+          "usd": 2630.44991,
+          "price": 0.0435
+        }
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-20T07:04:34.654Z"
+    },
+    "760447": {
+      "match": "Netherlands vs Sweden",
+      "home": "Netherlands",
+      "away": "Sweden",
+      "whaleSide": "home",
+      "consensusPct": 0.93640799961917,
+      "bigBettor": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "home",
+        "usd": 199902.3915,
+        "entryPrice": 0.5700000000000001,
+        "betTs": 1781906299,
+        "leadMin": 1142
+      },
+      "sides": {
+        "home": {
+          "usd": 310948.85826799995,
+          "price": 0.575
+        },
+        "draw": {
+          "usd": 8415.009998000001,
+          "price": 0.235
+        },
+        "away": {
+          "usd": 12701.704,
+          "price": 0.195
+        }
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-20T07:04:33.435Z"
     }
   },
   "settled": [
@@ -380,31 +442,207 @@
         }
       },
       "settledAt": "2026-06-19T02:57:22.115Z"
+    },
+    {
+      "espnId": "760442",
+      "match": "United States vs Australia",
+      "home": "United States",
+      "away": "Australia",
+      "actual": "home",
+      "score": "2-0",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0x84cfffc3f16dcc353094de30d4a45226eccd2f63",
+        "side": "home",
+        "usd": 137285.34769999998,
+        "entryPrice": 0.6101376036028002,
+        "betTs": 1781419704,
+        "leadMin": 7932
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.605,
+          "win": true,
+          "profit": 0.6528925619834711
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.605,
+          "win": true,
+          "profit": 0.6528925619834711
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.605,
+          "win": true,
+          "profit": 0.6528925619834711
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.395,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T21:04:35.019Z"
+    },
+    {
+      "espnId": "760445",
+      "match": "Scotland vs Morocco",
+      "home": "Scotland",
+      "away": "Morocco",
+      "actual": "away",
+      "score": "0-1",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0x4bf6b33cdca575ba646f172d2d9d1477be71432f",
+        "side": "away",
+        "usd": 21620.189998,
+        "entryPrice": 0.5599999999896393,
+        "betTs": 1781845981,
+        "leadMin": 1007
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.555,
+          "win": true,
+          "profit": 0.8018018018018016
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.555,
+          "win": true,
+          "profit": 0.8018018018018016
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.555,
+          "win": true,
+          "profit": 0.8018018018018016
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.44499999999999995,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-19T23:59:59.888Z"
+    },
+    {
+      "espnId": "760444",
+      "match": "Brazil vs Haiti",
+      "home": "Brazil",
+      "away": "Haiti",
+      "actual": "home",
+      "score": "3-0",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0xa3a39a3746dbd55f3a33ae38bd27ae2804c2c2f9",
+        "side": "home",
+        "usd": 10812.346,
+        "entryPrice": 0.92,
+        "betTs": 1781382538,
+        "leadMin": 8881
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.885,
+          "win": true,
+          "profit": 0.12994350282485875
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.885,
+          "win": true,
+          "profit": 0.12994350282485875
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.885,
+          "win": true,
+          "profit": 0.12994350282485875
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.11499999999999999,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-20T02:31:24.257Z"
+    },
+    {
+      "espnId": "760443",
+      "match": "Türkiye vs Paraguay",
+      "home": "Türkiye",
+      "away": "Paraguay",
+      "actual": "away",
+      "score": "0-1",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0xd88139efbecc8641892e17171afcced35315af24",
+        "side": "home",
+        "usd": 18709.5156,
+        "entryPrice": 0.4699999999999999,
+        "betTs": 1781844701,
+        "leadMin": 1328
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.465,
+          "win": false,
+          "profit": -1
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.465,
+          "win": false,
+          "profit": -1
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.465,
+          "win": false,
+          "profit": -1
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.5349999999999999,
+          "win": true,
+          "profit": 0.8691588785046732
+        }
+      },
+      "settledAt": "2026-06-20T05:06:50.904Z"
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 4,
-      "wins": 3,
-      "profit": 1.012452700378397
+      "bets": 8,
+      "wins": 6,
+      "profit": 1.5970905669885282
     },
     "followBig": {
-      "bets": 4,
-      "wins": 3,
-      "profit": 1.012452700378397
+      "bets": 8,
+      "wins": 6,
+      "profit": 1.5970905669885282
     },
     "highConsensus": {
-      "bets": 3,
-      "wins": 2,
-      "profit": -0.09281045751633993
+      "bets": 7,
+      "wins": 5,
+      "profit": 0.4918274090937915
     },
     "fadeFav": {
-      "bets": 4,
-      "wins": 1,
-      "profit": -1.894736842105263
+      "bets": 8,
+      "wins": 2,
+      "profit": -4.02557796360059
     }
   },
-  "previewDay": "2026-06-19",
+  "previewDay": "2026-06-20",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1781893716071
+  "trackUpdatedAt": 1781953445239
 }

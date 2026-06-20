@@ -563,7 +563,36 @@ async function matchPrediction(m, pmEvents) {
       bigBettor = { wallet: w, side, usd: wr.usd, entryPrice, betTs, leadMin };
     }
   }
-  return { whaleSide, consensusPct, bigBettor, sides };
+  return { whaleSide, consensusPct, bigBettor, sides, eventSlug: pmEvent.slug };
+}
+
+// ---- 准确比分市场: 返回市场概率榜(按隐含概率排序的具体比分 + "其他比分"桶) ----
+// 注意: 准确比分盘成交极小(单笔多为几百刀散户, 无巨鲸), 故只用"价格=市场共识概率", 不追大户.
+async function getExactScoreBoard(eventSlug, topN = 5) {
+  if (!eventSlug) return null;
+  const arr = await getJSON(`${GAMMA}/events?slug=${eventSlug}-exact-score`).catch(() => null);
+  const e = Array.isArray(arr) ? arr[0] : null;
+  if (!e || !Array.isArray(e.markets)) return null;
+  const rows = [];
+  let other = null;
+  for (const mk of e.markets) {
+    let prob = null;
+    try {
+      const outs = JSON.parse(mk.outcomes || "[]");
+      const px = JSON.parse(mk.outcomePrices || "[]");
+      const yi = outs.findIndex((o) => /yes/i.test(o));
+      if (yi >= 0) prob = Number(px[yi]);
+    } catch {}
+    if (prob == null) continue;
+    const q = mk.question || "";
+    if (/any other/i.test(q)) { other = prob; continue; }
+    const s = q.match(/(\d+)\s*-\s*(\d+)/); // "Exact Score: Netherlands 1 - 1 Sweden?" → 主队比分在前
+    if (!s) continue;
+    rows.push({ home: Number(s[1]), away: Number(s[2]), prob });
+  }
+  if (!rows.length) return null;
+  rows.sort((a, b) => b.prob - a.prob);
+  return { top: rows.slice(0, topN), other };
 }
 
 // ---- 加密版预判: 单个二元市场(Yes/No)的巨鲸方向 ----
@@ -633,6 +662,6 @@ async function getMarketResolution(gammaId) {
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction, cryptoPrediction, getMarketResolution,
+  getWcResults, matchPrediction, getExactScoreBoard, cryptoPrediction, getMarketResolution,
   fmtUSD, CONFIG, isDirectional,
 };

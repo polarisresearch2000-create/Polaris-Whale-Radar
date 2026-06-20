@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V4.1**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V4.2**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -60,7 +60,7 @@ node index.js          # 命令行信号报告
 | 内容 | 触发 | 加密 | 世界杯 |
 |---|---|---|---|
 | 📊 巨鲸持仓分析（多空分布 + 💎最赚大户/⚠️输家反指） | 每 `POSITIONING_MIN` 分钟 | ✅ | ✅(15分) |
-| ☀️ 今日巨鲸预判 | 每天 HKT `PREVIEW_HOUR` 点 | ✅ | ✅ |
+| ☀️ 今日巨鲸预判（含🎯准确比分概率榜Top3） | 每天 HKT `PREVIEW_HOUR` 点 | ✅ | ✅(比分榜仅世界杯) |
 | 🏁 赛果总结 + 策略 ROI | 完赛/市场结算后 | ✅(UMA结算) | ✅(ESPN) |
 | 📌 置顶策略战绩(自动更新) | 有新结算时 + 每≥30分钟刷新 | ✅ | ✅ |
 | 🐋/👑 逐条实时信号 | 每轮 | ✅ | ❌(已关，整合进持仓分析) |
@@ -91,7 +91,7 @@ node index.js          # 命令行信号报告
 - `seen_<tag>.json` — 逐条信号去重
 - `watchlist_<tag>.json` — 加密活跃常胜钱包缓存(6h)
 - `digest_<tag>.json` — 持仓/风格摘要上次推送时间戳
-- `results_<tag>.json` — 赛果追踪：`predictions`(赛前锁定的预判) / `settled` / `strategies`(各策略 bets/wins/profit) / `pinnedMsgId`
+- `results_<tag>.json` — 赛果追踪：`predictions`(赛前锁定的预判, 含 `eventSlug`+`scoreBoard`准确比分概率榜) / `settled`(含 `scoreBoard`+`scoreRank`) / `strategies`(各策略 bets/wins/profit) / `scoreStats`(比分 Top3/榜首命中数) / `pinnedMsgId` / `trackUpdatedAt`
 
 **重置追踪记录**：删对应 `results_<tag>.json`（干净起跑；现无已结算数据时无损失）。
 
