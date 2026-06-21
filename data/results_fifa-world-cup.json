@@ -972,31 +972,98 @@
         }
       },
       "settledAt": "2026-06-20T20:52:06.462Z"
+    },
+    {
+      "espnId": "760453",
+      "match": "Spain vs Saudi Arabia",
+      "home": "Spain",
+      "away": "Saudi Arabia",
+      "actual": "home",
+      "score": "4-0",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0x1f28a0404133776151339ff618c876b81a59266e",
+        "side": "home",
+        "usd": 144283.22220000002,
+        "entryPrice": 0.8900000000000002,
+        "betTs": 1782027254,
+        "leadMin": 506
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.885,
+          "win": true,
+          "profit": 0.12994350282485875
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.885,
+          "win": true,
+          "profit": 0.12994350282485875
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.885,
+          "win": true,
+          "profit": 0.12994350282485875
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.11499999999999999,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-21T20:59:09.166Z",
+      "scoreBoard": [
+        {
+          "home": 3,
+          "away": 0,
+          "prob": 0.165
+        },
+        {
+          "home": 2,
+          "away": 0,
+          "prob": 0.145
+        },
+        {
+          "home": 1,
+          "away": 0,
+          "prob": 0.085
+        }
+      ],
+      "scoreRank": -1
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 9,
-      "wins": 7,
-      "profit": 2.336221001771137
+      "bets": 10,
+      "wins": 8,
+      "profit": 2.4661645045959957
     },
     "followBig": {
-      "bets": 9,
-      "wins": 7,
-      "profit": 2.336221001771137
+      "bets": 10,
+      "wins": 8,
+      "profit": 2.4661645045959957
     },
     "highConsensus": {
-      "bets": 8,
-      "wins": 6,
-      "profit": 1.2309578438764004
+      "bets": 9,
+      "wins": 7,
+      "profit": 1.3609013467012592
     },
     "fadeFav": {
-      "bets": 9,
+      "bets": 10,
       "wins": 2,
-      "profit": -5.02557796360059
+      "profit": -6.02557796360059
     }
   },
   "previewDay": "2026-06-21",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782059076790
+  "trackUpdatedAt": 1782075550669,
+  "scoreStats": {
+    "n": 1,
+    "hit1": 0,
+    "hit3": 0
+  }
 }
