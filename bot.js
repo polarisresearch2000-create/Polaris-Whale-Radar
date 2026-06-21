@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V4.6"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V4.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -360,7 +360,7 @@ function fmtTrackRecord(res) {
   });
   if (!wbDiverged && res.strategies.followWhale?.bets && res.strategies.followBig?.bets) {
     rows = rows.flatMap((s) =>
-      s.key === "followBig" ? [] : s.key === "followWhale" ? [{ key: "followWhale", label: "🐋👑 跟巨鯨多數方／最大單大戶（同側）" }] : [s]
+      s.key === "followBig" ? [] : s.key === "followWhale" ? [{ key: "followWhale", label: "🐋👑 跟巨鯨多數方／最大單大戶（同側 · 全部出手）" }] : [s]
     );
   }
   let any = false, best = null;
@@ -378,13 +378,27 @@ function fmtTrackRecord(res) {
     const prices = mine.map((x) => x.strat[key].price).filter((p) => p > 0);
     const avgOdds = prices.length ? 1 / (prices.reduce((a, b) => a + b, 0) / prices.length) : null; // 入场价隐含赔率(押中赔几倍)
     const form = mine.slice(-6).map((x) => (x.strat[key].win ? "✅" : "❌")).join("");
-    lines.push(`<b>${label}</b>`);
-    lines.push(`   ${s.wins}勝${losses}負 · 命中 ${wr}% · ROI <b>${roi >= 0 ? "+" : ""}${roi}%</b>`);
+    // 把"高共识子集"明确标成"你真会下单的子集"(= paper/live 里的 live)
+    const lbl = key === "highConsensus" ? "🔒 只在高共識≥85%才跟（= 你真會下單的子集）" : label;
+    const units = `${s.profit >= 0 ? "+" : ""}${s.profit.toFixed(1)}u`; // 累计盈亏(单位: 注; 1u=一注固定本金)
+    lines.push(`<b>${lbl}</b>`);
+    lines.push(`   ${s.wins}勝${losses}負 · 命中 ${wr}% · ROI <b>${roi >= 0 ? "+" : ""}${roi}%</b> · 累計 <b>${units}</b>`);
     const sub = [avgOdds ? `均入場賠率 ${avgOdds.toFixed(2)}x` : "", form ? `近期 ${form}` : ""].filter(Boolean).join(" · ");
     if (sub) lines.push(`   ${sub}`);
-    if (!best || roi > best.roi) best = { label, roi };
+    if (!best || roi > best.roi) best = { label: lbl, roi };
   }
   lines.push("");
+  // 逐场赛果明细(跟巨鲸方向, 最近6场, 新到旧): 押了谁/几比几/入场价/单注盈亏 —— 透明度
+  const recent = settled.filter((x) => x.strat?.followWhale).slice(-6).reverse();
+  if (recent.length) {
+    lines.push("📋 <b>近期逐場賽果</b>（跟巨鯨方向）");
+    for (const x of recent) {
+      const fw = x.strat.followWhale;
+      const backed = fw.side === "home" ? tTeam(x.home) : fw.side === "away" ? tTeam(x.away) : "平局";
+      lines.push(`${fw.win ? "✅" : "❌"} ${esc(tTeam(x.home))} ${esc(x.score)} ${esc(tTeam(x.away))} · 押${esc(backed)} @${fw.price != null ? fw.price.toFixed(2).slice(1) : "?"} · ${fw.profit >= 0 ? "+" : ""}${fw.profit.toFixed(2)}u`);
+    }
+    lines.push("");
+  }
   if (best && any) lines.push(`🏆 目前最佳: ${best.label} (ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%)`);
   const shr = scoreHitRateLine(res);
   if (shr) lines.push(shr);
@@ -520,6 +534,7 @@ const TEAMS = {
   italy: "意大利", japan: "日本", iran: "伊朗", nigeria: "尼日利亞", denmark: "丹麥", poland: "波蘭",
   serbia: "塞爾維亞", cameroon: "喀麥隆", tunisia: "突尼斯", peru: "秘魯", chile: "智利", greece: "希臘",
   wales: "威爾士", ukraine: "烏克蘭", "curaçao": "庫拉索", curacao: "庫拉索",
+  czechia: "捷克", "czech republic": "捷克", "south africa": "南非",
 };
 const tTeam = (s) => TEAMS[String(s).trim().toLowerCase()] || String(s).trim();
 // 整场三方: 把结果(home/draw/away)转成中文队名/平局
