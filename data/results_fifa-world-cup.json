@@ -359,6 +359,254 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-20T11:37:22.267Z"
+    },
+    "760450": {
+      "match": "Uruguay vs Cape Verde",
+      "home": "Uruguay",
+      "away": "Cape Verde",
+      "whaleSide": "home",
+      "consensusPct": 0.9475436035671764,
+      "bigBettor": {
+        "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+        "side": "home",
+        "usd": 30198.24,
+        "entryPrice": 0.67,
+        "betTs": 1782001538,
+        "leadMin": 1294
+      },
+      "sides": {
+        "home": {
+          "usd": 133413.82654600003,
+          "price": 0.675
+        },
+        "draw": {
+          "usd": 5612.571799,
+          "price": 0.225
+        },
+        "away": {
+          "usd": 1773.2715,
+          "price": 0.105
+        }
+      },
+      "eventSlug": "fifwc-ury-cvi-2026-06-21",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.165
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.165
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.11
+          },
+          {
+            "home": 0,
+            "away": 0,
+            "prob": 0.095
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.095
+          }
+        ],
+        "other": 0.125
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-21T10:45:52.799Z"
+    },
+    "760451": {
+      "match": "Belgium vs Iran",
+      "home": "Belgium",
+      "away": "Iran",
+      "whaleSide": "home",
+      "consensusPct": 0.8963452690117404,
+      "bigBettor": {
+        "wallet": "0x839e95471009f3ef9c50c755f2d8fe57f1b40d3c",
+        "side": "home",
+        "usd": 19999.999998000003,
+        "entryPrice": 0.6799999999986401,
+        "betTs": 1782033854,
+        "leadMin": 576
+      },
+      "sides": {
+        "home": {
+          "usd": 146661.39314400003,
+          "price": 0.675
+        },
+        "draw": {
+          "usd": 1699.9999980000002,
+          "price": 0.205
+        },
+        "away": {
+          "usd": 15260.146698,
+          "price": 0.125
+        }
+      },
+      "eventSlug": "fifwc-bel-irn-2026-06-21",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.135
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.125
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.115
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 3,
+            "away": 0,
+            "prob": 0.085
+          }
+        ],
+        "other": 0.155
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-21T10:45:52.754Z"
+    },
+    "760452": {
+      "match": "New Zealand vs Egypt",
+      "home": "New Zealand",
+      "away": "Egypt",
+      "whaleSide": "away",
+      "consensusPct": 0.922243939110018,
+      "bigBettor": {
+        "wallet": "0xe9076a87c5ed90ef16e6fe6529c943baeca0cff6",
+        "side": "away",
+        "usd": 7766.979998999999,
+        "entryPrice": 0.6099999999866486,
+        "betTs": 1782018364,
+        "leadMin": 1194
+      },
+      "sides": {
+        "home": {
+          "usd": 3475.369998,
+          "price": 0.155
+        },
+        "draw": {
+          "usd": 0,
+          "price": 0.235
+        },
+        "away": {
+          "usd": 41220.438383,
+          "price": 0.605
+        }
+      },
+      "eventSlug": "fifwc-nzl-egy-2026-06-21",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.145
+          },
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.125
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.115
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.105
+          },
+          {
+            "home": 0,
+            "away": 0,
+            "prob": 0.085
+          }
+        ],
+        "other": 0.125
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-21T10:45:52.994Z"
+    },
+    "760453": {
+      "match": "Spain vs Saudi Arabia",
+      "home": "Spain",
+      "away": "Saudi Arabia",
+      "whaleSide": "home",
+      "consensusPct": 0.9456489259891879,
+      "bigBettor": {
+        "wallet": "0x1f28a0404133776151339ff618c876b81a59266e",
+        "side": "home",
+        "usd": 144283.22220000002,
+        "entryPrice": 0.8900000000000002,
+        "betTs": 1782027254,
+        "leadMin": 506
+      },
+      "sides": {
+        "home": {
+          "usd": 500014.52179700014,
+          "price": 0.885
+        },
+        "draw": {
+          "usd": 12179.843893,
+          "price": 0.075
+        },
+        "away": {
+          "usd": 16558.438924000002,
+          "price": 0.0355
+        }
+      },
+      "eventSlug": "fifwc-esp-ksa-2026-06-21",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 3,
+            "away": 0,
+            "prob": 0.165
+          },
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.145
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.085
+          },
+          {
+            "home": 3,
+            "away": 1,
+            "prob": 0.075
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.065
+          }
+        ],
+        "other": 0.405
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-21T10:45:52.710Z"
     }
   },
   "settled": [
@@ -748,7 +996,7 @@
       "profit": -5.02557796360059
     }
   },
-  "previewDay": "2026-06-20",
+  "previewDay": "2026-06-21",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1781988727998
+  "trackUpdatedAt": 1782038754577
 }
