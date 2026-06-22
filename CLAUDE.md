@@ -31,7 +31,7 @@ Polymarket「聪明钱」雷达 → 自动推送到 Telegram 频道。**只读�
 | `index.js` | 命令行报告（给自己看，中文） |
 | `启动世界杯雷达.bat` | 世界杯本地启动（PROFILE=SPORTS + 门槛 + 关信号/风格榜） |
 | `启动本地雷达.bat` | 加密本地启动 |
-| `.github/workflows/worldcup.yml` | 世界杯云端 24h（cron */5，**需仓库密钥 `SPORTS_BOT_TOKEN`**） |
+| `.github/workflows/worldcup.yml` | 世界杯云端（cron `7,37 * * * *` 每半小时，**需仓库密钥 `SPORTS_BOT_TOKEN`**） |
 | `.github/workflows/radar.yml` | 加密云端（schedule 已注释=暂停；保留手动触发） |
 | `.env` | 机密 token（**gitignored，不上传**） |
 | `data/` | 状态文件（见 §7），云端工作流会 commit 回写 |
@@ -52,7 +52,7 @@ node index.js          # 命令行信号报告
 ```
 > bot 走哪个频道由环境变量 `PROFILE` 决定：`PROFILE=SPORTS` → 世界杯；空 → 加密(默认)。启动脚本里已设好。
 
-**云端 24h**：GitHub Actions。世界杯 = `worldcup.yml`（每 5 分钟跑 `node bot.js --once`）。
+**云端**：GitHub Actions。世界杯 = `worldcup.yml`（每半小时跑 `node bot.js --once`；**GitHub 免费 cron 对 */5 高频降权严重，实测 4-7h 才跑一次，故改 30 分钟**。要真·零空窗需长任务自重启或换常驻托管）。
 启用步骤：GitHub 仓库 → Settings → Secrets and variables → Actions → New secret，名 `SPORTS_BOT_TOKEN`、值见 `.env`；然后 Actions 页 Run workflow。**启用云端后关掉本地世界杯窗口**（避免重复）。
 
 ## 5. 频道里会推什么

@@ -1,9 +1,11 @@
 name: Polaris World Cup Radar
 
-# 世界杯频道 24/7 云端运行(每5分钟扫描一次)。
+# 世界杯频道云端运行(每半小时扫描一次)。
+# 注: GitHub 免费 cron 对 */5 这种高频会大幅降权(实测常 4-7 小时才跑一次),
+# 故改 30 分钟(并避开整点高峰用 7/37 分), 提升按时率。仍可手动 Run workflow。
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "7,37 * * * *"
   workflow_dispatch: {}
 
 permissions:
