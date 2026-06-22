@@ -1282,38 +1282,100 @@
         }
       ],
       "scoreRank": -1
+    },
+    {
+      "espnId": "760456",
+      "match": "Argentina vs Austria",
+      "home": "Argentina",
+      "away": "Austria",
+      "actual": "home",
+      "score": "2-0",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0x0346afae2603313d2bbee96b628536c8cbe352a5",
+        "side": "home",
+        "usd": 317530.10219999996,
+        "entryPrice": 0.6467620178479617,
+        "betTs": 1781935258,
+        "leadMin": 3539
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.665,
+          "win": true,
+          "profit": 0.5037593984962405
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.665,
+          "win": true,
+          "profit": 0.5037593984962405
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.665,
+          "win": true,
+          "profit": 0.5037593984962405
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.33499999999999996,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-22T22:24:07.744Z",
+      "scoreBoard": [
+        {
+          "home": 1,
+          "away": 0,
+          "prob": 0.135
+        },
+        {
+          "home": 2,
+          "away": 0,
+          "prob": 0.13
+        },
+        {
+          "home": 1,
+          "away": 1,
+          "prob": 0.105
+        }
+      ],
+      "scoreRank": 1
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 10,
-      "wins": 8,
-      "profit": 2.4661645045959957
+      "bets": 11,
+      "wins": 9,
+      "profit": 2.969923903092236
     },
     "followBig": {
-      "bets": 10,
-      "wins": 8,
-      "profit": 2.4661645045959957
+      "bets": 11,
+      "wins": 9,
+      "profit": 2.969923903092236
     },
     "highConsensus": {
-      "bets": 9,
-      "wins": 7,
-      "profit": 1.3609013467012592
+      "bets": 10,
+      "wins": 8,
+      "profit": 1.8646607451974997
     },
     "fadeFav": {
-      "bets": 10,
+      "bets": 11,
       "wins": 2,
-      "profit": -6.02557796360059
+      "profit": -7.02557796360059
     }
   },
   "previewDay": "2026-06-22",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782141265061,
+  "trackUpdatedAt": 1782167049320,
   "scoreStats": {
-    "n": 1,
+    "n": 2,
     "hit1": 0,
-    "hit3": 0
+    "hit3": 1
   },
-  "previewUpdatedAt": 1782141265427,
+  "previewUpdatedAt": 1782167049853,
   "previewMsgId": 1002
 }
