@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V4.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V4.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -281,13 +281,15 @@ async function trackResultsCrypto() {
     }
   for (const { ev, mk } of candidates.slice(0, 25)) {
     const pred = await cryptoPrediction(mk).catch(() => null);
-    if (pred && pred.sides) {
-      res.predictions[mk.conditionId] = {
-        match: mk.question, slug: ev.slug, gammaId: mk.id,
-        whaleSide: pred.whaleSide, consensusPct: pred.consensusPct, bigBettor: pred.bigBettor,
-        sides: pred.sides, capturedAt: new Date().toISOString(),
-      };
-    }
+    if (!pred || !pred.sides) continue;
+    // 竞争性过滤: 跳过近乎确定的废盘(巨鲸侧价 >0.90 或 <0.10) —— 100%胜但+0 ROI, 是噪声不是信号
+    const wp = pred.sides[pred.whaleSide]?.price;
+    if (wp != null && (wp > 0.9 || wp < 0.1)) continue;
+    res.predictions[mk.conditionId] = {
+      match: mk.question, slug: ev.slug, gammaId: mk.id,
+      whaleSide: pred.whaleSide, consensusPct: pred.consensusPct, bigBettor: pred.bigBettor,
+      sides: pred.sides, capturedAt: new Date().toISOString(),
+    };
   }
   // 2) 结算: 检查已捕捉但未结算市场的解析结果(每轮限量查, 控制请求)
   const pending = Object.entries(res.predictions).filter(([id, p]) => p.gammaId && p.sides && !res.settled.find((s) => s.espnId === id));
@@ -328,6 +330,11 @@ async function trackResultsCrypto() {
     }
   }
   if (Date.now() - (res.trackUpdatedAt || 0) >= 30 * 60000) await postOrUpdateTrackRecord(res);
+  // 置顶②预判(加密: 未结算的预判, 每≥30分钟刷新)
+  if (Date.now() - (res.previewUpdatedAt || 0) >= 30 * 60000) {
+    const up = Object.entries(res.predictions).filter(([id]) => !res.settled.find((s) => s.espnId === id)).slice(0, 6).map(([id, p]) => ({ id, ...p }));
+    await postOrUpdatePreviewPin(res, up);
+  }
   saveResults(res);
 }
 
@@ -393,14 +400,26 @@ function fmtTrackRecord(res) {
     if (!best || roi > best.roi) best = { label: lbl, roi };
   }
   lines.push("");
-  // 逐场赛果明细(跟巨鲸方向, 最近6场, 新到旧): 押了谁/几比几/入场价/单注盈亏 —— 透明度
+  // 逐场结算明细(跟巨鲸方向, 最近6场, 新到旧): 押了谁/结果/入场价/单注盈亏 —— 透明度。兼容体育(主客比分)与加密(Yes/No)。
   const recent = settled.filter((x) => x.strat?.followWhale).slice(-6).reverse();
   if (recent.length) {
-    lines.push("📋 <b>近期逐場賽果</b>（跟巨鯨方向）");
+    lines.push("📋 <b>近期逐場結果</b>（跟巨鯨方向）");
     for (const x of recent) {
       const fw = x.strat.followWhale;
-      const backed = fw.side === "home" ? tTeam(x.home) : fw.side === "away" ? tTeam(x.away) : "平局";
-      lines.push(`${fw.win ? "✅" : "❌"} ${esc(tTeam(x.home))} ${esc(x.score)} ${esc(tTeam(x.away))} · 押${esc(backed)} @${fw.price != null ? fw.price.toFixed(2).slice(1) : "?"} · ${fw.profit >= 0 ? "+" : ""}${fw.profit.toFixed(2)}u`);
+      const px = `@${fw.price != null ? fw.price.toFixed(2).slice(1) : "?"}`;
+      const u = `${fw.profit >= 0 ? "+" : ""}${fw.profit.toFixed(2)}u`;
+      let body;
+      if (x.home && x.away) {
+        // 体育: 主队 比分 客队
+        const backed = fw.side === "home" ? tTeam(x.home) : fw.side === "away" ? tTeam(x.away) : "平局";
+        body = `${esc(tTeam(x.home))} ${esc(x.score || "")} ${esc(tTeam(x.away))} · 押${esc(backed)}`;
+      } else {
+        // 加密: 市场问题(译中文+截断) + 押 是/否
+        const q = translateTitle(x.match || "");
+        const backed = /yes|是/i.test(fw.side) ? "是" : /no|否/i.test(fw.side) ? "否" : esc(String(fw.side));
+        body = `${esc(q.length > 24 ? q.slice(0, 24) + "…" : q)} · 押${backed}`;
+      }
+      lines.push(`${fw.win ? "✅" : "❌"} ${body} ${px} · ${u}`);
     }
     lines.push("");
   }
@@ -458,9 +477,12 @@ function fmtDailyPreview(matches, res) {
 // 置顶用: 即将开赛预判(只列未开赛场次, 就地编辑、持续刷新; 复用每日预判的逐场渲染)
 function fmtUpcomingPin(matches, res) {
   const show = (matches || []).slice(0, 6); // 最多6场, 保持可扫读
-  const lines = ["📅 <b>即將開賽 · 巨鯨預判</b>（持續更新）", "（未開賽場次 · 大戶押哪邊 + 市場比分榜）", ""];
+  const sportsLike = show.some((m) => res.predictions[m.id]?.home); // 体育有主客; 加密无
+  const lines = sportsLike
+    ? ["📅 <b>即將開賽 · 巨鯨預判</b>（持續更新）", "（未開賽場次 · 大戶押哪邊 + 市場比分榜）", ""]
+    : ["📅 <b>待結算 · 巨鯨預判</b>（持續更新）", "（活躍市場 · 大戶押 Yes/No）", ""];
   if (!show.length) {
-    lines.push("⏳ 暫無即將開賽的場次,稍後自動更新");
+    lines.push("⏳ 暫無可顯示的場次,稍後自動更新");
   } else {
     for (const m of show) {
       const p = res.predictions[m.id];
@@ -721,10 +743,15 @@ function fmtPositioning(markets, threshold) {
       cn.push("");
       continue;
     }
-    // 加密: 逐个二元市场 Yes/No
+    // 加密: 逐个二元市场 Yes/No（加盘口价: Yes=m.price, No=1-m.price）
     m.breakdown.slice(0, 3).forEach((b, i) => {
       const ocz = ocZh(b.outcome) ? `（${ocZh(b.outcome)}）` : "";
-      cn.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}${ocz}  ${fmtUSD(b.usd)} · ${b.wallets}人 · ${b.pct}%`);
+      let oddsC = "";
+      if (m.price != null) {
+        const p = /yes/i.test(b.outcome) ? m.price : /no/i.test(b.outcome) ? 1 - m.price : null;
+        if (p != null) oddsC = `盤口${Math.round(p * 100)}¢ · `;
+      }
+      cn.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}${ocz}  ${oddsC}${fmtUSD(b.usd)} · ${b.wallets}人 · 佔${b.pct}%`);
     });
     // 💎 主推"最赚大户"(proven winner); 没有则退回最大注大户
     if (m.topWinner) {

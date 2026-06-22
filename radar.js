@@ -454,7 +454,11 @@ async function marketSentiment(opts = {}) {
       .sort((a, b) => b.usd - a.usd);
     // 金额最大的前几个大户(待 PnL 评分后再选"最赚的"与"最大注的")
     const topWallets = [...byWallet.entries()]
-      .map(([w, wr]) => ({ wallet: w, name: wr.name, usd: wr.usd, outcome: [...wr.byOut.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] }))
+      .map(([w, wr]) => {
+        const ents = [...wr.byOut.entries()].sort((a, b) => b[1] - a[1]);
+        const dir = wr.usd > 0 ? (ents[0]?.[1] || 0) / wr.usd : 0; // 方向集中度: 同时押 Yes+No(对冲/做市)→ 低
+        return { wallet: w, name: wr.name, usd: wr.usd, outcome: ents[0]?.[0], dir, directional: dir >= 0.8 };
+      })
       .sort((a, b) => b.usd - a.usd)
       .slice(0, 6);
     const yesUsd = [...yesByWallet.values()].reduce((s, v) => s + v.usd, 0);
@@ -477,8 +481,11 @@ async function marketSentiment(opts = {}) {
     });
 
   if (!isSports) {
-    // 加密: 维持"逐个二元市场 Yes/No"视图
-    const markets = enriched.filter((m) => m.total > 0).sort((a, b) => b.total - a.total).slice(0, topN);
+    // 加密: 逐个二元市场 Yes/No 视图; 跳过近乎确定的废盘(Yes价>0.88或<0.12), 只留有分歧的竞争盘 → 才有信号
+    const markets = enriched
+      .filter((m) => m.total > 0 && (m.price == null || (m.price >= 0.12 && m.price <= 0.88)))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, topN);
     await scorePnL(markets);
     return { markets, threshold: minUsd };
   }
