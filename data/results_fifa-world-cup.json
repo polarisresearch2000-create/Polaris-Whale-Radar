@@ -607,6 +607,254 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-21T10:45:52.710Z"
+    },
+    "760454": {
+      "match": "Norway vs Senegal",
+      "home": "Norway",
+      "away": "Senegal",
+      "whaleSide": "home",
+      "consensusPct": 0.7075365292340835,
+      "bigBettor": {
+        "wallet": "0x361b16e3ddfe1d415d41008daac2631d94ab74fe",
+        "side": "home",
+        "usd": 62412.86479100001,
+        "entryPrice": 0.42863901138605454,
+        "betTs": 1781759936,
+        "leadMin": 6881
+      },
+      "sides": {
+        "home": {
+          "usd": 212351.514352,
+          "price": 0.435
+        },
+        "draw": {
+          "usd": 1446.639998,
+          "price": 0.275
+        },
+        "away": {
+          "usd": 86329.832797,
+          "price": 0.285
+        }
+      },
+      "eventSlug": "fifwc-nor-sen-2026-06-22",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.135
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.1
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.075
+          },
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.075
+          }
+        ],
+        "other": 0.115
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-22T08:17:07.453Z"
+    },
+    "760455": {
+      "match": "Jordan vs Algeria",
+      "home": "Jordan",
+      "away": "Algeria",
+      "whaleSide": "away",
+      "consensusPct": 0.9878601233935423,
+      "bigBettor": {
+        "wallet": "0xc1da9728491b4d25480a771bbf932dbeddc5fefa",
+        "side": "away",
+        "usd": 84515.98819999999,
+        "entryPrice": 0.62,
+        "betTs": 1782061943,
+        "leadMin": 2028
+      },
+      "sides": {
+        "home": {
+          "usd": 1503.9999990000001,
+          "price": 0.155
+        },
+        "draw": {
+          "usd": 0,
+          "price": 0.225
+        },
+        "away": {
+          "usd": 122385.23279599998,
+          "price": 0.625
+        }
+      },
+      "eventSlug": "fifwc-jor-alg-2026-06-22",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.12
+          },
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.12
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.105
+          },
+          {
+            "home": 0,
+            "away": 0,
+            "prob": 0.07
+          }
+        ],
+        "other": 0.13
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-22T08:17:07.502Z"
+    },
+    "760456": {
+      "match": "Argentina vs Austria",
+      "home": "Argentina",
+      "away": "Austria",
+      "whaleSide": "home",
+      "consensusPct": 0.971746692817981,
+      "bigBettor": {
+        "wallet": "0x0346afae2603313d2bbee96b628536c8cbe352a5",
+        "side": "home",
+        "usd": 317530.10219999996,
+        "entryPrice": 0.6467620178479617,
+        "betTs": 1781935258,
+        "leadMin": 3539
+      },
+      "sides": {
+        "home": {
+          "usd": 1475674.9680159993,
+          "price": 0.665
+        },
+        "draw": {
+          "usd": 23990.149994000003,
+          "price": 0.225
+        },
+        "away": {
+          "usd": 18914.753599,
+          "price": 0.115
+        }
+      },
+      "eventSlug": "fifwc-arg-aut-2026-06-22",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.135
+          },
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.13
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 3,
+            "away": 0,
+            "prob": 0.085
+          }
+        ],
+        "other": 0.1415
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-22T08:17:07.351Z"
+    },
+    "760457": {
+      "match": "France vs Iraq",
+      "home": "France",
+      "away": "Iraq",
+      "whaleSide": "home",
+      "consensusPct": 0.9691234708747187,
+      "bigBettor": {
+        "wallet": "0x0346afae2603313d2bbee96b628536c8cbe352a5",
+        "side": "home",
+        "usd": 38099.3964,
+        "entryPrice": 0.8940844324761954,
+        "betTs": 1781817374,
+        "leadMin": 5744
+      },
+      "sides": {
+        "home": {
+          "usd": 272995.09324100026,
+          "price": 0.905
+        },
+        "draw": {
+          "usd": 4814.225598999999,
+          "price": 0.065
+        },
+        "away": {
+          "usd": 3883.4700000000003,
+          "price": 0.0245
+        }
+      },
+      "eventSlug": "fifwc-fra-irq-2026-06-22",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 3,
+            "away": 0,
+            "prob": 0.155
+          },
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.125
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.075
+          },
+          {
+            "home": 3,
+            "away": 1,
+            "prob": 0.065
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.055
+          }
+        ],
+        "other": 0.455
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-22T08:17:07.404Z"
     }
   },
   "settled": [
@@ -1058,12 +1306,14 @@
       "profit": -6.02557796360059
     }
   },
-  "previewDay": "2026-06-21",
+  "previewDay": "2026-06-22",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782075550669,
+  "trackUpdatedAt": 1782116229040,
   "scoreStats": {
     "n": 1,
     "hit1": 0,
     "hit3": 0
-  }
+  },
+  "previewUpdatedAt": 1782116229361,
+  "previewMsgId": 1002
 }
