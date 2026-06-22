@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V4.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V4.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -249,8 +249,13 @@ async function trackResults() {
     }
   }
 
-  // 置顶战绩定期刷新(即使无新结算也保持新鲜; 时间戳变化故 edit 不会"未修改")
+  // 置顶①战绩定期刷新(即使无新结算也保持新鲜; 时间戳变化故 edit 不会"未修改")
   if (Date.now() - (res.trackUpdatedAt || 0) >= 30 * 60000) await postOrUpdateTrackRecord(res);
+  // 置顶②即将开赛预判: 只显示未开赛(state=pre)且有预判的场, 每≥30分钟刷新(开赛的自动掉出、新场补进)
+  if (Date.now() - (res.previewUpdatedAt || 0) >= 30 * 60000) {
+    const upcomingPre = wc.filter((m) => m.state === "pre" && res.predictions[m.id]);
+    await postOrUpdatePreviewPin(res, upcomingPre);
+  }
   saveResults(res);
 }
 
@@ -447,6 +452,31 @@ function fmtDailyPreview(matches, res) {
   const best = bestStrategy(res);
   if (best) lines.push("", `📊 目前最佳策略: ${best.label} ${best.bets}場 ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%`);
   lines.push("", `🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
+  return lines.join("\n");
+}
+
+// 置顶用: 即将开赛预判(只列未开赛场次, 就地编辑、持续刷新; 复用每日预判的逐场渲染)
+function fmtUpcomingPin(matches, res) {
+  const show = (matches || []).slice(0, 6); // 最多6场, 保持可扫读
+  const lines = ["📅 <b>即將開賽 · 巨鯨預判</b>（持續更新）", "（未開賽場次 · 大戶押哪邊 + 市場比分榜）", ""];
+  if (!show.length) {
+    lines.push("⏳ 暫無即將開賽的場次,稍後自動更新");
+  } else {
+    for (const m of show) {
+      const p = res.predictions[m.id];
+      if (!p) continue;
+      const cons = Math.round((p.consensusPct || 0) * 100);
+      lines.push(`${p.home ? "🆚" : "🔥"} ${esc(p.match)}`);
+      lines.push(`   巨鯨預判: <b>${esc(sideLabel(p.whaleSide, p.home, p.away))}</b> (共識 ${cons}%)`);
+      lines.push(`   🐋 ${esc(bigLine(p.bigBettor, p.home, p.away))}`);
+      const sb = scoreBoardInline(p.scoreBoard);
+      if (sb) lines.push(`   🎯 市場比分榜(主-客): ${sb}`);
+    }
+    lines.push("", "💡 比分榜=市場共識熱度(非穩贏)，準確比分本就難中");
+  }
+  const best = bestStrategy(res);
+  if (best) lines.push("", `📊 目前最佳策略: ${best.label} ${best.bets}場 ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%`);
+  lines.push(`🔭 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
   return lines.join("\n");
 }
 
@@ -777,6 +807,18 @@ async function postOrUpdateTrackRecord(res) {
   }
 }
 
+// 置顶②: 即将开赛预判(就地编辑; 不存在则发+置顶)。previewMsgId 持久化在 results, 故云端始终编辑同一条, 不会重复置顶。
+async function postOrUpdatePreviewPin(res, matches) {
+  res.previewUpdatedAt = Date.now();
+  const text = fmtUpcomingPin(matches || [], res);
+  if (res.previewMsgId && (await editMsg(res.previewMsgId, text))) return;
+  const id = await sendReturn(text);
+  if (id) {
+    res.previewMsgId = id;
+    await pinMsg(id);
+  }
+}
+
 async function pollOnce() {
   const seen = loadSeen();
 
@@ -920,4 +962,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { translateTitle, titleBlock, fmtPositioning, fmtProfiles, fmtResultSummary, evalStrategies, fmtTrackRecord, fmtDailyPreview };
+module.exports = { translateTitle, titleBlock, fmtPositioning, fmtProfiles, fmtResultSummary, evalStrategies, fmtTrackRecord, fmtDailyPreview, fmtUpcomingPin };
