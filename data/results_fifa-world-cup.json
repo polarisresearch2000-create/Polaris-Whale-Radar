@@ -855,6 +855,254 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-22T08:17:07.404Z"
+    },
+    "760458": {
+      "match": "England vs Ghana",
+      "home": "England",
+      "away": "Ghana",
+      "whaleSide": "home",
+      "consensusPct": 0.9310592363631269,
+      "bigBettor": {
+        "wallet": "0x5b6331e7ff0831a3fe2ed12004747db1a9c911a4",
+        "side": "home",
+        "usd": 94461.41999899999,
+        "entryPrice": 0.8099999999986279,
+        "betTs": 1782183230,
+        "leadMin": 1026
+      },
+      "sides": {
+        "home": {
+          "usd": 332221.677801,
+          "price": 0.825
+        },
+        "draw": {
+          "usd": 11299.999996999999,
+          "price": 0.125
+        },
+        "away": {
+          "usd": 13299.526295,
+          "price": 0.055
+        }
+      },
+      "eventSlug": "fifwc-eng-gha-2026-06-23",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.145
+          },
+          {
+            "home": 3,
+            "away": 0,
+            "prob": 0.135
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.115
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.085
+          },
+          {
+            "home": 3,
+            "away": 1,
+            "prob": 0.075
+          }
+        ],
+        "other": 0.245
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-23T10:49:12.171Z"
+    },
+    "760459": {
+      "match": "Colombia vs Congo DR",
+      "home": "Colombia",
+      "away": "Congo DR",
+      "whaleSide": "home",
+      "consensusPct": 0.8342032004120229,
+      "bigBettor": {
+        "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+        "side": "away",
+        "usd": 5080.139999999999,
+        "entryPrice": 0.12999999999999998,
+        "betTs": 1782148555,
+        "leadMin": 1964
+      },
+      "sides": {
+        "home": {
+          "usd": 38975.901195,
+          "price": 0.635
+        },
+        "draw": {
+          "usd": 0,
+          "price": 0.235
+        },
+        "away": {
+          "usd": 7746.409599,
+          "price": 0.135
+        }
+      },
+      "eventSlug": "fifwc-col-cdr-2026-06-23",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.165
+          },
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.135
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 0,
+            "away": 0,
+            "prob": 0.085
+          }
+        ],
+        "other": 0.105
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-23T10:49:12.505Z"
+    },
+    "760460": {
+      "match": "Panama vs Croatia",
+      "home": "Panama",
+      "away": "Croatia",
+      "whaleSide": "away",
+      "consensusPct": 0.9808329974836321,
+      "bigBettor": {
+        "wallet": "0xc1da9728491b4d25480a771bbf932dbeddc5fefa",
+        "side": "away",
+        "usd": 99000.00000000001,
+        "entryPrice": 0.6600000000000001,
+        "betTs": 1782211369,
+        "leadMin": 737
+      },
+      "sides": {
+        "home": {
+          "usd": 6034.269997,
+          "price": 0.125
+        },
+        "draw": {
+          "usd": 970.929999,
+          "price": 0.225
+        },
+        "away": {
+          "usd": 358477.0912499999,
+          "price": 0.655
+        }
+      },
+      "eventSlug": "fifwc-pan-hrv-2026-06-23",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.125
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.115
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.105
+          },
+          {
+            "home": 0,
+            "away": 3,
+            "prob": 0.085
+          }
+        ],
+        "other": 0.155
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-23T10:49:12.339Z"
+    },
+    "760461": {
+      "match": "Portugal vs Uzbekistan",
+      "home": "Portugal",
+      "away": "Uzbekistan",
+      "whaleSide": "home",
+      "consensusPct": 0.988219211749911,
+      "bigBettor": {
+        "wallet": "0x9f2fe025f84839ca81dd8e0338892605702d2ca8",
+        "side": "home",
+        "usd": 530008.2312,
+        "entryPrice": 0.8400000000000002,
+        "betTs": 1782192472,
+        "leadMin": 692
+      },
+      "sides": {
+        "home": {
+          "usd": 1537425.8704929987,
+          "price": 0.855
+        },
+        "draw": {
+          "usd": 1024.3000000000002,
+          "price": 0.105
+        },
+        "away": {
+          "usd": 17303.707,
+          "price": 0.045
+        }
+      },
+      "eventSlug": "fifwc-prt-uzb-2026-06-23",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.145
+          },
+          {
+            "home": 3,
+            "away": 0,
+            "prob": 0.145
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.095
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.075
+          },
+          {
+            "home": 3,
+            "away": 1,
+            "prob": 0.075
+          }
+        ],
+        "other": 0.285
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-23T10:49:11.811Z"
     }
   },
   "settled": [
@@ -1368,14 +1616,14 @@
       "profit": -7.02557796360059
     }
   },
-  "previewDay": "2026-06-22",
+  "previewDay": "2026-06-23",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782167049320,
+  "trackUpdatedAt": 1782211754056,
   "scoreStats": {
     "n": 2,
     "hit1": 0,
     "hit3": 1
   },
-  "previewUpdatedAt": 1782167049853,
+  "previewUpdatedAt": 1782211754594,
   "previewMsgId": 1002
 }
