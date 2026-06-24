@@ -1,11 +1,11 @@
 name: Polaris World Cup Radar
 
-# 世界杯频道云端运行(每半小时扫描一次)。
-# 注: GitHub 免费 cron 对 */5 这种高频会大幅降权(实测常 4-7 小时才跑一次),
-# 故改 30 分钟(并避开整点高峰用 7/37 分), 提升按时率。仍可手动 Run workflow。
+# 长任务版(解决 GitHub 免费 cron 不可靠导致的多小时静默):
+# 一次运行连续约 5h40m, 期间每小时跑一轮 --once 并回写状态; cron 每小时尝试重启,
+# 靠并发锁(同时只一个)接力 → 近乎不间断, 每小时推一次。公开仓库 Actions 免费无限。
 on:
   schedule:
-    - cron: "7,37 * * * *"
+    - cron: "9 * * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -18,12 +18,13 @@ concurrency:
 jobs:
   scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Run World Cup radar
+      - name: Run World Cup radar (hourly for ~6h)
         env:
           SPORTS_BOT_TOKEN: ${{ secrets.SPORTS_BOT_TOKEN }}
           SPORTS_CHANNEL: "@polarisresearch2000_PE"
@@ -35,18 +36,21 @@ jobs:
           WATCHLIST_MIN_PNL: "50000"
           WATCHLIST_MIN_NOTIONAL: "500"
           POSITIONING_MIN_NOTIONAL: "500"
-          POSITIONING_MIN: "15"
+          POSITIONING_MIN: "55"
           PROFILES_ENABLED: "off"
           SIGNALS_ENABLED: "off"
-        run: node bot.js --once
-      - name: Persist state (dedupe + watchlist + digest)
         run: |
-          if [ -n "$(git status --porcelain data)" ]; then
-            git config user.name "polaris-bot"
-            git config user.email "bot@users.noreply.github.com"
-            git add data
-            git commit -m "chore: update worldcup state [skip ci]"
-            git push
-          else
-            echo "No state changes to persist."
-          fi
+          git config user.name "polaris-bot"
+          git config user.email "bot@users.noreply.github.com"
+          END=$((SECONDS + 18000))   # ~5h: 跑5轮(每小时一轮)后干净退出, 远在 6h 上限内, cron 再接力
+          while [ $SECONDS -lt $END ]; do
+            timeout 600 node bot.js --once || true
+            if [ -n "$(git status --porcelain data)" ]; then
+              git add data
+              git commit -m "chore: update worldcup state [skip ci]" || true
+              git pull --rebase --autostash origin main || true
+              git push || true
+            fi
+            echo "--- iteration done at ${SECONDS}s, sleeping 1h ---"
+            sleep 3600
+          done
