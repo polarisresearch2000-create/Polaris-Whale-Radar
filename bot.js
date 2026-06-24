@@ -479,8 +479,8 @@ function fmtUpcomingPin(matches, res) {
   const show = (matches || []).slice(0, 6); // 最多6场, 保持可扫读
   const sportsLike = show.some((m) => res.predictions[m.id]?.home); // 体育有主客; 加密无
   const lines = sportsLike
-    ? ["📅 <b>即將開賽 · 巨鯨預判</b>（持續更新）", "（未開賽場次 · 大戶押哪邊 + 市場比分榜）", ""]
-    : ["📅 <b>待結算 · 巨鯨預判</b>（持續更新）", "（活躍市場 · 大戶押 Yes/No）", ""];
+    ? ["📅 <b>即將開賽 · 賽前預判</b>（持續更新）", "（未開賽場次 · 預判方向 + 比分熱度）", ""]
+    : ["📅 <b>待結算 · 賽前預判</b>（持續更新）", "（活躍市場 · 預判方向）", ""];
   if (!show.length) {
     lines.push("⏳ 暫無可顯示的場次,稍後自動更新");
   } else {
@@ -488,16 +488,16 @@ function fmtUpcomingPin(matches, res) {
       const p = res.predictions[m.id];
       if (!p) continue;
       const cons = Math.round((p.consensusPct || 0) * 100);
-      lines.push(`${p.home ? "🆚" : "🔥"} ${esc(p.match)}`);
-      lines.push(`   巨鯨預判: <b>${esc(sideLabel(p.whaleSide, p.home, p.away))}</b> (共識 ${cons}%)`);
-      lines.push(`   🐋 ${esc(bigLine(p.bigBettor, p.home, p.away))}`);
+      const pick = tTeam(sideLabel(p.whaleSide, p.home, p.away)); // 中文队名/平局/是否
+      lines.push(`${p.home ? "🆚" : "🔥"} ${esc(translateTitle(p.match))}`);
+      lines.push(`   ⭐ 看好 <b>${esc(pick)}</b>（信心 ${cons}%）`);
       const sb = scoreBoardInline(p.scoreBoard);
-      if (sb) lines.push(`   🎯 市場比分榜(主-客): ${sb}`);
+      if (sb) lines.push(`   🎯 比分熱度: ${esc(sb)}`);
     }
-    lines.push("", "💡 比分榜=市場共識熱度(非穩贏)，準確比分本就難中");
+    lines.push("", "⚠️ 數據分析 · 非投注建議");
   }
   const best = bestStrategy(res);
-  if (best) lines.push("", `📊 目前最佳策略: ${best.label} ${best.bets}場 ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%`);
+  if (best) lines.push("", `📊 本屆預判戰績: ${best.bets}場 · ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%（詳見置頂戰績）`);
   lines.push(`🔭 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
   return lines.join("\n");
 }
