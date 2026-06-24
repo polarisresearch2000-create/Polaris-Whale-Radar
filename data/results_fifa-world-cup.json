@@ -1103,6 +1103,378 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-23T10:49:11.811Z"
+    },
+    "760462": {
+      "match": "Bosnia-Herzegovina vs Qatar",
+      "home": "Bosnia-Herzegovina",
+      "away": "Qatar",
+      "whaleSide": "home",
+      "consensusPct": 0.9238493932053018,
+      "bigBettor": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "home",
+        "usd": 49310.254400000005,
+        "entryPrice": 0.68,
+        "betTs": 1782167242,
+        "leadMin": 2673
+      },
+      "sides": {
+        "home": {
+          "usd": 175879.01987800005,
+          "price": 0.705
+        },
+        "draw": {
+          "usd": 7242.909997000001,
+          "price": 0.175
+        },
+        "away": {
+          "usd": 7254.359996,
+          "price": 0.115
+        }
+      },
+      "eventSlug": "fifwc-bih-qat-2026-06-24",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.115
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.105
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.085
+          },
+          {
+            "home": 3,
+            "away": 0,
+            "prob": 0.085
+          }
+        ],
+        "other": 0.205
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-24T10:44:49.449Z"
+    },
+    "760463": {
+      "match": "Switzerland vs Canada",
+      "home": "Switzerland",
+      "away": "Canada",
+      "whaleSide": "home",
+      "consensusPct": 0.5531691755118113,
+      "bigBettor": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "home",
+        "usd": 65308.276000000005,
+        "entryPrice": 0.4,
+        "betTs": 1782168640,
+        "leadMin": 2649
+      },
+      "sides": {
+        "home": {
+          "usd": 121157.17098,
+          "price": 0.415
+        },
+        "draw": {
+          "usd": 47048.257999999994,
+          "price": 0.315
+        },
+        "away": {
+          "usd": 50818.291689000005,
+          "price": 0.285
+        }
+      },
+      "eventSlug": "fifwc-che-can-2026-06-24",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.145
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.105
+          },
+          {
+            "home": 0,
+            "away": 0,
+            "prob": 0.095
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.095
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.085
+          }
+        ],
+        "other": 0.076
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-24T10:44:49.507Z"
+    },
+    "760464": {
+      "match": "Morocco vs Haiti",
+      "home": "Morocco",
+      "away": "Haiti",
+      "whaleSide": "home",
+      "consensusPct": 0.9785874403172291,
+      "bigBettor": {
+        "wallet": "0xf731ab9c4ffeb18d1d7f8596853d5b36ab62e013",
+        "side": "home",
+        "usd": 98974.98999599999,
+        "entryPrice": 0.8299999999985743,
+        "betTs": 1782295670,
+        "leadMin": 712
+      },
+      "sides": {
+        "home": {
+          "usd": 274846.9133949999,
+          "price": 0.825
+        },
+        "draw": {
+          "usd": 0,
+          "price": 0.125
+        },
+        "away": {
+          "usd": 6013.950000000001,
+          "price": 0.055
+        }
+      },
+      "eventSlug": "fifwc-mar-hai-2026-06-24",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.145
+          },
+          {
+            "home": 3,
+            "away": 0,
+            "prob": 0.125
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.105
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.085
+          },
+          {
+            "home": 3,
+            "away": 1,
+            "prob": 0.075
+          }
+        ],
+        "other": 0.295
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-24T10:44:49.570Z"
+    },
+    "760465": {
+      "match": "Scotland vs Brazil",
+      "home": "Scotland",
+      "away": "Brazil",
+      "whaleSide": "away",
+      "consensusPct": 0.9682845995464473,
+      "bigBettor": {
+        "wallet": "0x58483a07148bf1c4ddc4a1f0c0ea8daeb9e8a698",
+        "side": "away",
+        "usd": 82291.1829,
+        "entryPrice": 0.7353876788544096,
+        "betTs": 1782158861,
+        "leadMin": 2992
+      },
+      "sides": {
+        "home": {
+          "usd": 2567.808498,
+          "price": 0.095
+        },
+        "draw": {
+          "usd": 9889.969997999999,
+          "price": 0.165
+        },
+        "away": {
+          "usd": 380341.2502989998,
+          "price": 0.745
+        }
+      },
+      "eventSlug": "fifwc-sco-bra-2026-06-24",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.145
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.135
+          },
+          {
+            "home": 0,
+            "away": 3,
+            "prob": 0.105
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.095
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.085
+          }
+        ],
+        "other": 0.175
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-24T10:44:49.617Z"
+    },
+    "760466": {
+      "match": "South Africa vs South Korea",
+      "home": "South Africa",
+      "away": "South Korea",
+      "whaleSide": "away",
+      "consensusPct": 0.9307731279125462,
+      "bigBettor": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "away",
+        "usd": 105956.2502,
+        "entryPrice": 0.58,
+        "betTs": 1782231221,
+        "leadMin": 1966
+      },
+      "sides": {
+        "home": {
+          "usd": 15860.875998,
+          "price": 0.175
+        },
+        "draw": {
+          "usd": 4969.4427989999995,
+          "price": 0.245
+        },
+        "away": {
+          "usd": 280069.0020719998,
+          "price": 0.595
+        }
+      },
+      "eventSlug": "fifwc-rsa-kr-2026-06-24",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.145
+          },
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.115
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.115
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.105
+          },
+          {
+            "home": 0,
+            "away": 0,
+            "prob": 0.085
+          }
+        ],
+        "other": 0.105
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-24T10:44:49.757Z"
+    },
+    "760467": {
+      "match": "Czechia vs Mexico",
+      "home": "Czechia",
+      "away": "Mexico",
+      "whaleSide": "away",
+      "consensusPct": 0.908364339466589,
+      "bigBettor": {
+        "wallet": "0xa49becb692927d455924583b5e3e5788246f4c40",
+        "side": "away",
+        "usd": 344432.5647,
+        "entryPrice": 0.5099999999999999,
+        "betTs": 1782276433,
+        "leadMin": 1213
+      },
+      "sides": {
+        "home": {
+          "usd": 35210.731894000004,
+          "price": 0.255
+        },
+        "draw": {
+          "usd": 16414.448198,
+          "price": 0.245
+        },
+        "away": {
+          "usd": 511749.1633840002,
+          "price": 0.505
+        }
+      },
+      "eventSlug": "fifwc-cze-mex-2026-06-24",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.125
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.115
+          },
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.095
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.095
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.085
+          }
+        ],
+        "other": 0.09
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-24T10:44:49.681Z"
     }
   },
   "settled": [
@@ -1740,14 +2112,14 @@
       "profit": -3.311292249314877
     }
   },
-  "previewDay": "2026-06-23",
+  "previewDay": "2026-06-24",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782255081380,
+  "trackUpdatedAt": 1782297891334,
   "scoreStats": {
     "n": 4,
     "hit1": 0,
     "hit3": 1
   },
-  "previewUpdatedAt": 1782255081884,
+  "previewUpdatedAt": 1782297891891,
   "previewMsgId": 1002
 }
