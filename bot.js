@@ -692,6 +692,13 @@ function fmtWatchlistSignal(w) {
 }
 
 // ---------- 一轮扫描 ----------
+// 紧凑金额: $8.8M / $462k / $78k (持仓分析用, 更干净不刷数字)
+const cUSD = (n) => {
+  const x = Number(n) || 0, a = Math.abs(x), s = x < 0 ? "-" : "";
+  if (a >= 1e6) return `${s}$${(a / 1e6).toFixed(1)}M`;
+  if (a >= 1e3) return `${s}$${Math.round(a / 1e3)}k`;
+  return `${s}$${Math.round(a)}`;
+};
 // 持仓快照：各市场大额买入的多空分布
 function fmtPositioning(markets, threshold) {
   const top = markets.slice(0, 6); // 纯中文, 可多放几个盘
@@ -699,71 +706,60 @@ function fmtPositioning(markets, threshold) {
 
   const cn = [
     "📊 <b>巨鯨持倉分析</b>",
-    `（大戶下注的多空分布）`,
+    `（大戶資金流向 · 盤口 vs 聰明錢）`,
     "",
   ];
   for (const m of top) {
-    const dm = (m.eventSlug || "").match(/(\d{4}-\d{2}-\d{2})$/);
-    const dateStr = dm ? `（${dm[1]}）` : "";
-    cn.push(`🔥 <a href="${url(m)}">${esc(translateTitle(m.title))}</a>${dateStr}  <i>(共 ${m.wallets} 人 · ${fmtUSD(m.total)})</i>`);
+    cn.push(`🔥 <a href="${url(m)}">${esc(translateTitle(m.title))}</a>  <i>${cUSD(m.total)} · ${m.wallets}人</i>`);
     if (m.sides) {
       // 体育: 整场三方分布(主胜 / 平 / 客胜)
       const topTeamUsd = Math.max(m.sides.home.usd, m.sides.away.usd);
       const rows = [["home", m.sides.home], ["draw", m.sides.draw], ["away", m.sides.away]]
-        .map(([oc, v]) => ({ oc, usd: v.usd, wallets: v.wallets, price: v.price }))
+        .map(([oc, v]) => ({ oc, usd: v.usd, price: v.price }))
         .filter((x) => x.usd > 0)
         .sort((a, b) => b.usd - a.usd);
       for (const x of rows) {
         const pct = m.total ? Math.round((x.usd / m.total) * 100) : 0;
         const icon = x.oc === "draw" ? "⚪" : x.usd === topTeamUsd ? "🟩" : "🟥";
-        const odds = x.price != null ? `盤口${Math.round(x.price * 100)}¢ · ` : "";
-        cn.push(`   ${icon} ${esc(outLabel(x.oc, m.home, m.away))}  ${odds}${fmtUSD(x.usd)} · ${x.wallets}人 · 佔${pct}%`);
+        const odds = x.price != null ? `（盤口 ${Math.round(x.price * 100)}¢）` : "";
+        cn.push(`   ${icon} ${esc(outLabel(x.oc, m.home, m.away))} <b>${pct}%</b>${odds}`);
       }
       if (m.topWinner) {
         const w = m.topWinner;
-        cn.push(`   💎 最賺大戶 押 ${esc(outLabel(w.outcome, m.home, m.away))} · ${fmtUSD(w.usd)} · 歷史盈利 ${fmtUSD(w.allTimePnl)}`);
-        cn.push(`      <code>${esc(w.wallet)}</code>`);
+        cn.push(`   💎 頂級贏家在押 ${esc(outLabel(w.outcome, m.home, m.away))}（歷史盈利 ${cUSD(w.allTimePnl)}）`);
       } else if (m.topWhale) {
         const tw = m.topWhale, pnl = tw.allTimePnl;
-        const tag = pnl == null ? "" : pnl > 0 ? ` · 歷史盈利 ${fmtUSD(pnl)}` : pnl < 0 ? ` · 歷史虧損 ${fmtUSD(Math.abs(pnl))}` : "";
-        cn.push(`   🐋 最大注大戶 押 ${esc(outLabel(tw.outcome, m.home, m.away))} · ${fmtUSD(tw.usd)}${tag}`);
-        cn.push(`      <code>${esc(tw.wallet)}</code>`);
+        const tag = pnl == null ? "" : pnl > 0 ? `（歷史盈利 ${cUSD(pnl)}）` : pnl < 0 ? `（歷史虧損 ${cUSD(Math.abs(pnl))}）` : "";
+        cn.push(`   🐋 最大注在押 ${esc(outLabel(tw.outcome, m.home, m.away))}${tag}`);
       }
       const big = m.topWhale;
       if (big && big.allTimePnl != null && big.allTimePnl <= -50000 && (!m.topWinner || big.wallet !== m.topWinner.wallet)) {
-        cn.push(`   ⚠️ 最大注卻是輸家 押 ${esc(outLabel(big.outcome, m.home, m.away))} · ${fmtUSD(big.usd)} (歷史虧損 ${fmtUSD(Math.abs(big.allTimePnl))})`);
+        cn.push(`   ⚠️ 但最大注是輸家 押 ${esc(outLabel(big.outcome, m.home, m.away))}（歷史虧損 ${cUSD(Math.abs(big.allTimePnl))}）`);
       }
       cn.push("");
       continue;
     }
-    // 加密: 逐个二元市场 Yes/No（加盘口价: Yes=m.price, No=1-m.price）
-    m.breakdown.slice(0, 3).forEach((b, i) => {
-      const ocz = ocZh(b.outcome) ? `（${ocZh(b.outcome)}）` : "";
-      let oddsC = "";
+    // 加密: 二元市场 Yes/No（只留 是/否 + 占比 + 盘口, 去掉地址/金额/人数）
+    const ocLabel = (o) => ocZh(o) || esc(String(o));
+    m.breakdown.slice(0, 2).forEach((b, i) => {
+      let odds = "";
       if (m.price != null) {
         const p = /yes/i.test(b.outcome) ? m.price : /no/i.test(b.outcome) ? 1 - m.price : null;
-        if (p != null) oddsC = `盤口${Math.round(p * 100)}¢ · `;
+        if (p != null) odds = `（盤口 ${Math.round(p * 100)}¢）`;
       }
-      cn.push(`   ${i === 0 ? "🟩" : "🔻"} ${esc(String(b.outcome))}${ocz}  ${oddsC}${fmtUSD(b.usd)} · ${b.wallets}人 · 佔${b.pct}%`);
+      cn.push(`   ${i === 0 ? "🟩" : "🔻"} ${ocLabel(b.outcome)} <b>${b.pct}%</b>${odds}`);
     });
-    // 💎 主推"最赚大户"(proven winner); 没有则退回最大注大户
     if (m.topWinner) {
       const w = m.topWinner;
-      const ocz = ocZh(w.outcome) ? `（${ocZh(w.outcome)}）` : "";
-      cn.push(`   💎 最賺大戶 押 ${esc(String(w.outcome))}${ocz} · ${fmtUSD(w.usd)} · 歷史盈利 ${fmtUSD(w.allTimePnl)}`);
-      cn.push(`      <code>${esc(w.wallet)}</code>`);
+      cn.push(`   💎 頂級贏家在押 ${ocLabel(w.outcome)}（歷史盈利 ${cUSD(w.allTimePnl)}）`);
     } else if (m.topWhale) {
-      const tw = m.topWhale;
-      const ocz = ocZh(tw.outcome) ? `（${ocZh(tw.outcome)}）` : "";
-      const pnl = tw.allTimePnl;
-      const tag = pnl == null ? "" : pnl > 0 ? ` · 歷史盈利 ${fmtUSD(pnl)}` : pnl < 0 ? ` · 歷史虧損 ${fmtUSD(Math.abs(pnl))}` : "";
-      cn.push(`   🐋 最大注大戶 押 ${esc(String(tw.outcome))}${ocz} · ${fmtUSD(tw.usd)}${tag}`);
-      cn.push(`      <code>${esc(tw.wallet)}</code>`);
+      const tw = m.topWhale, pnl = tw.allTimePnl;
+      const tag = pnl == null ? "" : pnl > 0 ? `（歷史盈利 ${cUSD(pnl)}）` : pnl < 0 ? `（歷史虧損 ${cUSD(Math.abs(pnl))}）` : "";
+      cn.push(`   🐋 最大注在押 ${ocLabel(tw.outcome)}${tag}`);
     }
-    // ⚠️ 反向提示: 若"最大注"是大输家(且不是上面展示的赢家)
     const big = m.topWhale;
     if (big && big.allTimePnl != null && big.allTimePnl <= -50000 && (!m.topWinner || big.wallet !== m.topWinner.wallet)) {
-      cn.push(`   ⚠️ 最大注卻是輸家 押 ${esc(String(big.outcome))} · ${fmtUSD(big.usd)} (歷史虧損 ${fmtUSD(Math.abs(big.allTimePnl))})`);
+      cn.push(`   ⚠️ 但最大注是輸家（歷史虧損 ${cUSD(Math.abs(big.allTimePnl))}）`);
     }
     cn.push("");
   }
