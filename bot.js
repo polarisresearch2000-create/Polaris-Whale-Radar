@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V4.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V5.0"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -231,7 +231,7 @@ async function trackResults() {
   }
   // 有新结算: 推赛果总结 + 更新置顶战绩
   if (newSettle > 0) {
-    await send(fmtResultSummary(res));
+    await send(fmtResultSummary(res, newSettle));
     await postOrUpdateTrackRecord(res);
     console.log(`  → 已推赛果总结+更新置顶(新结算 ${newSettle})`);
   }
@@ -310,7 +310,7 @@ async function trackResultsCrypto() {
     newSettle++;
   }
   if (newSettle > 0) {
-    await send(fmtResultSummary(res));
+    await send(fmtResultSummary(res, newSettle));
     await postOrUpdateTrackRecord(res);
     console.log(`  → 加密赛果结算 ${newSettle} + 更新置顶`);
   }
@@ -502,9 +502,10 @@ function fmtUpcomingPin(matches, res) {
   return lines.join("\n");
 }
 
-function fmtResultSummary(res) {
-  const lines = ["🏁 <b>賽果總結 + 策略戰績</b>", "（巨鯨方向 vs 賽果 · 按下注價算 ROI）", ""];
-  for (const s of res.settled.slice(-5)) {
+function fmtResultSummary(res, newCount) {
+  const lines = ["🏁 <b>賽果總結</b>", "（巨鯨方向 vs 賽果 · 按下注價算 ROI）", ""];
+  const n = newCount && newCount > 0 ? newCount : 3; // 只展示本次新结算的赛果, 不再每次重复推旧的
+  for (const s of res.settled.slice(-n)) {
     const fw = s.strat?.followWhale, fb = s.strat?.followBig;
     const score = s.score ? ` <b>${s.score}</b>` : "";
     lines.push(`${fw?.win ? "✅" : "❌"} ${esc(s.match)}${score} → ${esc(resultLabel(s))}`);
@@ -515,18 +516,10 @@ function fmtResultSummary(res) {
   }
   const shr = scoreHitRateLine(res);
   if (shr) lines.push("", shr);
-  lines.push("");
-  lines.push("📊 <b>策略累計戰績（前向測試 · ROI）</b>");
-  for (const { key, label } of STRATS) {
-    const s = res.strategies[key];
-    if (!s || !s.bets) {
-      lines.push(`${label}: 暫無`);
-      continue;
-    }
-    const wr = Math.round((s.wins / s.bets) * 100);
-    const roi = roiPct(s);
-    lines.push(`${label}: ${s.bets}場 命中${wr}% · ROI <b>${roi >= 0 ? "+" : ""}${roi}%</b>`);
-  }
+  // 不再重复列全部策略(含已隐藏的 fade、旧格式) —— 置顶才是详细正本; 这里只给一行头条 + 指向置顶
+  const best = bestStrategy(res);
+  if (best) lines.push("", `📊 目前最佳策略: ${best.label} ${best.bets}場 · ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%`);
+  lines.push("📌 完整策略戰績(逐場明細 · 累計u)見置頂");
   lines.push("");
   lines.push("⚠️ 樣本小時 ROI 噪聲大; 跑滿幾十場才算數");
   lines.push(`🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
