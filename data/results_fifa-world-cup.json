@@ -1164,7 +1164,8 @@
         "other": 0.205
       },
       "state": "pre",
-      "capturedAt": "2026-06-24T10:44:49.449Z"
+      "capturedAt": "2026-06-24T10:44:49.449Z",
+      "kickoffMs": 1782327600000
     },
     "760463": {
       "match": "Switzerland vs Canada",
@@ -1226,7 +1227,8 @@
         "other": 0.076
       },
       "state": "pre",
-      "capturedAt": "2026-06-24T10:44:49.507Z"
+      "capturedAt": "2026-06-24T10:44:49.507Z",
+      "kickoffMs": 1782327600000
     },
     "760464": {
       "match": "Morocco vs Haiti",
@@ -1288,7 +1290,8 @@
         "other": 0.295
       },
       "state": "pre",
-      "capturedAt": "2026-06-24T10:44:49.570Z"
+      "capturedAt": "2026-06-24T10:44:49.570Z",
+      "kickoffMs": 1782338400000
     },
     "760465": {
       "match": "Scotland vs Brazil",
@@ -1350,7 +1353,8 @@
         "other": 0.175
       },
       "state": "pre",
-      "capturedAt": "2026-06-24T10:44:49.617Z"
+      "capturedAt": "2026-06-24T10:44:49.617Z",
+      "kickoffMs": 1782338400000
     },
     "760466": {
       "match": "South Africa vs South Korea",
@@ -1412,7 +1416,8 @@
         "other": 0.105
       },
       "state": "pre",
-      "capturedAt": "2026-06-24T10:44:49.757Z"
+      "capturedAt": "2026-06-24T10:44:49.757Z",
+      "kickoffMs": 1782349200000
     },
     "760467": {
       "match": "Czechia vs Mexico",
@@ -1474,7 +1479,8 @@
         "other": 0.09
       },
       "state": "pre",
-      "capturedAt": "2026-06-24T10:44:49.681Z"
+      "capturedAt": "2026-06-24T10:44:49.681Z",
+      "kickoffMs": 1782349200000
     }
   },
   "settled": [
@@ -2114,12 +2120,12 @@
   },
   "previewDay": "2026-06-24",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782301500593,
+  "trackUpdatedAt": 1782320899910,
   "scoreStats": {
     "n": 4,
     "hit1": 0,
     "hit3": 1
   },
-  "previewUpdatedAt": 1782301501140,
+  "previewUpdatedAt": 1782320900468,
   "previewMsgId": 1002
 }
