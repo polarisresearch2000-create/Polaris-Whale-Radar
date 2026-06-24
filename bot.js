@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V5.0"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V5.1"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -182,6 +182,14 @@ async function capturePredictions(res, wc, pmEvents) {
         whaleSide: pred.whaleSide, consensusPct: pred.consensusPct, bigBettor: pred.bigBettor,
         sides: pred.sides, eventSlug: pred.eventSlug, scoreBoard, state: m.state, capturedAt: new Date().toISOString(),
       };
+    }
+  }
+  // 兜底回填开赛时间: 对仍缺 kickoffMs 的预判(尤其改版前捕捉、已不在 ESPN 赛程上的), 从已拉取的 Polymarket 事件 startTime 补(零额外请求)
+  for (const id in res.predictions) {
+    const p = res.predictions[id];
+    if (p.kickoffMs == null && p.eventSlug) {
+      const pe = (pmEvents || []).find((e) => e.slug === p.eventSlug);
+      if (pe && pe.startTime) p.kickoffMs = Date.parse(pe.startTime);
     }
   }
 }
@@ -719,7 +727,8 @@ function fmtPositioning(markets, threshold) {
     "",
   ];
   for (const m of top) {
-    cn.push(`🔥 <a href="${url(m)}">${esc(translateTitle(m.title))}</a>  <i>${cUSD(m.total)} · ${m.wallets}人</i>`);
+    const ko = koHKT(m.kickoffMs);
+    cn.push(`🔥 <a href="${url(m)}">${esc(translateTitle(m.title))}</a>${ko ? ` · ⏰ ${ko}` : ""}  <i>${cUSD(m.total)} · ${m.wallets}人</i>`);
     if (m.sides) {
       // 体育: 整场三方分布(主胜 / 平 / 客胜)
       const topTeamUsd = Math.max(m.sides.home.usd, m.sides.away.usd);

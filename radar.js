@@ -387,12 +387,12 @@ async function marketSentiment(opts = {}) {
   // 收集要统计的市场(主胜负/平, 排除衍生玩法); 体育额外标注该盘属于本场哪个结果(home/draw/away)
   const targets = [];
   for (const ev of events) {
-    let homeName = null, awayName = null, homeTok = [], awayTok = [];
+    let homeName = null, awayName = null, homeTok = [], awayTok = [], kickoffMs = null;
     if (isSports) {
       // #7: 只统计【未开赛】比赛, 排除 in-play/已完赛 —— 开赛后场上的钱不算"赛前布局聪明钱"
       const gs = ev.startTime || (ev.markets || []).find((x) => x.gameStartTime)?.gameStartTime;
-      const kickoff = gs ? Date.parse(String(gs).replace(" ", "T")) : null;
-      if (kickoff && Date.now() >= kickoff) continue;
+      kickoffMs = gs ? Date.parse(String(gs).replace(" ", "T")) : null;
+      if (kickoffMs && Date.now() >= kickoffMs) continue;
       const parts = String(ev.title || "").split(/\s+vs\.?\s+/i);
       if (parts.length >= 2) { homeName = parts[0].trim(); awayName = parts[1].trim(); homeTok = teamToks(homeName); awayTok = teamToks(awayName); }
     }
@@ -414,7 +414,7 @@ async function marketSentiment(opts = {}) {
         const yi = outs.findIndex((o) => /yes/i.test(o));
         if (yi >= 0) price = Number(px[yi]);
       } catch {}
-      targets.push({ cid: m.conditionId, title: m.question, eventSlug: ev.slug, eventTitle: ev.title, outcome, home: homeName, away: awayName, price });
+      targets.push({ cid: m.conditionId, title: m.question, eventSlug: ev.slug, eventTitle: ev.title, outcome, home: homeName, away: awayName, price, kickoffMs });
     }
   }
 
@@ -462,7 +462,7 @@ async function marketSentiment(opts = {}) {
       .sort((a, b) => b.usd - a.usd)
       .slice(0, 6);
     const yesUsd = [...yesByWallet.values()].reduce((s, v) => s + v.usd, 0);
-    return { title: mk.title, eventSlug: mk.eventSlug, eventTitle: mk.eventTitle, outcome: mk.outcome, home: mk.home, away: mk.away, price: mk.price, total, wallets: allWallets.size, breakdown, topWallets, yesUsd, yesByWallet };
+    return { title: mk.title, eventSlug: mk.eventSlug, eventTitle: mk.eventTitle, outcome: mk.outcome, home: mk.home, away: mk.away, price: mk.price, kickoffMs: mk.kickoffMs, total, wallets: allWallets.size, breakdown, topWallets, yesUsd, yesByWallet };
   });
 
   // 给"前几大户"标注历史战绩(交叉 user-pnl, 缓存) → 选出 💎最赚大户 / 🐋最大注大户(两条路径共用)
@@ -495,7 +495,7 @@ async function marketSentiment(opts = {}) {
   for (const m of enriched) {
     if (!m.outcome || m.yesUsd <= 0) continue;
     if (!byEvent.has(m.eventSlug))
-      byEvent.set(m.eventSlug, { eventSlug: m.eventSlug, title: m.eventTitle, home: m.home, away: m.away, sides: { home: { usd: 0, wallets: 0, price: null }, draw: { usd: 0, wallets: 0, price: null }, away: { usd: 0, wallets: 0, price: null } }, walletAgg: new Map() });
+      byEvent.set(m.eventSlug, { eventSlug: m.eventSlug, title: m.eventTitle, home: m.home, away: m.away, kickoffMs: m.kickoffMs, sides: { home: { usd: 0, wallets: 0, price: null }, draw: { usd: 0, wallets: 0, price: null }, away: { usd: 0, wallets: 0, price: null } }, walletAgg: new Map() });
     const ev = byEvent.get(m.eventSlug);
     ev.sides[m.outcome].usd += m.yesUsd;
     ev.sides[m.outcome].wallets += m.yesByWallet.size;
@@ -518,7 +518,7 @@ async function marketSentiment(opts = {}) {
         })
         .sort((a, b) => b.usd - a.usd)
         .slice(0, 6);
-      return { eventSlug: ev.eventSlug, title: ev.title, home: ev.home, away: ev.away, total, wallets: ev.walletAgg.size, sides: ev.sides, topWallets };
+      return { eventSlug: ev.eventSlug, title: ev.title, home: ev.home, away: ev.away, kickoffMs: ev.kickoffMs, total, wallets: ev.walletAgg.size, sides: ev.sides, topWallets };
     })
     .filter((m) => m.total > 0)
     .sort((a, b) => b.total - a.total)
