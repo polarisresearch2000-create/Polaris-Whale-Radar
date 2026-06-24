@@ -1,8 +1,9 @@
 name: Polaris World Cup Radar
 
-# 长任务版(解决 GitHub 免费 cron 不可靠导致的多小时静默):
-# 一次运行连续约 5h40m, 期间每小时跑一轮 --once 并回写状态; cron 每小时尝试重启,
-# 靠并发锁(同时只一个)接力 → 近乎不间断, 每小时推一次。公开仓库 Actions 免费无限。
+# 长任务 + 自我重启版(根治 GitHub 免费 cron 不可靠):
+# 一次运行连续约 5h, 期间每小时跑一轮 --once 并回写状态; 跑满后用 PAT 令牌(secrets.WORKFLOW_PAT)
+# 触发下一轮(内置 GITHUB_TOKEN 不能触发工作流, PAT 可以) → 一个接一个、几乎零空窗。
+# cron 每小时保留作兜底(万一某次没接上)。公开仓库 Actions 免费无限。
 on:
   schedule:
     - cron: "9 * * * *"
@@ -39,10 +40,11 @@ jobs:
           POSITIONING_MIN: "55"
           PROFILES_ENABLED: "off"
           SIGNALS_ENABLED: "off"
+          WORKFLOW_PAT: ${{ secrets.WORKFLOW_PAT }}
         run: |
           git config user.name "polaris-bot"
           git config user.email "bot@users.noreply.github.com"
-          END=$((SECONDS + 18000))   # ~5h: 跑5轮(每小时一轮)后干净退出, 远在 6h 上限内, cron 再接力
+          END=$((SECONDS + 18000))   # ~5h: 跑5轮(每小时一轮)后退出, 远在 6h 上限内
           while [ $SECONDS -lt $END ]; do
             timeout 600 node bot.js --once || true
             if [ -n "$(git status --porcelain data)" ]; then
@@ -54,3 +56,15 @@ jobs:
             echo "--- iteration done at ${SECONDS}s, sleeping 1h ---"
             sleep 3600
           done
+          # 跑满约5小时 → 用 PAT 触发下一轮(无缝接力)。无 PAT 则靠 cron 兜底。
+          if [ -n "$WORKFLOW_PAT" ]; then
+            echo "Re-dispatching next run via PAT..."
+            curl -sS -X POST \
+              -H "Authorization: Bearer $WORKFLOW_PAT" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/worldcup.yml/dispatches" \
+              -d '{"ref":"main"}' && echo "✅ next run dispatched" || echo "⚠️ dispatch failed"
+          else
+            echo "ℹ️ no WORKFLOW_PAT secret set yet; relying on hourly cron as fallback"
+          fi
