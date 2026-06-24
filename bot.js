@@ -462,22 +462,23 @@ function scoreHitRateLine(res) {
 
 // 每日固定: 今日巨鲸预判
 function fmtDailyPreview(matches, res) {
-  const sub = LABEL === "World Cup" ? "今日世界盃 · 大戶押哪邊" : "當前熱門 · 大戶押哪邊";
-  const lines = ["☀️ <b>今日巨鯨預判 Daily Preview</b>", `（${sub}）`, ""];
+  const sub = LABEL === "World Cup" ? "今日世界盃 · 開賽時間 HKT" : "當前焦點";
+  const lines = ["☀️ <b>今日賽前預判</b>", `（${sub}）`, ""];
   for (const m of matches) {
     const p = res.predictions[m.id];
     if (!p) continue;
     const cons = Math.round((p.consensusPct || 0) * 100);
-    lines.push(`${p.home ? "🆚" : "🔥"} ${esc(p.match)}`);
-    lines.push(`   巨鯨預判: <b>${esc(sideLabel(p.whaleSide, p.home, p.away))}</b> (共識 ${cons}%)`);
-    lines.push(`   🐋 ${esc(bigLine(p.bigBettor, p.home, p.away))}`);
+    const pick = tTeam(sideLabel(p.whaleSide, p.home, p.away));
+    const ko = koHKT(p.kickoffMs);
+    lines.push(`${p.home ? "🆚" : "🔥"} ${esc(translateTitle(p.match))}${ko ? ` · ⏰ ${ko}` : ""}`);
+    lines.push(`   ⭐ 看好 <b>${esc(pick)}</b>（信心 ${cons}%）`);
     const sb = scoreBoardInline(p.scoreBoard);
-    if (sb) lines.push(`   🎯 市場比分榜(主-客): ${sb}`);
+    if (sb) lines.push(`   🎯 比分熱度: ${esc(sb)}`);
   }
-  if (matches.some((m) => res.predictions[m.id]?.scoreBoard)) lines.push("", "💡 比分榜=市場共識熱度(非穩贏)，準確比分本就難中");
+  lines.push("", "⚠️ 數據分析 · 非投注建議");
   const best = bestStrategy(res);
-  if (best) lines.push("", `📊 目前最佳策略: ${best.label} ${best.bets}場 ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%`);
-  lines.push("", `🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
+  if (best) lines.push("", `📊 本屆預判戰績: ${best.bets}場 · ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%（詳見置頂戰績）`);
+  lines.push(`🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
   return lines.join("\n");
 }
 
