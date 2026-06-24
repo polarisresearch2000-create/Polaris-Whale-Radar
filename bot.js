@@ -426,7 +426,7 @@ function fmtTrackRecord(res) {
   if (best && any) lines.push(`🏆 目前最佳: ${best.label} (ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%)`);
   const shr = scoreHitRateLine(res);
   if (shr) lines.push(shr);
-  lines.push(any ? `⚠️ 樣本仍小(${settled.length}場)、噪聲大; 跑滿幾十場才有統計意義` : "⏳ 等待首批賽果結算中…");
+  if (!any) lines.push("⏳ 等待首批賽果結算中…"); // 取消"样本仍小"警告行(保留空态占位)
   lines.push(`🔭 ROI=每$1淨回報 · 賠率=入場價隱含倍數 · 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
   return lines.join("\n");
 }
