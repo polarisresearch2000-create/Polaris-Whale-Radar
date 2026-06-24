@@ -169,6 +169,7 @@ async function capturePredictions(res, wc, pmEvents) {
     if (m.completed || m.state !== "pre") continue;
     const ex = res.predictions[m.id];
     if (ex && ex.sides) {
+      if (ex.kickoffMs == null && m.kickoffMs) ex.kickoffMs = m.kickoffMs; // 回填开赛时间(老预判没存)
       // 回填准确比分榜: 仅在"从未尝试过"(undefined)时补一次, 失败置 null 不再每轮重试
       if (ex.scoreBoard === undefined && ex.eventSlug) ex.scoreBoard = (await getExactScoreBoard(ex.eventSlug, 5).catch(() => null)) || null;
       continue;
@@ -177,7 +178,7 @@ async function capturePredictions(res, wc, pmEvents) {
     if (pred && pred.sides) {
       const scoreBoard = await getExactScoreBoard(pred.eventSlug, 5).catch(() => null); // 准确比分市场概率榜
       res.predictions[m.id] = {
-        match: `${m.home} vs ${m.away}`, home: m.home, away: m.away,
+        match: `${m.home} vs ${m.away}`, home: m.home, away: m.away, kickoffMs: m.kickoffMs,
         whaleSide: pred.whaleSide, consensusPct: pred.consensusPct, bigBettor: pred.bigBettor,
         sides: pred.sides, eventSlug: pred.eventSlug, scoreBoard, state: m.state, capturedAt: new Date().toISOString(),
       };
@@ -340,6 +341,12 @@ async function trackResultsCrypto() {
 
 const roiPct = (s) => (s.bets ? Math.round((s.profit / s.bets) * 100) : 0);
 const hkNow = () => new Date(Date.now() + 8 * 3600 * 1000); // 香港时间
+// 开赛时间 → 香港时间 "M/D HH:MM"
+const koHKT = (ms) => {
+  if (!ms) return "";
+  const d = new Date(ms + 8 * 3600 * 1000), p = (n) => String(n).padStart(2, "0");
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+};
 
 // 目前 ROI 最高的策略(至少 1 场)
 function bestStrategy(res) {
@@ -479,7 +486,7 @@ function fmtUpcomingPin(matches, res) {
   const show = (matches || []).slice(0, 6); // 最多6场, 保持可扫读
   const sportsLike = show.some((m) => res.predictions[m.id]?.home); // 体育有主客; 加密无
   const lines = sportsLike
-    ? ["📅 <b>即將開賽 · 賽前預判</b>（持續更新）", "（未開賽場次 · 預判方向 + 比分熱度）", ""]
+    ? ["📅 <b>即將開賽 · 賽前預判</b>（持續更新）", "（未開賽場次 · 開賽時間 HKT · 預判方向 + 比分熱度）", ""]
     : ["📅 <b>待結算 · 賽前預判</b>（持續更新）", "（活躍市場 · 預判方向）", ""];
   if (!show.length) {
     lines.push("⏳ 暫無可顯示的場次,稍後自動更新");
@@ -489,7 +496,8 @@ function fmtUpcomingPin(matches, res) {
       if (!p) continue;
       const cons = Math.round((p.consensusPct || 0) * 100);
       const pick = tTeam(sideLabel(p.whaleSide, p.home, p.away)); // 中文队名/平局/是否
-      lines.push(`${p.home ? "🆚" : "🔥"} ${esc(translateTitle(p.match))}`);
+      const ko = koHKT(p.kickoffMs);
+      lines.push(`${p.home ? "🆚" : "🔥"} ${esc(translateTitle(p.match))}${ko ? ` · ⏰ ${ko}` : ""}`);
       lines.push(`   ⭐ 看好 <b>${esc(pick)}</b>（信心 ${cons}%）`);
       const sb = scoreBoardInline(p.scoreBoard);
       if (sb) lines.push(`   🎯 比分熱度: ${esc(sb)}`);
