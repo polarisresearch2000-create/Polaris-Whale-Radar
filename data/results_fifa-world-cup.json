@@ -2094,38 +2094,157 @@
         }
       ],
       "scoreRank": -1
+    },
+    {
+      "espnId": "760462",
+      "match": "Bosnia-Herzegovina vs Qatar",
+      "home": "Bosnia-Herzegovina",
+      "away": "Qatar",
+      "actual": "home",
+      "score": "3-1",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "home",
+        "usd": 49310.254400000005,
+        "entryPrice": 0.68,
+        "betTs": 1782167242,
+        "leadMin": 2673
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.705,
+          "win": true,
+          "profit": 0.41843971631205684
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.705,
+          "win": true,
+          "profit": 0.41843971631205684
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.705,
+          "win": true,
+          "profit": 0.41843971631205684
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.29500000000000004,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-24T21:08:50.767Z",
+      "scoreBoard": [
+        {
+          "home": 2,
+          "away": 0,
+          "prob": 0.115
+        },
+        {
+          "home": 1,
+          "away": 0,
+          "prob": 0.105
+        },
+        {
+          "home": 2,
+          "away": 1,
+          "prob": 0.105
+        }
+      ],
+      "scoreRank": -1
+    },
+    {
+      "espnId": "760463",
+      "match": "Switzerland vs Canada",
+      "home": "Switzerland",
+      "away": "Canada",
+      "actual": "home",
+      "score": "2-1",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "home",
+        "usd": 65308.276000000005,
+        "entryPrice": 0.4,
+        "betTs": 1782168640,
+        "leadMin": 2649
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.415,
+          "win": true,
+          "profit": 1.4096385542168675
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.415,
+          "win": true,
+          "profit": 1.4096385542168675
+        },
+        "highConsensus": null,
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.585,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-24T21:08:50.767Z",
+      "scoreBoard": [
+        {
+          "home": 1,
+          "away": 1,
+          "prob": 0.145
+        },
+        {
+          "home": 1,
+          "away": 0,
+          "prob": 0.105
+        },
+        {
+          "home": 0,
+          "away": 0,
+          "prob": 0.095
+        }
+      ],
+      "scoreRank": 3
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 13,
-      "wins": 10,
-      "profit": 2.13951454636709
+      "bets": 15,
+      "wins": 12,
+      "profit": 3.9675928168960146
     },
     "followBig": {
-      "bets": 13,
-      "wins": 10,
-      "profit": 2.13951454636709
+      "bets": 15,
+      "wins": 12,
+      "profit": 3.9675928168960146
     },
     "highConsensus": {
-      "bets": 12,
-      "wins": 9,
-      "profit": 1.0342513884723536
+      "bets": 13,
+      "wins": 10,
+      "profit": 1.4526911047844104
     },
     "fadeFav": {
-      "bets": 13,
+      "bets": 15,
       "wins": 3,
-      "profit": -3.311292249314877
+      "profit": -5.311292249314877
     }
   },
   "previewDay": "2026-06-24",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782331723364,
+  "trackUpdatedAt": 1782335332272,
   "scoreStats": {
-    "n": 4,
+    "n": 6,
     "hit1": 0,
     "hit3": 1
   },
-  "previewUpdatedAt": 1782331723838,
+  "previewUpdatedAt": 1782335332747,
   "previewMsgId": 1002
 }
