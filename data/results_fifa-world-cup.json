@@ -2213,38 +2213,162 @@
         }
       ],
       "scoreRank": 3
+    },
+    {
+      "espnId": "760464",
+      "match": "Morocco vs Haiti",
+      "home": "Morocco",
+      "away": "Haiti",
+      "actual": "home",
+      "score": "4-2",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0xf731ab9c4ffeb18d1d7f8596853d5b36ab62e013",
+        "side": "home",
+        "usd": 98974.98999599999,
+        "entryPrice": 0.8299999999985743,
+        "betTs": 1782295670,
+        "leadMin": 712
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.825,
+          "win": true,
+          "profit": 0.21212121212121218
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.825,
+          "win": true,
+          "profit": 0.21212121212121218
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.825,
+          "win": true,
+          "profit": 0.21212121212121218
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.17500000000000004,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-25T00:09:32.466Z",
+      "scoreBoard": [
+        {
+          "home": 2,
+          "away": 0,
+          "prob": 0.145
+        },
+        {
+          "home": 3,
+          "away": 0,
+          "prob": 0.125
+        },
+        {
+          "home": 1,
+          "away": 0,
+          "prob": 0.105
+        }
+      ],
+      "scoreRank": -1
+    },
+    {
+      "espnId": "760465",
+      "match": "Scotland vs Brazil",
+      "home": "Scotland",
+      "away": "Brazil",
+      "actual": "away",
+      "score": "0-3",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0x58483a07148bf1c4ddc4a1f0c0ea8daeb9e8a698",
+        "side": "away",
+        "usd": 82291.1829,
+        "entryPrice": 0.7353876788544096,
+        "betTs": 1782158861,
+        "leadMin": 2992
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.745,
+          "win": true,
+          "profit": 0.3422818791946309
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.745,
+          "win": true,
+          "profit": 0.3422818791946309
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.745,
+          "win": true,
+          "profit": 0.3422818791946309
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.255,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-25T00:09:32.466Z",
+      "scoreBoard": [
+        {
+          "home": 0,
+          "away": 2,
+          "prob": 0.145
+        },
+        {
+          "home": 0,
+          "away": 1,
+          "prob": 0.135
+        },
+        {
+          "home": 0,
+          "away": 3,
+          "prob": 0.105
+        }
+      ],
+      "scoreRank": 2
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 15,
-      "wins": 12,
-      "profit": 3.9675928168960146
+      "bets": 17,
+      "wins": 14,
+      "profit": 4.521995908211857
     },
     "followBig": {
-      "bets": 15,
-      "wins": 12,
-      "profit": 3.9675928168960146
+      "bets": 17,
+      "wins": 14,
+      "profit": 4.521995908211857
     },
     "highConsensus": {
-      "bets": 13,
-      "wins": 10,
-      "profit": 1.4526911047844104
+      "bets": 15,
+      "wins": 12,
+      "profit": 2.0070941961002533
     },
     "fadeFav": {
-      "bets": 15,
+      "bets": 17,
       "wins": 3,
-      "profit": -5.311292249314877
+      "profit": -7.311292249314877
     }
   },
   "previewDay": "2026-06-24",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782342563894,
+  "trackUpdatedAt": 1782346174033,
   "scoreStats": {
-    "n": 6,
+    "n": 8,
     "hit1": 0,
-    "hit3": 1
+    "hit3": 2
   },
-  "previewUpdatedAt": 1782342564421,
+  "previewUpdatedAt": 1782346174561,
   "previewMsgId": 1002
 }
