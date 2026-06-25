@@ -2839,38 +2839,162 @@
         }
       ],
       "scoreRank": -1
+    },
+    {
+      "espnId": "760473",
+      "match": "Curaçao vs Ivory Coast",
+      "home": "Curaçao",
+      "away": "Ivory Coast",
+      "actual": "away",
+      "score": "0-2",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+        "side": "away",
+        "usd": 39926.28999600001,
+        "entryPrice": 0.8386330345829802,
+        "betTs": 1782189791,
+        "leadMin": 3797
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.8385,
+          "win": true,
+          "profit": 0.19260584376863443
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.8385,
+          "win": true,
+          "profit": 0.19260584376863443
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.8385,
+          "win": true,
+          "profit": 0.19260584376863443
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.16149999999999998,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-25T22:14:51.366Z",
+      "scoreBoard": [
+        {
+          "home": 0,
+          "away": 2,
+          "prob": 0.145
+        },
+        {
+          "home": 0,
+          "away": 3,
+          "prob": 0.135
+        },
+        {
+          "home": 0,
+          "away": 1,
+          "prob": 0.095
+        }
+      ],
+      "scoreRank": 0
+    },
+    {
+      "espnId": "760468",
+      "match": "Ecuador vs Germany",
+      "home": "Ecuador",
+      "away": "Germany",
+      "actual": "home",
+      "score": "2-1",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0x408fe71e6b5401ecd6733970cb6f1a25e984b2f4",
+        "side": "away",
+        "usd": 605851.519999,
+        "entryPrice": 0.6625343556701645,
+        "betTs": 1782361036,
+        "leadMin": 943
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.6515,
+          "win": false,
+          "profit": -1
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.6515,
+          "win": false,
+          "profit": -1
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.6515,
+          "win": false,
+          "profit": -1
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.34850000000000003,
+          "win": true,
+          "profit": 1.8694404591104732
+        }
+      },
+      "settledAt": "2026-06-25T22:14:51.366Z",
+      "scoreBoard": [
+        {
+          "home": 0,
+          "away": 1,
+          "prob": 0.115
+        },
+        {
+          "home": 0,
+          "away": 2,
+          "prob": 0.105
+        },
+        {
+          "home": 1,
+          "away": 2,
+          "prob": 0.105
+        }
+      ],
+      "scoreRank": -1
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 19,
-      "wins": 15,
-      "profit": 4.502193928013837
+      "bets": 21,
+      "wins": 16,
+      "profit": 3.6947997717824723
     },
     "followBig": {
-      "bets": 19,
-      "wins": 15,
-      "profit": 4.502193928013837
+      "bets": 21,
+      "wins": 16,
+      "profit": 3.6947997717824723
     },
     "highConsensus": {
-      "bets": 17,
-      "wins": 13,
-      "profit": 1.9872922159022335
+      "bets": 19,
+      "wins": 14,
+      "profit": 1.179898059670868
     },
     "fadeFav": {
-      "bets": 19,
-      "wins": 4,
-      "profit": -6.842156446845742
+      "bets": 21,
+      "wins": 5,
+      "profit": -5.972715987735269
     }
   },
   "previewDay": "2026-06-25",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782422082843,
+  "trackUpdatedAt": 1782425692957,
   "scoreStats": {
-    "n": 10,
-    "hit1": 0,
-    "hit3": 2
+    "n": 12,
+    "hit1": 1,
+    "hit3": 3
   },
-  "previewUpdatedAt": 1782422083360,
+  "previewUpdatedAt": 1782425693540,
   "previewMsgId": 1002
 }
