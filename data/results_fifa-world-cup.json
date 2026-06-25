@@ -1481,6 +1481,384 @@
       "state": "pre",
       "capturedAt": "2026-06-24T10:44:49.681Z",
       "kickoffMs": 1782349200000
+    },
+    "760468": {
+      "match": "Ecuador vs Germany",
+      "home": "Ecuador",
+      "away": "Germany",
+      "kickoffMs": 1782417600000,
+      "whaleSide": "away",
+      "consensusPct": 0.9589942732221798,
+      "bigBettor": {
+        "wallet": "0x408fe71e6b5401ecd6733970cb6f1a25e984b2f4",
+        "side": "away",
+        "usd": 605851.519999,
+        "entryPrice": 0.6625343556701645,
+        "betTs": 1782361036,
+        "leadMin": 943
+      },
+      "sides": {
+        "home": {
+          "usd": 52091.40170300001,
+          "price": 0.1665
+        },
+        "draw": {
+          "usd": 26149.609962,
+          "price": 0.1815
+        },
+        "away": {
+          "usd": 1829809.8342310002,
+          "price": 0.6515
+        }
+      },
+      "eventSlug": "fifwc-ecu-ger-2026-06-25",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.115
+          },
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.105
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.105
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.085
+          },
+          {
+            "home": 0,
+            "away": 3,
+            "prob": 0.0795
+          }
+        ],
+        "other": 0.155
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-25T07:11:02.575Z"
+    },
+    "760469": {
+      "match": "Paraguay vs Australia",
+      "home": "Paraguay",
+      "away": "Australia",
+      "kickoffMs": 1782439200000,
+      "whaleSide": "draw",
+      "consensusPct": 0.814199278779419,
+      "bigBettor": {
+        "wallet": "0x10a6fadcbacd66330862206f6199b197e3ad4d8b",
+        "side": "draw",
+        "usd": 49209.229999,
+        "entryPrice": 0.4299999999966795,
+        "betTs": 1782360989,
+        "leadMin": 1304
+      },
+      "sides": {
+        "home": {
+          "usd": 22345.425797,
+          "price": 0.345
+        },
+        "draw": {
+          "usd": 127267.51318800003,
+          "price": 0.425
+        },
+        "away": {
+          "usd": 6697.090396,
+          "price": 0.235
+        }
+      },
+      "eventSlug": "fifwc-par-aus-2026-06-25",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 0,
+            "prob": 0.195
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.175
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.125
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.095
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.075
+          }
+        ],
+        "other": 0.0565
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-25T07:11:02.740Z"
+    },
+    "760470": {
+      "match": "Türkiye vs United States",
+      "home": "Türkiye",
+      "away": "United States",
+      "kickoffMs": 1782439200000,
+      "whaleSide": "away",
+      "consensusPct": 0.9431866801299141,
+      "bigBettor": {
+        "wallet": "0x0346afae2603313d2bbee96b628536c8cbe352a5",
+        "side": "away",
+        "usd": 383673.8180000001,
+        "entryPrice": 0.5206675676987988,
+        "betTs": 1782101113,
+        "leadMin": 5635
+      },
+      "sides": {
+        "home": {
+          "usd": 60211.391293000015,
+          "price": 0.245
+        },
+        "draw": {
+          "usd": 5607.053499,
+          "price": 0.225
+        },
+        "away": {
+          "usd": 1092685.317046,
+          "price": 0.535
+        }
+      },
+      "eventSlug": "fifwc-tur-usa-2026-06-25",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.095
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.095
+          },
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.09
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.065
+          }
+        ],
+        "other": 0.15
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-25T07:11:02.798Z"
+    },
+    "760471": {
+      "match": "Japan vs Sweden",
+      "home": "Japan",
+      "away": "Sweden",
+      "kickoffMs": 1782428400000,
+      "whaleSide": "home",
+      "consensusPct": 0.9488629170859375,
+      "bigBettor": {
+        "wallet": "0xe9076a87c5ed90ef16e6fe6529c943baeca0cff6",
+        "side": "home",
+        "usd": 144544.292392,
+        "entryPrice": 0.5208634724339977,
+        "betTs": 1782169307,
+        "leadMin": 4318
+      },
+      "sides": {
+        "home": {
+          "usd": 676962.3380399997,
+          "price": 0.5335
+        },
+        "draw": {
+          "usd": 23990.594374999997,
+          "price": 0.2605
+        },
+        "away": {
+          "usd": 12492.946699999997,
+          "price": 0.2095
+        }
+      },
+      "eventSlug": "fifwc-jpn-swe-2026-06-25",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.125
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.105
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.095
+          },
+          {
+            "home": 0,
+            "away": 0,
+            "prob": 0.065
+          }
+        ],
+        "other": 0.135
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-25T07:11:02.632Z"
+    },
+    "760472": {
+      "match": "Tunisia vs Netherlands",
+      "home": "Tunisia",
+      "away": "Netherlands",
+      "kickoffMs": 1782428400000,
+      "whaleSide": "away",
+      "consensusPct": 0.9948436217937866,
+      "bigBettor": {
+        "wallet": "0xe9076a87c5ed90ef16e6fe6529c943baeca0cff6",
+        "side": "away",
+        "usd": 253312.721795,
+        "entryPrice": 0.8883620842684221,
+        "betTs": 1781496772,
+        "leadMin": 15527
+      },
+      "sides": {
+        "home": {
+          "usd": 1871.5181300000002,
+          "price": 0.0295
+        },
+        "draw": {
+          "usd": 2024,
+          "price": 0.085
+        },
+        "away": {
+          "usd": 751580.1227579996,
+          "price": 0.895
+        }
+      },
+      "eventSlug": "fifwc-tun-nld-2026-06-25",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 3,
+            "prob": 0.155
+          },
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.135
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.085
+          },
+          {
+            "home": 1,
+            "away": 3,
+            "prob": 0.065
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.06
+          }
+        ],
+        "other": 0.36
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-25T07:11:02.689Z"
+    },
+    "760473": {
+      "match": "Curaçao vs Ivory Coast",
+      "home": "Curaçao",
+      "away": "Ivory Coast",
+      "kickoffMs": 1782417600000,
+      "whaleSide": "away",
+      "consensusPct": 0.9313440201290074,
+      "bigBettor": {
+        "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+        "side": "away",
+        "usd": 39926.28999600001,
+        "entryPrice": 0.8386330345829802,
+        "betTs": 1782189791,
+        "leadMin": 3797
+      },
+      "sides": {
+        "home": {
+          "usd": 7109.310227999999,
+          "price": 0.0495
+        },
+        "draw": {
+          "usd": 2570.869998,
+          "price": 0.1135
+        },
+        "away": {
+          "usd": 131315.26174699998,
+          "price": 0.8385
+        }
+      },
+      "eventSlug": "fifwc-kor-civ-2026-06-25",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.145
+          },
+          {
+            "home": 0,
+            "away": 3,
+            "prob": 0.135
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.095
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.075
+          },
+          {
+            "home": 1,
+            "away": 3,
+            "prob": 0.07
+          }
+        ],
+        "other": 0.315
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-25T07:11:02.508Z"
     }
   },
   "settled": [
@@ -2487,12 +2865,12 @@
   },
   "previewDay": "2026-06-25",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782367855074,
+  "trackUpdatedAt": 1782371462798,
   "scoreStats": {
     "n": 10,
     "hit1": 0,
     "hit3": 2
   },
-  "previewUpdatedAt": 1782367855546,
+  "previewUpdatedAt": 1782371463280,
   "previewMsgId": 1002
 }
