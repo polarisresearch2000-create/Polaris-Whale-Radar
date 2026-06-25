@@ -2337,38 +2337,162 @@
         }
       ],
       "scoreRank": 2
+    },
+    {
+      "espnId": "760467",
+      "match": "Czechia vs Mexico",
+      "home": "Czechia",
+      "away": "Mexico",
+      "actual": "away",
+      "score": "0-3",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0xa49becb692927d455924583b5e3e5788246f4c40",
+        "side": "away",
+        "usd": 344432.5647,
+        "entryPrice": 0.5099999999999999,
+        "betTs": 1782276433,
+        "leadMin": 1213
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.505,
+          "win": true,
+          "profit": 0.9801980198019802
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.505,
+          "win": true,
+          "profit": 0.9801980198019802
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.505,
+          "win": true,
+          "profit": 0.9801980198019802
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.495,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-25T03:10:15.186Z",
+      "scoreBoard": [
+        {
+          "home": 0,
+          "away": 1,
+          "prob": 0.125
+        },
+        {
+          "home": 1,
+          "away": 1,
+          "prob": 0.115
+        },
+        {
+          "home": 0,
+          "away": 2,
+          "prob": 0.095
+        }
+      ],
+      "scoreRank": -1
+    },
+    {
+      "espnId": "760466",
+      "match": "South Africa vs South Korea",
+      "home": "South Africa",
+      "away": "South Korea",
+      "actual": "home",
+      "score": "1-0",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "away",
+        "usd": 105956.2502,
+        "entryPrice": 0.58,
+        "betTs": 1782231221,
+        "leadMin": 1966
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.595,
+          "win": false,
+          "profit": -1
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.595,
+          "win": false,
+          "profit": -1
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.595,
+          "win": false,
+          "profit": -1
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.405,
+          "win": true,
+          "profit": 1.4691358024691357
+        }
+      },
+      "settledAt": "2026-06-25T03:10:15.186Z",
+      "scoreBoard": [
+        {
+          "home": 0,
+          "away": 1,
+          "prob": 0.145
+        },
+        {
+          "home": 0,
+          "away": 2,
+          "prob": 0.115
+        },
+        {
+          "home": 1,
+          "away": 1,
+          "prob": 0.115
+        }
+      ],
+      "scoreRank": -1
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 17,
-      "wins": 14,
-      "profit": 4.521995908211857
+      "bets": 19,
+      "wins": 15,
+      "profit": 4.502193928013837
     },
     "followBig": {
-      "bets": 17,
-      "wins": 14,
-      "profit": 4.521995908211857
+      "bets": 19,
+      "wins": 15,
+      "profit": 4.502193928013837
     },
     "highConsensus": {
-      "bets": 15,
-      "wins": 12,
-      "profit": 2.0070941961002533
+      "bets": 17,
+      "wins": 13,
+      "profit": 1.9872922159022335
     },
     "fadeFav": {
-      "bets": 17,
-      "wins": 3,
-      "profit": -7.311292249314877
+      "bets": 19,
+      "wins": 4,
+      "profit": -6.842156446845742
     }
   },
   "previewDay": "2026-06-25",
   "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782353394156,
+  "trackUpdatedAt": 1782357016691,
   "scoreStats": {
-    "n": 8,
+    "n": 10,
     "hit1": 0,
     "hit3": 2
   },
-  "previewUpdatedAt": 1782353394690,
+  "previewUpdatedAt": 1782357017166,
   "previewMsgId": 1002
 }
