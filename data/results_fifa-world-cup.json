@@ -2963,38 +2963,162 @@
         }
       ],
       "scoreRank": -1
+    },
+    {
+      "espnId": "760471",
+      "match": "Japan vs Sweden",
+      "home": "Japan",
+      "away": "Sweden",
+      "actual": "draw",
+      "score": "1-1",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0xe9076a87c5ed90ef16e6fe6529c943baeca0cff6",
+        "side": "home",
+        "usd": 144544.292392,
+        "entryPrice": 0.5208634724339977,
+        "betTs": 1782169307,
+        "leadMin": 4318
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.5335,
+          "win": false,
+          "profit": -1
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.5335,
+          "win": false,
+          "profit": -1
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.5335,
+          "win": false,
+          "profit": -1
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.4665,
+          "win": true,
+          "profit": 1.1436227224008573
+        }
+      },
+      "settledAt": "2026-06-26T01:15:30.431Z",
+      "scoreBoard": [
+        {
+          "home": 1,
+          "away": 1,
+          "prob": 0.125
+        },
+        {
+          "home": 1,
+          "away": 0,
+          "prob": 0.105
+        },
+        {
+          "home": 2,
+          "away": 1,
+          "prob": 0.105
+        }
+      ],
+      "scoreRank": 0
+    },
+    {
+      "espnId": "760472",
+      "match": "Tunisia vs Netherlands",
+      "home": "Tunisia",
+      "away": "Netherlands",
+      "actual": "away",
+      "score": "1-3",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0xe9076a87c5ed90ef16e6fe6529c943baeca0cff6",
+        "side": "away",
+        "usd": 253312.721795,
+        "entryPrice": 0.8883620842684221,
+        "betTs": 1781496772,
+        "leadMin": 15527
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.895,
+          "win": true,
+          "profit": 0.11731843575418992
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.895,
+          "win": true,
+          "profit": 0.11731843575418992
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.895,
+          "win": true,
+          "profit": 0.11731843575418992
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.10499999999999998,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-26T01:15:30.431Z",
+      "scoreBoard": [
+        {
+          "home": 0,
+          "away": 3,
+          "prob": 0.155
+        },
+        {
+          "home": 0,
+          "away": 2,
+          "prob": 0.135
+        },
+        {
+          "home": 0,
+          "away": 1,
+          "prob": 0.085
+        }
+      ],
+      "scoreRank": 3
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 21,
-      "wins": 16,
-      "profit": 3.6947997717824723
+      "bets": 23,
+      "wins": 17,
+      "profit": 2.8121182075366624
     },
     "followBig": {
-      "bets": 21,
-      "wins": 16,
-      "profit": 3.6947997717824723
+      "bets": 23,
+      "wins": 17,
+      "profit": 2.8121182075366624
     },
     "highConsensus": {
-      "bets": 19,
-      "wins": 14,
-      "profit": 1.179898059670868
+      "bets": 21,
+      "wins": 15,
+      "profit": 0.29721649542505785
     },
     "fadeFav": {
-      "bets": 21,
-      "wins": 5,
-      "profit": -5.972715987735269
+      "bets": 23,
+      "wins": 6,
+      "profit": -5.829093265334412
     }
   },
-  "previewDay": "2026-06-25",
-  "pinnedMsgId": 742,
-  "trackUpdatedAt": 1782432922919,
+  "previewDay": "2026-06-26",
+  "pinnedMsgId": 1070,
+  "trackUpdatedAt": 1782436534087,
   "scoreStats": {
-    "n": 12,
-    "hit1": 1,
-    "hit3": 3
+    "n": 14,
+    "hit1": 2,
+    "hit3": 4
   },
-  "previewUpdatedAt": 1782432923394,
+  "previewUpdatedAt": 1782436534949,
   "previewMsgId": 1002
 }
