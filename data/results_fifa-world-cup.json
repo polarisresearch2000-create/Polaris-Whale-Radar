@@ -3703,38 +3703,157 @@
         }
       ],
       "scoreRank": -1
+    },
+    {
+      "espnId": "760478",
+      "match": "Cape Verde vs Saudi Arabia",
+      "home": "Cape Verde",
+      "away": "Saudi Arabia",
+      "actual": "draw",
+      "score": "0-0",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+        "side": "away",
+        "usd": 35484.722200000004,
+        "entryPrice": 0.3409976006318352,
+        "betTs": 1781562168,
+        "leadMin": 15937
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.365,
+          "win": false,
+          "profit": -1
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.355,
+          "win": false,
+          "profit": -1
+        },
+        "highConsensus": null,
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.635,
+          "win": true,
+          "profit": 0.5748031496062992
+        }
+      },
+      "settledAt": "2026-06-27T02:20:21.361Z",
+      "scoreBoard": [
+        {
+          "home": 1,
+          "away": 1,
+          "prob": 0.14
+        },
+        {
+          "home": 1,
+          "away": 0,
+          "prob": 0.11
+        },
+        {
+          "home": 0,
+          "away": 1,
+          "prob": 0.105
+        }
+      ],
+      "scoreRank": 3
+    },
+    {
+      "espnId": "760479",
+      "match": "Uruguay vs Spain",
+      "home": "Uruguay",
+      "away": "Spain",
+      "actual": "away",
+      "score": "0-1",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "away",
+        "usd": 83135.90340000001,
+        "entryPrice": 0.6600000000000001,
+        "betTs": 1782421544,
+        "leadMin": 1614
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.615,
+          "win": true,
+          "profit": 0.6260162601626017
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.615,
+          "win": true,
+          "profit": 0.6260162601626017
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.615,
+          "win": true,
+          "profit": 0.6260162601626017
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.385,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-27T02:20:21.361Z",
+      "scoreBoard": [
+        {
+          "home": 0,
+          "away": 1,
+          "prob": 0.155
+        },
+        {
+          "home": 0,
+          "away": 2,
+          "prob": 0.135
+        },
+        {
+          "home": 1,
+          "away": 1,
+          "prob": 0.115
+        }
+      ],
+      "scoreRank": 0
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 27,
-      "wins": 20,
-      "profit": 4.075813581210847
+      "bets": 29,
+      "wins": 21,
+      "profit": 3.7018298413734483
     },
     "followBig": {
-      "bets": 27,
-      "wins": 20,
-      "profit": 4.075813581210847
+      "bets": 29,
+      "wins": 21,
+      "profit": 3.7018298413734483
     },
     "highConsensus": {
-      "bets": 23,
-      "wins": 16,
-      "profit": -0.4449218693548165
+      "bets": 24,
+      "wins": 17,
+      "profit": 0.18109439080778522
     },
     "fadeFav": {
-      "bets": 27,
-      "wins": 7,
-      "profit": -7.67855563092581
+      "bets": 29,
+      "wins": 8,
+      "profit": -8.10375248131951
     }
   },
   "previewDay": "2026-06-27",
   "pinnedMsgId": 1070,
-  "trackUpdatedAt": 1782523212925,
+  "trackUpdatedAt": 1782526822983,
   "scoreStats": {
-    "n": 18,
-    "hit1": 3,
-    "hit3": 5
+    "n": 20,
+    "hit1": 4,
+    "hit3": 6
   },
-  "previewUpdatedAt": 1782523213450,
+  "previewUpdatedAt": 1782526823532,
   "previewMsgId": 1002
 }
