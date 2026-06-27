@@ -2299,7 +2299,14 @@
         "other": 0.085
       },
       "state": "pre",
-      "capturedAt": "2026-06-27T07:21:23.635Z"
+      "capturedAt": "2026-06-27T07:21:23.635Z",
+      "totals": {
+        "line": 2.5,
+        "side": "Under",
+        "pct": 81,
+        "overUsd": 3359,
+        "underUsd": 14068
+      }
     },
     "760481": {
       "match": "Colombia vs Portugal",
@@ -2362,7 +2369,14 @@
         "other": 0.115
       },
       "state": "pre",
-      "capturedAt": "2026-06-27T07:21:23.739Z"
+      "capturedAt": "2026-06-27T07:21:23.739Z",
+      "totals": {
+        "line": 2.5,
+        "side": "Over",
+        "pct": 84,
+        "overUsd": 104024,
+        "underUsd": 20461
+      }
     },
     "760482": {
       "match": "Congo DR vs Uzbekistan",
@@ -2425,7 +2439,14 @@
         "other": 0.105
       },
       "state": "pre",
-      "capturedAt": "2026-06-27T07:21:23.787Z"
+      "capturedAt": "2026-06-27T07:21:23.787Z",
+      "totals": {
+        "line": 2.5,
+        "side": "Under",
+        "pct": 93,
+        "overUsd": 3770,
+        "underUsd": 53791
+      }
     },
     "760483": {
       "match": "Jordan vs Argentina",
@@ -2488,7 +2509,14 @@
         "other": 0.29
       },
       "state": "pre",
-      "capturedAt": "2026-06-27T07:21:23.884Z"
+      "capturedAt": "2026-06-27T07:21:23.884Z",
+      "totals": {
+        "line": 2.5,
+        "side": "Over",
+        "pct": 85,
+        "overUsd": 16637,
+        "underUsd": 3036
+      }
     },
     "760484": {
       "match": "Algeria vs Austria",
@@ -2551,7 +2579,14 @@
         "other": 0.0455
       },
       "state": "pre",
-      "capturedAt": "2026-06-27T07:21:23.833Z"
+      "capturedAt": "2026-06-27T07:21:23.833Z",
+      "totals": {
+        "line": 2.5,
+        "side": "Under",
+        "pct": 88,
+        "overUsd": 5023,
+        "underUsd": 36942
+      }
     },
     "760485": {
       "match": "Panama vs England",
@@ -2614,7 +2649,14 @@
         "other": 0.305
       },
       "state": "pre",
-      "capturedAt": "2026-06-27T07:21:23.685Z"
+      "capturedAt": "2026-06-27T07:21:23.685Z",
+      "totals": {
+        "line": 2.5,
+        "side": "Over",
+        "pct": 93,
+        "overUsd": 63759,
+        "underUsd": 4571
+      }
     }
   },
   "settled": [
@@ -4345,14 +4387,14 @@
   },
   "previewDay": "2026-06-27",
   "pinnedMsgId": 1070,
-  "trackUpdatedAt": 1782566543087,
+  "trackUpdatedAt": 1782570152169,
   "scoreStats": {
     "n": 22,
     "hit1": 5,
     "hit3": 7
   },
-  "previewUpdatedAt": 1782566543570,
+  "previewUpdatedAt": 1782570152650,
   "previewMsgId": 1002,
-  "resultsUpdatedAt": 1782566544061,
+  "resultsUpdatedAt": 1782570153316,
   "resultsMsgId": 1114
 }
