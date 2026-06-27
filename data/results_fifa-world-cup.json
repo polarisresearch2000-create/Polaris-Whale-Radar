@@ -3822,38 +3822,157 @@
         }
       ],
       "scoreRank": 0
+    },
+    {
+      "espnId": "760476",
+      "match": "Egypt vs Iran",
+      "home": "Egypt",
+      "away": "Iran",
+      "actual": "draw",
+      "score": "1-1",
+      "whaleSide": "draw",
+      "bigBettor": {
+        "wallet": "0x076daa87c4fe1a85402a9b6b8e0a866224388d4c",
+        "side": "draw",
+        "usd": 44673.202596999996,
+        "entryPrice": 0.3682637231450689,
+        "betTs": 1782078404,
+        "leadMin": 7513
+      },
+      "strat": {
+        "followWhale": {
+          "side": "draw",
+          "price": 0.375,
+          "win": true,
+          "profit": 1.6666666666666667
+        },
+        "followBig": {
+          "side": "draw",
+          "price": 0.375,
+          "win": true,
+          "profit": 1.6666666666666667
+        },
+        "highConsensus": null,
+        "fadeFav": {
+          "side": "No(draw)",
+          "price": 0.625,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-27T05:21:03.838Z",
+      "scoreBoard": [
+        {
+          "home": 1,
+          "away": 1,
+          "prob": 0.165
+        },
+        {
+          "home": 0,
+          "away": 0,
+          "prob": 0.155
+        },
+        {
+          "home": 1,
+          "away": 0,
+          "prob": 0.135
+        }
+      ],
+      "scoreRank": 0
+    },
+    {
+      "espnId": "760477",
+      "match": "New Zealand vs Belgium",
+      "home": "New Zealand",
+      "away": "Belgium",
+      "actual": "away",
+      "score": "1-5",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0x0346afae2603313d2bbee96b628536c8cbe352a5",
+        "side": "away",
+        "usd": 18139.994199999997,
+        "entryPrice": 0.82,
+        "betTs": 1782318914,
+        "leadMin": 3505
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.835,
+          "win": true,
+          "profit": 0.19760479041916174
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.835,
+          "win": true,
+          "profit": 0.19760479041916174
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.835,
+          "win": true,
+          "profit": 0.19760479041916174
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.16500000000000004,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-27T05:21:03.838Z",
+      "scoreBoard": [
+        {
+          "home": 0,
+          "away": 3,
+          "prob": 0.125
+        },
+        {
+          "home": 0,
+          "away": 2,
+          "prob": 0.115
+        },
+        {
+          "home": 1,
+          "away": 2,
+          "prob": 0.085
+        }
+      ],
+      "scoreRank": -1
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 29,
-      "wins": 21,
-      "profit": 3.7018298413734483
+      "bets": 31,
+      "wins": 23,
+      "profit": 5.566101298459277
     },
     "followBig": {
-      "bets": 29,
-      "wins": 21,
-      "profit": 3.7018298413734483
+      "bets": 31,
+      "wins": 23,
+      "profit": 5.566101298459277
     },
     "highConsensus": {
-      "bets": 24,
-      "wins": 17,
-      "profit": 0.18109439080778522
+      "bets": 25,
+      "wins": 18,
+      "profit": 0.37869918122694696
     },
     "fadeFav": {
-      "bets": 29,
+      "bets": 31,
       "wins": 8,
-      "profit": -8.10375248131951
+      "profit": -10.10375248131951
     }
   },
   "previewDay": "2026-06-27",
   "pinnedMsgId": 1070,
-  "trackUpdatedAt": 1782534040472,
+  "trackUpdatedAt": 1782537665415,
   "scoreStats": {
-    "n": 20,
-    "hit1": 4,
-    "hit3": 6
+    "n": 22,
+    "hit1": 5,
+    "hit3": 7
   },
-  "previewUpdatedAt": 1782534041004,
+  "previewUpdatedAt": 1782537665998,
   "previewMsgId": 1002
 }
