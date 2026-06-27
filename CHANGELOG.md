@@ -3,6 +3,9 @@
 > 每次迭代升级在此记录并更新版本号。当前版本同步显示在：
 > 启动脚本横幅（`启动世界杯雷达.bat`）+ bot 启动日志（`bot.js` 的 `VERSION`）。
 
+## V5.2 — 2026-06-27
+- **新增第三条置顶「🏁 今日賽果」**:赛后把**最近一个比赛日(按 HKT 开赛日期分组)**的赛果整理成自更新置顶 —— 每场 `✅/❌ 主队 比分 客队 · 看好X ✓/✗` + 顶部「賽前看好 命中 N/M」。结算时即时更新、并每≥30分钟刷新。`fmtResultsPin()` 渲染、`postOrUpdateResultsPin()` 维护、`resultsMsgId`/`resultsUpdatedAt` 持久化。结算记录补存 `kickoffMs`(缺则用 settledAt 兜底分组)。赛果总结推送照旧保留。三条置顶分工:①过往战绩 ②即将开赛 ③今日赛果。
+
 ## V5.1 — 2026-06-24
 - **开赛时间(HKT)铺到「巨鯨持倉分析」**:每场对阵名后加 `⏰ M/D HH:MM`(香港时间),取自 Polymarket 事件 `startTime`(in-play 过滤本就算过 → 零额外请求)。`marketSentiment` 把 `kickoffMs` 带到 match/market 对象,`fmtPositioning` 渲染。
 - **预判置顶/每日预判的开赛时间更稳**:对仍缺 `kickoffMs` 的预判(尤其改版前捕捉、已离开 ESPN 当前赛程的),`capturePredictions` 从**已拉取的 Polymarket 事件 `startTime` 兜底回填**(零额外请求)→ 不再只依赖 ESPN 当前赛程才显示时间。

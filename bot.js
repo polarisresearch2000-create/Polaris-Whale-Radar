@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V5.1"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V5.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -221,7 +221,7 @@ async function trackResults() {
       s.profit += r.profit;
     }
     const rec = {
-      espnId: m.id, match: p.match, home: p.home, away: p.away, actual: m.actual,
+      espnId: m.id, match: p.match, home: p.home, away: p.away, actual: m.actual, kickoffMs: p.kickoffMs,
       score: `${m.homeScore}-${m.awayScore}`, whaleSide: p.whaleSide, bigBettor: p.bigBettor,
       strat, settledAt: new Date().toISOString(),
     };
@@ -242,6 +242,7 @@ async function trackResults() {
   if (newSettle > 0) {
     await send(fmtResultSummary(res, newSettle));
     await postOrUpdateTrackRecord(res);
+    await postOrUpdateResultsPin(res); // 置顶③: 今日赛果
     console.log(`  → 已推赛果总结+更新置顶(新结算 ${newSettle})`);
   }
 
@@ -265,6 +266,8 @@ async function trackResults() {
     const upcomingPre = wc.filter((m) => m.state === "pre" && res.predictions[m.id]);
     await postOrUpdatePreviewPin(res, upcomingPre);
   }
+  // 置顶③今日赛果定期刷新
+  if (Date.now() - (res.resultsUpdatedAt || 0) >= 30 * 60000) await postOrUpdateResultsPin(res);
   saveResults(res);
 }
 
@@ -512,6 +515,34 @@ function fmtUpcomingPin(matches, res) {
       if (sb) lines.push(`   🎯 比分熱度: ${esc(sb)}`);
     }
     lines.push("", "⚠️ 數據分析 · 非投注建議");
+  }
+  const best = bestStrategy(res);
+  if (best) lines.push("", `📊 本屆預判戰績: ${best.bets}場 · ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%（詳見置頂戰績）`);
+  lines.push(`🔭 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
+  return lines.join("\n");
+}
+
+// 置顶③: 最近比赛日的赛果(预判 vs 结果, 就地编辑、持续刷新)。无可显示的赛果时返回 null。
+function fmtResultsPin(res) {
+  const settled = (res.settled || []).filter((s) => s.home && s.away && s.strat?.followWhale);
+  const hkDate = (s) => {
+    const ms = s.kickoffMs || (s.settledAt ? Date.parse(s.settledAt) : null);
+    return ms ? new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 10) : null;
+  };
+  const withDate = settled.map((s) => ({ s, d: hkDate(s) })).filter((x) => x.d);
+  if (!withDate.length) return null;
+  const latest = withDate.map((x) => x.d).sort().pop(); // 最近比赛日(HKT)
+  const todays = withDate.filter((x) => x.d === latest).map((x) => x.s).slice(-8);
+  const hits = todays.filter((s) => s.strat.followWhale.win).length;
+  const lines = [
+    `🏁 <b>${latest.slice(5).replace("-", "/")} 賽果 · 預判 vs 結果</b>（持續更新）`,
+    `（賽前看好 命中 <b>${hits}/${todays.length}</b>）`,
+    "",
+  ];
+  for (const s of todays) {
+    const fw = s.strat.followWhale;
+    const pick = tTeam(sideLabel(s.whaleSide, s.home, s.away));
+    lines.push(`${fw.win ? "✅" : "❌"} ${esc(tTeam(s.home))} ${esc(s.score || "")} ${esc(tTeam(s.away))} · 看好${esc(pick)} ${fw.win ? "✓" : "✗"}`);
   }
   const best = bestStrategy(res);
   if (best) lines.push("", `📊 本屆預判戰績: ${best.bets}場 · ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%（詳見置頂戰績）`);
@@ -853,6 +884,19 @@ async function postOrUpdatePreviewPin(res, matches) {
   }
 }
 
+// 置顶③: 最近比赛日赛果(就地编辑; 无赛果时不发)。resultsMsgId 持久化, 云端始终编辑同一条。
+async function postOrUpdateResultsPin(res) {
+  const text = fmtResultsPin(res);
+  if (!text) return; // 还没有可显示的赛果
+  res.resultsUpdatedAt = Date.now();
+  if (res.resultsMsgId && (await editMsg(res.resultsMsgId, text))) return;
+  const id = await sendReturn(text);
+  if (id) {
+    res.resultsMsgId = id;
+    await pinMsg(id);
+  }
+}
+
 async function pollOnce() {
   const seen = loadSeen();
 
@@ -996,4 +1040,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { translateTitle, titleBlock, fmtPositioning, fmtProfiles, fmtResultSummary, evalStrategies, fmtTrackRecord, fmtDailyPreview, fmtUpcomingPin };
+module.exports = { translateTitle, titleBlock, fmtPositioning, fmtProfiles, fmtResultSummary, evalStrategies, fmtTrackRecord, fmtDailyPreview, fmtUpcomingPin, fmtResultsPin };
