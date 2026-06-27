@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getExactScoreBoard, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V5.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V5.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -170,17 +170,17 @@ async function capturePredictions(res, wc, pmEvents) {
     const ex = res.predictions[m.id];
     if (ex && ex.sides) {
       if (ex.kickoffMs == null && m.kickoffMs) ex.kickoffMs = m.kickoffMs; // 回填开赛时间(老预判没存)
-      // 回填准确比分榜: 仅在"从未尝试过"(undefined)时补一次, 失败置 null 不再每轮重试
-      if (ex.scoreBoard === undefined && ex.eventSlug) ex.scoreBoard = (await getExactScoreBoard(ex.eventSlug, 5).catch(() => null)) || null;
+      // 回填大小球信号: 仅在"从未尝试过"(undefined)时补一次, 失败置 null 不再每轮重试
+      if (ex.totals === undefined && ex.eventSlug) ex.totals = (await getTotalsSignal(ex.eventSlug).catch(() => null)) || null;
       continue;
     }
     const pred = await matchPrediction(m, pmEvents).catch(() => null);
     if (pred && pred.sides) {
-      const scoreBoard = await getExactScoreBoard(pred.eventSlug, 5).catch(() => null); // 准确比分市场概率榜
+      const totals = await getTotalsSignal(pred.eventSlug).catch(() => null); // 大小球 O/U 2.5 聪明钱偏向
       res.predictions[m.id] = {
         match: `${m.home} vs ${m.away}`, home: m.home, away: m.away, kickoffMs: m.kickoffMs,
         whaleSide: pred.whaleSide, consensusPct: pred.consensusPct, bigBettor: pred.bigBettor,
-        sides: pred.sides, eventSlug: pred.eventSlug, scoreBoard, state: m.state, capturedAt: new Date().toISOString(),
+        sides: pred.sides, eventSlug: pred.eventSlug, totals, state: m.state, capturedAt: new Date().toISOString(),
       };
     }
   }
@@ -442,34 +442,14 @@ function fmtTrackRecord(res) {
     lines.push("");
   }
   if (best && any) lines.push(`🏆 目前最佳: ${best.label} (ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%)`);
-  const shr = scoreHitRateLine(res);
-  if (shr) lines.push(shr);
   if (!any) lines.push("⏳ 等待首批賽果結算中…"); // 取消"样本仍小"警告行(保留空态占位)
   lines.push(`🔭 ROI=每$1淨回報 · 賠率=入場價隱含倍數 · 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
   return lines.join("\n");
 }
 
-// 准确比分概率榜(一行, 主-客视角): "2-1 12% · 1-1 12% · 1-0 11%"
-const scoreBoardInline = (board, topN = 3) =>
-  board && board.top && board.top.length
-    ? board.top.slice(0, topN).map((e) => `${e.home}-${e.away} ${Math.round(e.prob * 100)}%`).join(" · ")
-    : null;
-
-// 赛后: 赛前比分榜 → 实际比分 + 命中标签(榜首/Top3/未中)
-function scoreResultLine(s) {
-  if (!s.scoreBoard || !s.scoreBoard.length) return null;
-  const board = s.scoreBoard.map((e) => `${e.home}-${e.away} ${Math.round(e.prob * 100)}%`).join(" · ");
-  const r = s.scoreRank;
-  const tag = r === 0 ? "✅ 命中榜首" : r >= 1 && r <= 2 ? "✅ 命中Top3" : "❌ 未中Top3";
-  return `   🎯 賽前比分榜 ${board} → 實際 ${esc(s.score)} ${tag}`;
-}
-
-// 准确比分 Top3 累计命中率(一行, 用于赛果总结/置顶)
-function scoreHitRateLine(res) {
-  const ss = res.scoreStats;
-  if (!ss || !ss.n) return null;
-  return `🎯 準確比分 Top3 命中率: <b>${ss.hit3}/${ss.n}</b> (${Math.round((ss.hit3 / ss.n) * 100)}%) · 榜首 ${ss.hit1}/${ss.n}`;
-}
+// 大小球(O/U 2.5)聪明钱偏向(一行): "大戶偏 大球 66%（O/U 2.5）"
+const totalsLine = (t) =>
+  t && t.side ? `大戶偏 ${t.side === "Over" ? "大球" : "小球"} ${t.pct}%（O/U 2.5）` : null;
 
 // 每日固定: 今日巨鲸预判
 function fmtDailyPreview(matches, res) {
@@ -483,8 +463,8 @@ function fmtDailyPreview(matches, res) {
     const ko = koHKT(p.kickoffMs);
     lines.push(`${p.home ? "🆚" : "🔥"} ${esc(translateTitle(p.match))}${ko ? ` · ⏰ ${ko}` : ""}`);
     lines.push(`   ⭐ 看好 <b>${esc(pick)}</b>（信心 ${cons}%）`);
-    const sb = scoreBoardInline(p.scoreBoard);
-    if (sb) lines.push(`   🎯 比分熱度: ${esc(sb)}`);
+    const tl = totalsLine(p.totals);
+    if (tl) lines.push(`   ⚽ 大小球: ${tl}`);
   }
   lines.push("", "⚠️ 數據分析 · 非投注建議");
   const best = bestStrategy(res);
@@ -498,7 +478,7 @@ function fmtUpcomingPin(matches, res) {
   const show = (matches || []).slice(0, 6); // 最多6场, 保持可扫读
   const sportsLike = show.some((m) => res.predictions[m.id]?.home); // 体育有主客; 加密无
   const lines = sportsLike
-    ? ["📅 <b>即將開賽 · 賽前預判</b>（持續更新）", "（未開賽場次 · 開賽時間 HKT · 預判方向 + 比分熱度）", ""]
+    ? ["📅 <b>即將開賽 · 賽前預判</b>（持續更新）", "（未開賽場次 · 開賽時間 HKT · 預判方向 + 大小球）", ""]
     : ["📅 <b>待結算 · 賽前預判</b>（持續更新）", "（活躍市場 · 預判方向）", ""];
   if (!show.length) {
     lines.push("⏳ 暫無可顯示的場次,稍後自動更新");
@@ -511,8 +491,8 @@ function fmtUpcomingPin(matches, res) {
       const ko = koHKT(p.kickoffMs);
       lines.push(`${p.home ? "🆚" : "🔥"} ${esc(translateTitle(p.match))}${ko ? ` · ⏰ ${ko}` : ""}`);
       lines.push(`   ⭐ 看好 <b>${esc(pick)}</b>（信心 ${cons}%）`);
-      const sb = scoreBoardInline(p.scoreBoard);
-      if (sb) lines.push(`   🎯 比分熱度: ${esc(sb)}`);
+      const tl = totalsLine(p.totals);
+      if (tl) lines.push(`   ⚽ 大小球: ${tl}`);
     }
     lines.push("", "⚠️ 數據分析 · 非投注建議");
   }
@@ -559,11 +539,7 @@ function fmtResultSummary(res, newCount) {
     lines.push(`${fw?.win ? "✅" : "❌"} ${esc(s.match)}${score} → ${esc(resultLabel(s))}`);
     lines.push(`   巨鯨押 ${esc(sideLabel(s.whaleSide, s.home, s.away))} ${fw?.win ? "✅" : "❌"}`);
     lines.push(`   🐋 ${esc(bigLine(s.bigBettor, s.home, s.away, fb?.win))}`);
-    const scoreLine = scoreResultLine(s);
-    if (scoreLine) lines.push(scoreLine);
   }
-  const shr = scoreHitRateLine(res);
-  if (shr) lines.push("", shr);
   // 不再重复列全部策略(含已隐藏的 fade、旧格式) —— 置顶才是详细正本; 这里只给一行头条 + 指向置顶
   const best = bestStrategy(res);
   if (best) lines.push("", `📊 目前最佳策略: ${best.label} ${best.bets}場 · ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%`);

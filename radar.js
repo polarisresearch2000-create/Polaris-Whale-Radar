@@ -658,31 +658,29 @@ async function matchPrediction(m, pmEvents) {
 
 // ---- 准确比分市场: 返回市场概率榜(按隐含概率排序的具体比分 + "其他比分"桶) ----
 // 注意: 准确比分盘成交极小(单笔多为几百刀散户, 无巨鲸), 故只用"价格=市场共识概率", 不追大户.
-async function getExactScoreBoard(eventSlug, topN = 5) {
+// ---- 大小球(O/U 2.5)聪明钱信号: 大户在「整场总进球 大/小」上偏哪边 ----
+// (数据证明: 盈利大户第二大类就押大小球; 准确比分则全是散户, 故弃用)
+async function getTotalsSignal(eventSlug) {
   if (!eventSlug) return null;
-  const arr = await getJSON(`${GAMMA}/events?slug=${eventSlug}-exact-score`).catch(() => null);
+  const arr = await getJSON(`${GAMMA}/events?slug=${eventSlug}-more-markets`).catch(() => null);
   const e = Array.isArray(arr) ? arr[0] : null;
   if (!e || !Array.isArray(e.markets)) return null;
-  const rows = [];
-  let other = null;
-  for (const mk of e.markets) {
-    let prob = null;
-    try {
-      const outs = JSON.parse(mk.outcomes || "[]");
-      const px = JSON.parse(mk.outcomePrices || "[]");
-      const yi = outs.findIndex((o) => /yes/i.test(o));
-      if (yi >= 0) prob = Number(px[yi]);
-    } catch {}
-    if (prob == null) continue;
-    const q = mk.question || "";
-    if (/any other/i.test(q)) { other = prob; continue; }
-    const s = q.match(/(\d+)\s*-\s*(\d+)/); // "Exact Score: Netherlands 1 - 1 Sweden?" → 主队比分在前
-    if (!s) continue;
-    rows.push({ home: Number(s[1]), away: Number(s[2]), prob });
+  // 整场总进球标准盘: "{Home} vs. {Away}: O/U 2.5"(排除半场/单队/其它线)
+  const mk = e.markets.find((m) => /:\s*o\/u\s*2\.5\b/i.test(m.question || "") && !/half|1st|2nd/i.test(m.question || ""));
+  if (!mk || !mk.conditionId) return null;
+  const tr = await getJSON(`${DATA}/trades?market=${mk.conditionId}&filterType=CASH&filterAmount=${CONFIG.POSITIONING_MIN_NOTIONAL}&limit=500`).catch(() => null);
+  const buys = Array.isArray(tr) ? tr.filter((t) => t.side === "BUY") : [];
+  let overUsd = 0, underUsd = 0;
+  for (const t of buys) {
+    const u = (t.size || 0) * (t.price || 0);
+    if (/over|yes/i.test(t.outcome || "")) overUsd += u;
+    else underUsd += u;
   }
-  if (!rows.length) return null;
-  rows.sort((a, b) => b.prob - a.prob);
-  return { top: rows.slice(0, topN), other };
+  const total = overUsd + underUsd;
+  if (total <= 0) return null;
+  const side = overUsd >= underUsd ? "Over" : "Under"; // 大户偏哪边
+  const pct = Math.round((Math.max(overUsd, underUsd) / total) * 100);
+  return { line: 2.5, side, pct, overUsd: Math.round(overUsd), underUsd: Math.round(underUsd) };
 }
 
 // ---- 加密版预判: 单个二元市场(Yes/No)的巨鲸方向 ----
@@ -752,6 +750,6 @@ async function getMarketResolution(gammaId) {
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction, getExactScoreBoard, cryptoPrediction, getMarketResolution,
+  getWcResults, matchPrediction, getTotalsSignal, cryptoPrediction, getMarketResolution,
   fmtUSD, CONFIG, isDirectional,
 };
