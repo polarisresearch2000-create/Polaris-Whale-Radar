@@ -2237,6 +2237,384 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-26T07:16:43.349Z"
+    },
+    "760480": {
+      "match": "Croatia vs Ghana",
+      "home": "Croatia",
+      "away": "Ghana",
+      "kickoffMs": 1782594000000,
+      "whaleSide": "home",
+      "consensusPct": 0.4871813583168102,
+      "bigBettor": {
+        "wallet": "0x82ba1b3913ddf383db52eb06e0e225e95257afea",
+        "side": "home",
+        "usd": 43360.208998,
+        "entryPrice": 0.5251935160801411,
+        "betTs": 1782527957,
+        "leadMin": 1101
+      },
+      "sides": {
+        "home": {
+          "usd": 108524.67657599997,
+          "price": 0.515
+        },
+        "draw": {
+          "usd": 60484.757996,
+          "price": 0.295
+        },
+        "away": {
+          "usd": 53750.888095,
+          "price": 0.185
+        }
+      },
+      "eventSlug": "fifwc-hrv-gha-2026-06-27",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.145
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.145
+          },
+          {
+            "home": 0,
+            "away": 0,
+            "prob": 0.115
+          },
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.105
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.095
+          }
+        ],
+        "other": 0.085
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-27T07:21:23.635Z"
+    },
+    "760481": {
+      "match": "Colombia vs Portugal",
+      "home": "Colombia",
+      "away": "Portugal",
+      "kickoffMs": 1782603000000,
+      "whaleSide": "away",
+      "consensusPct": 0.7698895400201011,
+      "bigBettor": {
+        "wallet": "0xe9076a87c5ed90ef16e6fe6529c943baeca0cff6",
+        "side": "away",
+        "usd": 145120.819196,
+        "entryPrice": 0.48034917742356864,
+        "betTs": 1782439757,
+        "leadMin": 2721
+      },
+      "sides": {
+        "home": {
+          "usd": 104391.77249100007,
+          "price": 0.275
+        },
+        "draw": {
+          "usd": 19043.9308,
+          "price": 0.245
+        },
+        "away": {
+          "usd": 412983.6463629995,
+          "price": 0.475
+        }
+      },
+      "eventSlug": "fifwc-col-prt-2026-06-27",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.125
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.105
+          },
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.085
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.075
+          }
+        ],
+        "other": 0.115
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-27T07:21:23.739Z"
+    },
+    "760482": {
+      "match": "Congo DR vs Uzbekistan",
+      "home": "Congo DR",
+      "away": "Uzbekistan",
+      "kickoffMs": 1782603000000,
+      "whaleSide": "home",
+      "consensusPct": 0.9545348547357277,
+      "bigBettor": {
+        "wallet": "0x56604973f2f37e86c213fef9ac209151258054bf",
+        "side": "home",
+        "usd": 88604.43680000001,
+        "entryPrice": 0.5506774845964079,
+        "betTs": 1782504361,
+        "leadMin": 1644
+      },
+      "sides": {
+        "home": {
+          "usd": 192268.66147200004,
+          "price": 0.595
+        },
+        "draw": {
+          "usd": 0,
+          "price": 0.225
+        },
+        "away": {
+          "usd": 9157.887299999999,
+          "price": 0.175
+        }
+      },
+      "eventSlug": "fifwc-cdr-uzb-2026-06-27",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.14
+          },
+          {
+            "home": 2,
+            "away": 0,
+            "prob": 0.115
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.115
+          },
+          {
+            "home": 2,
+            "away": 1,
+            "prob": 0.095
+          },
+          {
+            "home": 0,
+            "away": 0,
+            "prob": 0.075
+          }
+        ],
+        "other": 0.105
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-27T07:21:23.787Z"
+    },
+    "760483": {
+      "match": "Jordan vs Argentina",
+      "home": "Jordan",
+      "away": "Argentina",
+      "kickoffMs": 1782612000000,
+      "whaleSide": "away",
+      "consensusPct": 0.974991958671195,
+      "bigBettor": {
+        "wallet": "0x0346afae2603313d2bbee96b628536c8cbe352a5",
+        "side": "away",
+        "usd": 260729.13369999998,
+        "entryPrice": 0.8473277100285646,
+        "betTs": 1782368591,
+        "leadMin": 4057
+      },
+      "sides": {
+        "home": {
+          "usd": 0,
+          "price": 0.0495
+        },
+        "draw": {
+          "usd": 14385.203499,
+          "price": 0.105
+        },
+        "away": {
+          "usd": 560837.9141319997,
+          "price": 0.855
+        }
+      },
+      "eventSlug": "fifwc-jor-arg-2026-06-27",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.145
+          },
+          {
+            "home": 0,
+            "away": 3,
+            "prob": 0.145
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.105
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.075
+          },
+          {
+            "home": 1,
+            "away": 3,
+            "prob": 0.075
+          }
+        ],
+        "other": 0.29
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-27T07:21:23.884Z"
+    },
+    "760484": {
+      "match": "Algeria vs Austria",
+      "home": "Algeria",
+      "away": "Austria",
+      "kickoffMs": 1782612000000,
+      "whaleSide": "draw",
+      "consensusPct": 0.8758049495800938,
+      "bigBettor": {
+        "wallet": "0x84cfffc3f16dcc353094de30d4a45226eccd2f63",
+        "side": "draw",
+        "usd": 109643.18099999998,
+        "entryPrice": 0.45046328555841847,
+        "betTs": 1782538759,
+        "leadMin": 1221
+      },
+      "sides": {
+        "home": {
+          "usd": 6882.992696,
+          "price": 0.225
+        },
+        "draw": {
+          "usd": 190548.0998929999,
+          "price": 0.445
+        },
+        "away": {
+          "usd": 20138.013390999997,
+          "price": 0.325
+        }
+      },
+      "eventSlug": "fifwc-alg-aut-2026-06-27",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 0,
+            "prob": 0.205
+          },
+          {
+            "home": 1,
+            "away": 1,
+            "prob": 0.185
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.125
+          },
+          {
+            "home": 1,
+            "away": 0,
+            "prob": 0.095
+          },
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.065
+          }
+        ],
+        "other": 0.0455
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-27T07:21:23.833Z"
+    },
+    "760485": {
+      "match": "Panama vs England",
+      "home": "Panama",
+      "away": "England",
+      "kickoffMs": 1782594000000,
+      "whaleSide": "away",
+      "consensusPct": 0.9541974914959651,
+      "bigBettor": {
+        "wallet": "0xa40778fb8d0dba8a24a99c7d23511af263faca38",
+        "side": "away",
+        "usd": 151169.8776,
+        "entryPrice": 0.84,
+        "betTs": 1782536191,
+        "leadMin": 963
+      },
+      "sides": {
+        "home": {
+          "usd": 20704.663198,
+          "price": 0.055
+        },
+        "draw": {
+          "usd": 5966.569899,
+          "price": 0.105
+        },
+        "away": {
+          "usd": 555638.2073269999,
+          "price": 0.845
+        }
+      },
+      "eventSlug": "fifwc-pan-eng-2026-06-27",
+      "scoreBoard": {
+        "top": [
+          {
+            "home": 0,
+            "away": 2,
+            "prob": 0.135
+          },
+          {
+            "home": 0,
+            "away": 3,
+            "prob": 0.125
+          },
+          {
+            "home": 0,
+            "away": 1,
+            "prob": 0.095
+          },
+          {
+            "home": 1,
+            "away": 3,
+            "prob": 0.075
+          },
+          {
+            "home": 1,
+            "away": 2,
+            "prob": 0.075
+          }
+        ],
+        "other": 0.305
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-27T07:21:23.685Z"
     }
   },
   "settled": [
@@ -3967,12 +4345,12 @@
   },
   "previewDay": "2026-06-27",
   "pinnedMsgId": 1070,
-  "trackUpdatedAt": 1782541275099,
+  "trackUpdatedAt": 1782544883885,
   "scoreStats": {
     "n": 22,
     "hit1": 5,
     "hit3": 7
   },
-  "previewUpdatedAt": 1782541275687,
+  "previewUpdatedAt": 1782544884440,
   "previewMsgId": 1002
 }
