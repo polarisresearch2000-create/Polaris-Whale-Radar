@@ -4361,40 +4361,161 @@
         }
       ],
       "scoreRank": -1
+    },
+    {
+      "espnId": "760480",
+      "match": "Croatia vs Ghana",
+      "home": "Croatia",
+      "away": "Ghana",
+      "actual": "home",
+      "kickoffMs": 1782594000000,
+      "score": "2-1",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0x82ba1b3913ddf383db52eb06e0e225e95257afea",
+        "side": "home",
+        "usd": 43360.208998,
+        "entryPrice": 0.5251935160801411,
+        "betTs": 1782527957,
+        "leadMin": 1101
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.515,
+          "win": true,
+          "profit": 0.9417475728155339
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.515,
+          "win": true,
+          "profit": 0.9417475728155339
+        },
+        "highConsensus": null,
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.485,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-27T23:24:22.977Z",
+      "scoreBoard": [
+        {
+          "home": 1,
+          "away": 0,
+          "prob": 0.145
+        },
+        {
+          "home": 1,
+          "away": 1,
+          "prob": 0.145
+        },
+        {
+          "home": 0,
+          "away": 0,
+          "prob": 0.115
+        }
+      ],
+      "scoreRank": 4
+    },
+    {
+      "espnId": "760485",
+      "match": "Panama vs England",
+      "home": "Panama",
+      "away": "England",
+      "actual": "away",
+      "kickoffMs": 1782594000000,
+      "score": "0-2",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0xa40778fb8d0dba8a24a99c7d23511af263faca38",
+        "side": "away",
+        "usd": 151169.8776,
+        "entryPrice": 0.84,
+        "betTs": 1782536191,
+        "leadMin": 963
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.845,
+          "win": true,
+          "profit": 0.18343195266272194
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.845,
+          "win": true,
+          "profit": 0.18343195266272194
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.845,
+          "win": true,
+          "profit": 0.18343195266272194
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.15500000000000003,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-27T23:24:22.977Z",
+      "scoreBoard": [
+        {
+          "home": 0,
+          "away": 2,
+          "prob": 0.135
+        },
+        {
+          "home": 0,
+          "away": 3,
+          "prob": 0.125
+        },
+        {
+          "home": 0,
+          "away": 1,
+          "prob": 0.095
+        }
+      ],
+      "scoreRank": 0
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 31,
-      "wins": 23,
-      "profit": 5.566101298459277
+      "bets": 33,
+      "wins": 25,
+      "profit": 6.691280823937532
     },
     "followBig": {
-      "bets": 31,
-      "wins": 23,
-      "profit": 5.566101298459277
+      "bets": 33,
+      "wins": 25,
+      "profit": 6.691280823937532
     },
     "highConsensus": {
-      "bets": 25,
-      "wins": 18,
-      "profit": 0.37869918122694696
+      "bets": 26,
+      "wins": 19,
+      "profit": 0.5621311338896688
     },
     "fadeFav": {
-      "bets": 31,
+      "bets": 33,
       "wins": 8,
-      "profit": -10.10375248131951
+      "profit": -12.10375248131951
     }
   },
   "previewDay": "2026-06-27",
   "pinnedMsgId": 1070,
-  "trackUpdatedAt": 1782599055215,
+  "trackUpdatedAt": 1782602664478,
   "scoreStats": {
-    "n": 22,
-    "hit1": 5,
-    "hit3": 7
+    "n": 24,
+    "hit1": 6,
+    "hit3": 8
   },
-  "previewUpdatedAt": 1782599055675,
+  "previewUpdatedAt": 1782602665397,
   "previewMsgId": 1002,
-  "resultsUpdatedAt": 1782599056305,
+  "resultsUpdatedAt": 1782602664950,
   "resultsMsgId": 1114
 }
