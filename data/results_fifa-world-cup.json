@@ -4769,40 +4769,85 @@
         }
       ],
       "scoreRank": 4
+    },
+    {
+      "espnId": "760486",
+      "match": "South Africa vs Canada",
+      "home": "South Africa",
+      "away": "Canada",
+      "actual": "away",
+      "kickoffMs": 1782673200000,
+      "score": "0-1",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0x076daa87c4fe1a85402a9b6b8e0a866224388d4c",
+        "side": "away",
+        "usd": 137701.249999,
+        "entryPrice": 0.5599999999998373,
+        "betTs": 1782561745,
+        "leadMin": 1858
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.595,
+          "win": true,
+          "profit": 0.680672268907563
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.595,
+          "win": true,
+          "profit": 0.680672268907563
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.595,
+          "win": true,
+          "profit": 0.680672268907563
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.405,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-28T21:28:59.820Z"
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 37,
-      "wins": 28,
-      "profit": 7.788734747355905
+      "bets": 38,
+      "wins": 29,
+      "profit": 8.469407016263467
     },
     "followBig": {
-      "bets": 37,
-      "wins": 28,
-      "profit": 7.788734747355905
+      "bets": 38,
+      "wins": 29,
+      "profit": 8.469407016263467
     },
     "highConsensus": {
-      "bets": 29,
-      "wins": 22,
-      "profit": 2.6595850573080404
+      "bets": 30,
+      "wins": 23,
+      "profit": 3.3402573262156032
     },
     "fadeFav": {
-      "bets": 37,
+      "bets": 38,
       "wins": 9,
-      "profit": -14.198990576557605
+      "profit": -15.198990576557605
     }
   },
   "previewDay": "2026-06-28",
   "pinnedMsgId": 1070,
-  "trackUpdatedAt": 1782678514900,
+  "trackUpdatedAt": 1782682141374,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782678515433,
+  "previewUpdatedAt": 1782682142529,
   "previewMsgId": 1002,
-  "resultsUpdatedAt": 1782678516262,
+  "resultsUpdatedAt": 1782682141890,
   "resultsMsgId": 1114
 }
