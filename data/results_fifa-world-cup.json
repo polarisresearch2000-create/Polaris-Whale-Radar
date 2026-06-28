@@ -2657,6 +2657,46 @@
         "overUsd": 63759,
         "underUsd": 4571
       }
+    },
+    "760486": {
+      "match": "South Africa vs Canada",
+      "home": "South Africa",
+      "away": "Canada",
+      "kickoffMs": 1782673200000,
+      "whaleSide": "away",
+      "consensusPct": 0.9632504313153722,
+      "bigBettor": {
+        "wallet": "0x076daa87c4fe1a85402a9b6b8e0a866224388d4c",
+        "side": "away",
+        "usd": 137701.249999,
+        "entryPrice": 0.5599999999998373,
+        "betTs": 1782561745,
+        "leadMin": 1858
+      },
+      "sides": {
+        "home": {
+          "usd": 14666.310397000001,
+          "price": 0.155
+        },
+        "draw": {
+          "usd": 13850.124593999999,
+          "price": 0.265
+        },
+        "away": {
+          "usd": 747450.0868399994,
+          "price": 0.595
+        }
+      },
+      "eventSlug": "fifwc-rsa-can-2026-06-28",
+      "totals": {
+        "line": 2.5,
+        "side": "Over",
+        "pct": 94,
+        "overUsd": 93841,
+        "underUsd": 6002
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-28T07:26:00.582Z"
     }
   },
   "settled": [
@@ -4755,14 +4795,14 @@
   },
   "previewDay": "2026-06-28",
   "pinnedMsgId": 1070,
-  "trackUpdatedAt": 1782627949781,
+  "trackUpdatedAt": 1782631560582,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782627950329,
+  "previewUpdatedAt": 1782631561124,
   "previewMsgId": 1002,
-  "resultsUpdatedAt": 1782627951164,
+  "resultsUpdatedAt": 1782631561939,
   "resultsMsgId": 1114
 }
