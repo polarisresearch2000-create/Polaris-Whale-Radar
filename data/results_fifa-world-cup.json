@@ -4482,40 +4482,161 @@
         }
       ],
       "scoreRank": 0
+    },
+    {
+      "espnId": "760481",
+      "match": "Colombia vs Portugal",
+      "home": "Colombia",
+      "away": "Portugal",
+      "actual": "draw",
+      "kickoffMs": 1782603000000,
+      "score": "0-0",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0xe9076a87c5ed90ef16e6fe6529c943baeca0cff6",
+        "side": "away",
+        "usd": 145120.819196,
+        "entryPrice": 0.48034917742356864,
+        "betTs": 1782439757,
+        "leadMin": 2721
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.475,
+          "win": false,
+          "profit": -1
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.475,
+          "win": false,
+          "profit": -1
+        },
+        "highConsensus": null,
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.525,
+          "win": true,
+          "profit": 0.9047619047619047
+        }
+      },
+      "settledAt": "2026-06-28T02:25:00.637Z",
+      "scoreBoard": [
+        {
+          "home": 1,
+          "away": 1,
+          "prob": 0.125
+        },
+        {
+          "home": 0,
+          "away": 1,
+          "prob": 0.105
+        },
+        {
+          "home": 1,
+          "away": 2,
+          "prob": 0.105
+        }
+      ],
+      "scoreRank": -1
+    },
+    {
+      "espnId": "760482",
+      "match": "Congo DR vs Uzbekistan",
+      "home": "Congo DR",
+      "away": "Uzbekistan",
+      "actual": "home",
+      "kickoffMs": 1782603000000,
+      "score": "3-1",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0x56604973f2f37e86c213fef9ac209151258054bf",
+        "side": "home",
+        "usd": 88604.43680000001,
+        "entryPrice": 0.5506774845964079,
+        "betTs": 1782504361,
+        "leadMin": 1644
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.595,
+          "win": true,
+          "profit": 0.680672268907563
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.595,
+          "win": true,
+          "profit": 0.680672268907563
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.595,
+          "win": true,
+          "profit": 0.680672268907563
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.405,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-28T02:25:00.637Z",
+      "scoreBoard": [
+        {
+          "home": 1,
+          "away": 0,
+          "prob": 0.14
+        },
+        {
+          "home": 2,
+          "away": 0,
+          "prob": 0.115
+        },
+        {
+          "home": 1,
+          "away": 1,
+          "prob": 0.115
+        }
+      ],
+      "scoreRank": -1
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 33,
-      "wins": 25,
-      "profit": 6.691280823937532
+      "bets": 35,
+      "wins": 26,
+      "profit": 6.371953092845096
     },
     "followBig": {
-      "bets": 33,
-      "wins": 25,
-      "profit": 6.691280823937532
+      "bets": 35,
+      "wins": 26,
+      "profit": 6.371953092845096
     },
     "highConsensus": {
-      "bets": 26,
-      "wins": 19,
-      "profit": 0.5621311338896688
+      "bets": 27,
+      "wins": 20,
+      "profit": 1.242803402797232
     },
     "fadeFav": {
-      "bets": 33,
-      "wins": 8,
-      "profit": -12.10375248131951
+      "bets": 35,
+      "wins": 9,
+      "profit": -12.198990576557605
     }
   },
   "previewDay": "2026-06-28",
   "pinnedMsgId": 1070,
-  "trackUpdatedAt": 1782609892390,
+  "trackUpdatedAt": 1782613502171,
   "scoreStats": {
-    "n": 24,
+    "n": 26,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782609892923,
+  "previewUpdatedAt": 1782613503178,
   "previewMsgId": 1002,
-  "resultsUpdatedAt": 1782609893696,
+  "resultsUpdatedAt": 1782613502634,
   "resultsMsgId": 1114
 }
