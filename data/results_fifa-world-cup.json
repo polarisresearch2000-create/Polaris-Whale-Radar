@@ -2697,6 +2697,126 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-28T07:26:00.582Z"
+    },
+    "760487": {
+      "match": "Brazil vs Japan",
+      "home": "Brazil",
+      "away": "Japan",
+      "kickoffMs": 1782752400000,
+      "whaleSide": "home",
+      "consensusPct": 0.8692419209832515,
+      "bigBettor": {
+        "wallet": "0xa07893a758eab810c30154672768e88251dd419a",
+        "side": "home",
+        "usd": 196455.129999,
+        "entryPrice": 0.5799999999992914,
+        "betTs": 1782680795,
+        "leadMin": 1193
+      },
+      "sides": {
+        "home": {
+          "usd": 1160331.74521,
+          "price": 0.575
+        },
+        "draw": {
+          "usd": 96970.709192,
+          "price": 0.255
+        },
+        "away": {
+          "usd": 77575.34796800002,
+          "price": 0.175
+        }
+      },
+      "eventSlug": "fifwc-bra-jpn-2026-06-29",
+      "totals": {
+        "line": 2.5,
+        "side": "Under",
+        "pct": 56,
+        "overUsd": 217400,
+        "underUsd": 279780
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-29T07:31:17.308Z"
+    },
+    "760488": {
+      "match": "Netherlands vs Morocco",
+      "home": "Netherlands",
+      "away": "Morocco",
+      "kickoffMs": 1782781200000,
+      "whaleSide": "home",
+      "consensusPct": 0.6427025177751851,
+      "bigBettor": {
+        "wallet": "0x65018f9fc473f6e920b8929a375d39c26a461220",
+        "side": "draw",
+        "usd": 47817.92,
+        "entryPrice": 0.32,
+        "betTs": 1782680309,
+        "leadMin": 1682
+      },
+      "sides": {
+        "home": {
+          "usd": 159216.63126799997,
+          "price": 0.425
+        },
+        "draw": {
+          "usd": 66791.119995,
+          "price": 0.315
+        },
+        "away": {
+          "usd": 21722.149997,
+          "price": 0.265
+        }
+      },
+      "eventSlug": "fifwc-nld-mar-2026-06-29",
+      "totals": {
+        "line": 2.5,
+        "side": "Under",
+        "pct": 85,
+        "overUsd": 6553,
+        "underUsd": 37709
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-29T07:31:17.836Z"
+    },
+    "760489": {
+      "match": "Germany vs Paraguay",
+      "home": "Germany",
+      "away": "Paraguay",
+      "kickoffMs": 1782765000000,
+      "whaleSide": "home",
+      "consensusPct": 0.9448726583059459,
+      "bigBettor": {
+        "wallet": "0x0346afae2603313d2bbee96b628536c8cbe352a5",
+        "side": "home",
+        "usd": 110018.51369999998,
+        "entryPrice": 0.7263140245681712,
+        "betTs": 1782620674,
+        "leadMin": 2405
+      },
+      "sides": {
+        "home": {
+          "usd": 376434.50697699987,
+          "price": 0.725
+        },
+        "draw": {
+          "usd": 15958.571997,
+          "price": 0.185
+        },
+        "away": {
+          "usd": 6003.9999,
+          "price": 0.085
+        }
+      },
+      "eventSlug": "fifwc-ger-par-2026-06-29",
+      "totals": {
+        "line": 2.5,
+        "side": "Under",
+        "pct": 53,
+        "overUsd": 75802,
+        "underUsd": 84069
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-29T07:31:17.582Z"
     }
   },
   "settled": [
@@ -4838,16 +4958,16 @@
       "profit": -15.198990576557605
     }
   },
-  "previewDay": "2026-06-28",
+  "previewDay": "2026-06-29",
   "pinnedMsgId": 1070,
-  "trackUpdatedAt": 1782714654885,
+  "trackUpdatedAt": 1782718279369,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782714655412,
+  "previewUpdatedAt": 1782718279872,
   "previewMsgId": 1002,
-  "resultsUpdatedAt": 1782714656262,
+  "resultsUpdatedAt": 1782718280539,
   "resultsMsgId": 1114
 }
