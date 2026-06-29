@@ -4934,40 +4934,85 @@
         }
       },
       "settledAt": "2026-06-28T21:28:59.820Z"
+    },
+    {
+      "espnId": "760487",
+      "match": "Brazil vs Japan",
+      "home": "Brazil",
+      "away": "Japan",
+      "actual": "home",
+      "kickoffMs": 1782752400000,
+      "score": "2-1",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0xa07893a758eab810c30154672768e88251dd419a",
+        "side": "home",
+        "usd": 196455.129999,
+        "entryPrice": 0.5799999999992914,
+        "betTs": 1782680795,
+        "leadMin": 1193
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.575,
+          "win": true,
+          "profit": 0.7391304347826089
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.575,
+          "win": true,
+          "profit": 0.7391304347826089
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.575,
+          "win": true,
+          "profit": 0.7391304347826089
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.42500000000000004,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-29T19:35:16.264Z"
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 38,
-      "wins": 29,
-      "profit": 8.469407016263467
+      "bets": 39,
+      "wins": 30,
+      "profit": 9.208537451046077
     },
     "followBig": {
-      "bets": 38,
-      "wins": 29,
-      "profit": 8.469407016263467
+      "bets": 39,
+      "wins": 30,
+      "profit": 9.208537451046077
     },
     "highConsensus": {
-      "bets": 30,
-      "wins": 23,
-      "profit": 3.3402573262156032
+      "bets": 31,
+      "wins": 24,
+      "profit": 4.0793877609982125
     },
     "fadeFav": {
-      "bets": 38,
+      "bets": 39,
       "wins": 9,
-      "profit": -15.198990576557605
+      "profit": -16.198990576557605
     }
   },
   "previewDay": "2026-06-29",
   "pinnedMsgId": 1070,
-  "trackUpdatedAt": 1782758106363,
+  "trackUpdatedAt": 1782761717801,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782758106866,
+  "previewUpdatedAt": 1782761718812,
   "previewMsgId": 1002,
-  "resultsUpdatedAt": 1782758107595,
+  "resultsUpdatedAt": 1782761718289,
   "resultsMsgId": 1114
 }
