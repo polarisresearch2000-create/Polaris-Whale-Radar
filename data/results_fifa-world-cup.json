@@ -4979,40 +4979,85 @@
         }
       },
       "settledAt": "2026-06-29T19:35:16.264Z"
+    },
+    {
+      "espnId": "760489",
+      "match": "Germany vs Paraguay",
+      "home": "Germany",
+      "away": "Paraguay",
+      "actual": "draw",
+      "kickoffMs": 1782765000000,
+      "score": "1-1",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0x0346afae2603313d2bbee96b628536c8cbe352a5",
+        "side": "home",
+        "usd": 110018.51369999998,
+        "entryPrice": 0.7263140245681712,
+        "betTs": 1782620674,
+        "leadMin": 2405
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.725,
+          "win": false,
+          "profit": -1
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.725,
+          "win": false,
+          "profit": -1
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.725,
+          "win": false,
+          "profit": -1
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.275,
+          "win": true,
+          "profit": 2.6363636363636362
+        }
+      },
+      "settledAt": "2026-06-29T23:41:03.724Z"
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 39,
+      "bets": 40,
       "wins": 30,
-      "profit": 9.208537451046077
+      "profit": 8.208537451046077
     },
     "followBig": {
-      "bets": 39,
+      "bets": 40,
       "wins": 30,
-      "profit": 9.208537451046077
+      "profit": 8.208537451046077
     },
     "highConsensus": {
-      "bets": 31,
+      "bets": 32,
       "wins": 24,
-      "profit": 4.0793877609982125
+      "profit": 3.0793877609982125
     },
     "fadeFav": {
-      "bets": 39,
-      "wins": 9,
-      "profit": -16.198990576557605
+      "bets": 40,
+      "wins": 10,
+      "profit": -13.562626940193969
     }
   },
   "previewDay": "2026-06-29",
   "pinnedMsgId": 1181,
-  "trackUpdatedAt": 1782772675005,
+  "trackUpdatedAt": 1782776465228,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782772856779,
+  "previewUpdatedAt": 1782776465999,
   "previewMsgId": 1002,
-  "resultsUpdatedAt": 1782772857241,
+  "resultsUpdatedAt": 1782776465521,
   "resultsMsgId": 1114
 }
