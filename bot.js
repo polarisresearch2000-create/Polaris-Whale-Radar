@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V5.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V5.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -250,9 +250,9 @@ async function trackResults() {
         const s = (ouS[key] = ouS[key] || { bets: 0, wins: 0, profit: 0 });
         s.bets++; if (r.win) s.wins++; s.profit += r.profit;
       }
-      // 逐场记录(供分段分析: 大球/小球、共识强弱、有无盈利大户)
+      // 逐场记录(供分段分析: 大球/小球各自 ROI、共识强弱、有无盈利大户); price=跟大户那一侧的入场价
       (res.ouSettled = res.ouSettled || []).push({
-        match: p.match, goals, actualOU, side: t.side, pct: t.pct,
+        match: p.match, goals, actualOU, side: t.side, pct: t.pct, price: priceOf(t.side),
         winnerSide: t.winnerSide, win: ouStrat.followBig ? ouStrat.followBig.win : null, settledAt: rec.settledAt,
       });
       rec.ou = { actualOU, goals, side: t.side, winnerSide: t.winnerSide, win: ouStrat.followBig ? ouStrat.followBig.win : null };
@@ -488,15 +488,18 @@ function ouStatsLines(res) {
     body.push(`${label}: ${s.bets}場 命中${wr}% · ROI ${roi >= 0 ? "+" : ""}${roi}%`);
   }
   if (!body.length) return [];
-  // 大/小球分段(跟大户口径): 信号在偏大球 vs 偏小球哪边更准
+  // 大/小球分段(跟大户口径): 偏大球 vs 偏小球 各自命中率 + ROI —— 区分"准"与"赚"(命中高但入场价更高可能仍亏)
   const seg = (sideVal) => {
     const a = (res.ouSettled || []).filter((x) => x.side === sideVal && x.win != null);
     if (!a.length) return null;
     const w = a.filter((x) => x.win).length;
-    return `${sideVal === "Over" ? "偏大球" : "偏小球"} ${a.length}場 命中${Math.round((w / a.length) * 100)}%`;
+    const priced = a.filter((x) => x.price > 0 && x.price < 1);
+    const roi = priced.length ? Math.round((priced.reduce((s, x) => s + (x.win ? (1 - x.price) / x.price : -1), 0) / priced.length) * 100) : null;
+    const avgPx = priced.length ? (priced.reduce((s, x) => s + x.price, 0) / priced.length) : null;
+    return `   ${sideVal === "Over" ? "偏大球" : "偏小球"}: ${a.length}場 命中${Math.round((w / a.length) * 100)}%${roi != null ? ` · ROI ${roi >= 0 ? "+" : ""}${roi}%` : ""}${avgPx != null ? ` · 均入場價${avgPx.toFixed(2)}` : ""}`;
   };
   const segs = [seg("Over"), seg("Under")].filter(Boolean);
-  return ["", "⚽ <b>大小球戰績</b>（O/U 2.5 · 前向測試）", ...body, ...(segs.length ? [`   分段: ${segs.join(" / ")}`] : [])];
+  return ["", "⚽ <b>大小球戰績</b>（O/U 2.5 · 前向測試）", ...body, ...(segs.length ? ["   ── 分段（跟大戶口徑）──", ...segs] : [])];
 }
 
 // 大小球(O/U 2.5)聪明钱偏向(一行): "大戶偏 大球 66%（O/U 2.5）"
