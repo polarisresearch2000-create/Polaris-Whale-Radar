@@ -668,19 +668,44 @@ async function getTotalsSignal(eventSlug) {
   // 整场总进球标准盘: "{Home} vs. {Away}: O/U 2.5"(排除半场/单队/其它线)
   const mk = e.markets.find((m) => /:\s*o\/u\s*2\.5\b/i.test(m.question || "") && !/half|1st|2nd/i.test(m.question || ""));
   if (!mk || !mk.conditionId) return null;
+  // 盘口当前价(算 ROI 用): Over/Under 各自概率价
+  let overPrice = null, underPrice = null;
+  try {
+    const outs = JSON.parse(mk.outcomes || "[]");
+    const px = JSON.parse(mk.outcomePrices || "[]");
+    const oi = outs.findIndex((o) => /over|yes/i.test(o));
+    const ui = outs.findIndex((o) => /under|no/i.test(o));
+    if (oi >= 0) overPrice = Number(px[oi]);
+    if (ui >= 0) underPrice = Number(px[ui]);
+  } catch {}
   const tr = await getJSON(`${DATA}/trades?market=${mk.conditionId}&filterType=CASH&filterAmount=${CONFIG.POSITIONING_MIN_NOTIONAL}&limit=500`).catch(() => null);
   const buys = Array.isArray(tr) ? tr.filter((t) => t.side === "BUY") : [];
   let overUsd = 0, underUsd = 0;
+  const byWallet = new Map(); // 每钱包押大/小各多少, 用来找"盈利大户在押哪边"
   for (const t of buys) {
     const u = (t.size || 0) * (t.price || 0);
-    if (/over|yes/i.test(t.outcome || "")) overUsd += u;
-    else underUsd += u;
+    const isOver = /over|yes/i.test(t.outcome || "");
+    if (isOver) overUsd += u; else underUsd += u;
+    if (!byWallet.has(t.proxyWallet)) byWallet.set(t.proxyWallet, { over: 0, under: 0 });
+    const w = byWallet.get(t.proxyWallet);
+    if (isOver) w.over += u; else w.under += u;
   }
   const total = overUsd + underUsd;
   if (total <= 0) return null;
-  const side = overUsd >= underUsd ? "Over" : "Under"; // 大户偏哪边
+  const side = overUsd >= underUsd ? "Over" : "Under"; // 大户(资金多数方)偏哪边
   const pct = Math.round((Math.max(overUsd, underUsd) / total) * 100);
-  return { line: 2.5, side, pct, overUsd: Math.round(overUsd), underUsd: Math.round(underUsd) };
+  // 找历史盈利 ≥$5万的最大赢家押哪边(测"跟💎盈利大户大小球"假设); 只评前6大钱包省 API
+  const tops = [...byWallet.entries()]
+    .map(([w, v]) => ({ w, usd: v.over + v.under, side: v.over >= v.under ? "Over" : "Under" }))
+    .sort((a, b) => b.usd - a.usd).slice(0, 6);
+  let winnerSide = null, winnerPnl = null;
+  for (const tw of tops) {
+    const sc = await getWalletScore(tw.w).catch(() => null);
+    if (sc && sc.allTimePnl >= 50000 && (winnerPnl == null || sc.allTimePnl > winnerPnl)) {
+      winnerPnl = sc.allTimePnl; winnerSide = tw.side;
+    }
+  }
+  return { line: 2.5, side, pct, overUsd: Math.round(overUsd), underUsd: Math.round(underUsd), overPrice, underPrice, winnerSide, winnerPnl: winnerPnl ? Math.round(winnerPnl) : null };
 }
 
 // ---- 加密版预判: 单个二元市场(Yes/No)的巨鲸方向 ----

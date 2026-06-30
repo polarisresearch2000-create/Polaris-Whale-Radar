@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V5.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V5.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -225,15 +225,37 @@ async function trackResults() {
       score: `${m.homeScore}-${m.awayScore}`, whaleSide: p.whaleSide, bigBettor: p.bigBettor,
       strat, settledAt: new Date().toISOString(),
     };
-    // 准确比分: 实际比分在赛前概率榜的名次 → 累计 Top3/榜首命中率
-    if (p.scoreBoard?.top?.length) {
-      const idx = p.scoreBoard.top.findIndex((e) => e.home === m.homeScore && e.away === m.awayScore);
-      const ss = (res.scoreStats = res.scoreStats || { n: 0, hit1: 0, hit3: 0 });
-      ss.n++;
-      if (idx === 0) ss.hit1++;
-      if (idx >= 0 && idx < 3) ss.hit3++;
-      rec.scoreBoard = p.scoreBoard.top.slice(0, 3);
-      rec.scoreRank = idx;
+    // 大小球前向测: 实际总进球 → Over/Under(2.5), 评 O/U 策略 ROI(跟大户 / 跟💎盈利大户 / 强共识)
+    if (p.totals && (p.totals.overPrice != null || p.totals.underPrice != null) && m.homeScore != null && m.awayScore != null) {
+      const t = p.totals;
+      const goals = m.homeScore + m.awayScore;
+      const actualOU = goals >= 3 ? "Over" : "Under"; // 总进球≥3 = 大球(O/U 2.5)中
+      const priceOf = (sd) => (sd === "Over" ? t.overPrice : t.underPrice);
+      const evalOU = (betSide) => {
+        if (!betSide) return null;
+        const price = priceOf(betSide);
+        if (!(price > 0 && price < 1)) return null;
+        const win = actualOU === betSide;
+        return { side: betSide, price, win, profit: win ? (1 - price) / price : -1 };
+      };
+      const ouStrat = {
+        followBig: evalOU(t.side),                              // 跟大户(资金多数方)
+        followWinner: t.winnerSide ? evalOU(t.winnerSide) : null, // 跟💎盈利大户押的那边
+        highConsensus: t.pct >= 75 ? evalOU(t.side) : null,      // 仅强共识(≥75%)才跟
+      };
+      const ouS = (res.ouStrategies = res.ouStrategies || {});
+      for (const key in ouStrat) {
+        const r = ouStrat[key];
+        if (!r) continue;
+        const s = (ouS[key] = ouS[key] || { bets: 0, wins: 0, profit: 0 });
+        s.bets++; if (r.win) s.wins++; s.profit += r.profit;
+      }
+      // 逐场记录(供分段分析: 大球/小球、共识强弱、有无盈利大户)
+      (res.ouSettled = res.ouSettled || []).push({
+        match: p.match, goals, actualOU, side: t.side, pct: t.pct,
+        winnerSide: t.winnerSide, win: ouStrat.followBig ? ouStrat.followBig.win : null, settledAt: rec.settledAt,
+      });
+      rec.ou = { actualOU, goals, side: t.side, winnerSide: t.winnerSide, win: ouStrat.followBig ? ouStrat.followBig.win : null };
     }
     res.settled.push(rec);
     newSettle++;
@@ -443,8 +465,38 @@ function fmtTrackRecord(res) {
   }
   if (best && any) lines.push(`🏆 目前最佳: ${best.label} (ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%)`);
   if (!any) lines.push("⏳ 等待首批賽果結算中…"); // 取消"样本仍小"警告行(保留空态占位)
+  for (const l of ouStatsLines(res)) lines.push(l); // ⚽ 大小球前向战绩(有结算才显示)
   lines.push(`🔭 ROI=每$1淨回報 · 賠率=入場價隱含倍數 · 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
   return lines.join("\n");
+}
+
+// 大小球(O/U 2.5)前向战绩: 跟💎盈利大户 / 跟大户 / 强共识 三条策略命中率+ROI + 大/小球分段(诚实小样本)
+function ouStatsLines(res) {
+  const os = res.ouStrategies;
+  if (!os) return [];
+  const order = [
+    ["followWinner", "跟💎盈利大戶"],
+    ["followBig", "跟大戶(資金多數方)"],
+    ["highConsensus", "僅強共識≥75%才跟"],
+  ];
+  const body = [];
+  for (const [key, label] of order) {
+    const s = os[key];
+    if (!s || !s.bets) continue;
+    const wr = Math.round((s.wins / s.bets) * 100);
+    const roi = Math.round((s.profit / s.bets) * 100);
+    body.push(`${label}: ${s.bets}場 命中${wr}% · ROI ${roi >= 0 ? "+" : ""}${roi}%`);
+  }
+  if (!body.length) return [];
+  // 大/小球分段(跟大户口径): 信号在偏大球 vs 偏小球哪边更准
+  const seg = (sideVal) => {
+    const a = (res.ouSettled || []).filter((x) => x.side === sideVal && x.win != null);
+    if (!a.length) return null;
+    const w = a.filter((x) => x.win).length;
+    return `${sideVal === "Over" ? "偏大球" : "偏小球"} ${a.length}場 命中${Math.round((w / a.length) * 100)}%`;
+  };
+  const segs = [seg("Over"), seg("Under")].filter(Boolean);
+  return ["", "⚽ <b>大小球戰績</b>（O/U 2.5 · 前向測試）", ...body, ...(segs.length ? [`   分段: ${segs.join(" / ")}`] : [])];
 }
 
 // 大小球(O/U 2.5)聪明钱偏向(一行): "大戶偏 大球 66%（O/U 2.5）"
@@ -965,6 +1017,11 @@ async function main() {
       console.log(`  ${label}: ${s.bets}场 命中${Math.round((s.wins / s.bets) * 100)}% ROI ${roiPct(s) >= 0 ? "+" : ""}${roiPct(s)}%`);
     }
     r.settled.slice(-10).forEach((s) => console.log(`    ${s.strat?.followWhale?.win ? "✅" : "❌"} ${s.match} ${s.score} 实际${s.actual}`));
+    if (r.ouStrategies) {
+      console.log("  ⚽ 大小球(O/U 2.5)前向战绩:");
+      for (const l of ouStatsLines(r)) { const t = l.replace(/<[^>]+>/g, "").trim(); if (t) console.log(`     ${t}`); }
+      (r.ouSettled || []).slice(-10).forEach((x) => console.log(`     ${x.win ? "✅" : "❌"} ${x.match} 进${x.goals}球→${x.actualOU === "Over" ? "大" : "小"} · 大户偏${x.side === "Over" ? "大" : "小"}${x.winnerSide ? ` · 💎偏${x.winnerSide === "Over" ? "大" : "小"}` : ""}`));
+    }
     return;
   }
 
