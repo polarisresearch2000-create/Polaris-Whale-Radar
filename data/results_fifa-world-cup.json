@@ -3058,7 +3058,17 @@
         "underUsd": 9682
       },
       "state": "pre",
-      "capturedAt": "2026-06-30T07:42:24.154Z"
+      "capturedAt": "2026-06-30T07:42:24.154Z",
+      "clv": {
+        "capturedAt": "2026-06-30T19:44:40.748Z",
+        "ml": {
+          "side": "home",
+          "entry": 0.765,
+          "close": 0.775,
+          "clv": 0.01
+        }
+      },
+      "clvCaptured": true
     }
   },
   "settled": [
@@ -5306,40 +5316,85 @@
         }
       },
       "settledAt": "2026-06-30T04:41:57.537Z"
+    },
+    {
+      "espnId": "760490",
+      "match": "Ivory Coast vs Norway",
+      "home": "Ivory Coast",
+      "away": "Norway",
+      "actual": "away",
+      "kickoffMs": 1782838800000,
+      "score": "1-2",
+      "whaleSide": "away",
+      "bigBettor": {
+        "wallet": "0x82ba1b3913ddf383db52eb06e0e225e95257afea",
+        "side": "away",
+        "usd": 99999.999999,
+        "entryPrice": 0.47179487179267016,
+        "betTs": 1782685384,
+        "leadMin": 2557
+      },
+      "strat": {
+        "followWhale": {
+          "side": "away",
+          "price": 0.455,
+          "win": true,
+          "profit": 1.1978021978021975
+        },
+        "followBig": {
+          "side": "away",
+          "price": 0.455,
+          "win": true,
+          "profit": 1.1978021978021975
+        },
+        "highConsensus": {
+          "side": "away",
+          "price": 0.455,
+          "win": true,
+          "profit": 1.1978021978021975
+        },
+        "fadeFav": {
+          "side": "No(away)",
+          "price": 0.5449999999999999,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-30T19:44:40.748Z"
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 41,
-      "wins": 30,
-      "profit": 7.208537451046077
+      "bets": 42,
+      "wins": 31,
+      "profit": 8.406339648848274
     },
     "followBig": {
-      "bets": 41,
-      "wins": 31,
-      "profit": 10.38314062564925
+      "bets": 42,
+      "wins": 32,
+      "profit": 11.580942823451448
     },
     "highConsensus": {
-      "bets": 32,
-      "wins": 24,
-      "profit": 3.0793877609982125
+      "bets": 33,
+      "wins": 25,
+      "profit": 4.27718995880041
     },
     "fadeFav": {
-      "bets": 41,
+      "bets": 42,
       "wins": 11,
-      "profit": -12.82349650541136
+      "profit": -13.82349650541136
     }
   },
   "previewDay": "2026-06-30",
   "pinnedMsgId": 17,
-  "trackUpdatedAt": 1782845072131,
+  "trackUpdatedAt": 1782848682222,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782845073178,
+  "previewUpdatedAt": 1782848683297,
   "previewMsgId": 19,
-  "resultsUpdatedAt": 1782845074046,
+  "resultsUpdatedAt": 1782848682675,
   "resultsMsgId": 21
 }
