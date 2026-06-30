@@ -3018,7 +3018,12 @@
         "underUsd": 31779
       },
       "state": "pre",
-      "capturedAt": "2026-06-30T07:42:24.444Z"
+      "capturedAt": "2026-06-30T07:42:24.444Z",
+      "proWinner": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "draw",
+        "pnl": 1265268
+      }
     },
     "760492": {
       "match": "France vs Sweden",
@@ -3068,7 +3073,12 @@
           "clv": 0.01
         }
       },
-      "clvCaptured": true
+      "clvCaptured": true,
+      "proWinner": {
+        "wallet": "0x9f2fe025f84839ca81dd8e0338892605702d2ca8",
+        "side": "home",
+        "pnl": 3400599
+      }
     }
   },
   "settled": [
@@ -5387,14 +5397,14 @@
   },
   "previewDay": "2026-06-30",
   "pinnedMsgId": 17,
-  "trackUpdatedAt": 1782848682222,
+  "trackUpdatedAt": 1782852291232,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782848683297,
+  "previewUpdatedAt": 1782852291705,
   "previewMsgId": 19,
-  "resultsUpdatedAt": 1782848682675,
+  "resultsUpdatedAt": 1782852292157,
   "resultsMsgId": 21
 }
