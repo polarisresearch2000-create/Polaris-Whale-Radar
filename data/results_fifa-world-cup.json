@@ -2817,6 +2817,126 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-29T07:31:17.582Z"
+    },
+    "760490": {
+      "match": "Ivory Coast vs Norway",
+      "home": "Ivory Coast",
+      "away": "Norway",
+      "kickoffMs": 1782838800000,
+      "whaleSide": "away",
+      "consensusPct": 0.8966519526028371,
+      "bigBettor": {
+        "wallet": "0x82ba1b3913ddf383db52eb06e0e225e95257afea",
+        "side": "away",
+        "usd": 99999.999999,
+        "entryPrice": 0.47179487179267016,
+        "betTs": 1782685384,
+        "leadMin": 2557
+      },
+      "sides": {
+        "home": {
+          "usd": 46092.110793,
+          "price": 0.265
+        },
+        "draw": {
+          "usd": 7639.141395,
+          "price": 0.285
+        },
+        "away": {
+          "usd": 466174.57613899984,
+          "price": 0.455
+        }
+      },
+      "eventSlug": "fifwc-civ-nor-2026-06-30",
+      "totals": {
+        "line": 2.5,
+        "side": "Under",
+        "pct": 65,
+        "overUsd": 175271,
+        "underUsd": 327093
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-30T07:42:23.921Z"
+    },
+    "760491": {
+      "match": "Mexico vs Ecuador",
+      "home": "Mexico",
+      "away": "Ecuador",
+      "kickoffMs": 1782867600000,
+      "whaleSide": "home",
+      "consensusPct": 0.6624487848635411,
+      "bigBettor": {
+        "wallet": "0x0346afae2603313d2bbee96b628536c8cbe352a5",
+        "side": "home",
+        "usd": 123339.8232,
+        "entryPrice": 0.43999999999999995,
+        "betTs": 1782700853,
+        "leadMin": 2779
+      },
+      "sides": {
+        "home": {
+          "usd": 155947.933787,
+          "price": 0.435
+        },
+        "draw": {
+          "usd": 52088.607895,
+          "price": 0.335
+        },
+        "away": {
+          "usd": 27374.764596,
+          "price": 0.235
+        }
+      },
+      "eventSlug": "fifwc-mex-ecu-2026-06-30",
+      "totals": {
+        "line": 2.5,
+        "side": "Under",
+        "pct": 50,
+        "overUsd": 31597,
+        "underUsd": 31779
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-30T07:42:24.444Z"
+    },
+    "760492": {
+      "match": "France vs Sweden",
+      "home": "France",
+      "away": "Sweden",
+      "kickoffMs": 1782853200000,
+      "whaleSide": "home",
+      "consensusPct": 0.9722004635237159,
+      "bigBettor": {
+        "wallet": "0xe9076a87c5ed90ef16e6fe6529c943baeca0cff6",
+        "side": "home",
+        "usd": 104777.170564,
+        "entryPrice": 0.7746043057392639,
+        "betTs": 1782569741,
+        "leadMin": 4724
+      },
+      "sides": {
+        "home": {
+          "usd": 790473.0767089997,
+          "price": 0.765
+        },
+        "draw": {
+          "usd": 5747.3,
+          "price": 0.155
+        },
+        "away": {
+          "usd": 16855.842,
+          "price": 0.075
+        }
+      },
+      "eventSlug": "fifwc-fra-swe-2026-06-30",
+      "totals": {
+        "line": 2.5,
+        "side": "Over",
+        "pct": 86,
+        "overUsd": 60029,
+        "underUsd": 9682
+      },
+      "state": "pre",
+      "capturedAt": "2026-06-30T07:42:24.154Z"
     }
   },
   "settled": [
@@ -5090,14 +5210,14 @@
   },
   "previewDay": "2026-06-30",
   "pinnedMsgId": 1181,
-  "trackUpdatedAt": 1782801735911,
+  "trackUpdatedAt": 1782805344444,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782801736300,
+  "previewUpdatedAt": 1782805344754,
   "previewMsgId": 1002,
-  "resultsUpdatedAt": 1782801736985,
+  "resultsUpdatedAt": 1782805345705,
   "resultsMsgId": 1114
 }
