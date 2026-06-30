@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V5.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V5.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -848,6 +848,21 @@ const cUSD = (n) => {
   return `${s}$${Math.round(a)}`;
 };
 // 持仓快照：各市场大额买入的多空分布
+// 持仓分析里的"聪明钱内部"块(个人自用·更详细): 💎顶级赢家 vs 🐋最大注 是否分歧。label(outcome)→显示名
+function smartMoneyLines(m, label) {
+  const w = m.topWinner, b = m.topWhale;
+  if (!w && !b) return [];
+  // 最大注本身就是顶级赢家 → 合成一行
+  if (w && b && w.wallet === b.wallet)
+    return [`   💎🐋 最大注即頂級贏家 押${label(w.outcome)}（歷史盈利 ${cUSD(w.allTimePnl)}）`];
+  const loseTag = (p) => (p != null && p <= -50000 ? `（⚠️歷史虧損 ${cUSD(Math.abs(p))}）` : p != null && p > 0 ? `（歷史盈利 ${cUSD(p)}）` : "");
+  const out = [];
+  if (w) out.push(`   💎 頂級贏家 押${label(w.outcome)}（歷史盈利 ${cUSD(w.allTimePnl)}）`);
+  if (b) out.push(`   🐋 最大注 押${label(b.outcome)}${loseTag(b.allTimePnl)}`);
+  if (w && b) out.push(w.outcome === b.outcome ? "   ✓ 同向（贏家與最大注一致）" : `   ⚠️ 分歧（贏家押${label(w.outcome)} / 最大注押${label(b.outcome)}）`);
+  return out;
+}
+
 function fmtPositioning(markets, threshold) {
   const top = markets.slice(0, 6); // 纯中文, 可多放几个盘
   const url = (m) => (m.eventSlug ? `https://polymarket.com/event/${m.eventSlug}` : "https://polymarket.com");
@@ -873,18 +888,7 @@ function fmtPositioning(markets, threshold) {
         const odds = x.price != null ? `（盤口 ${Math.round(x.price * 100)}¢）` : "";
         cn.push(`   ${icon} ${esc(outLabel(x.oc, m.home, m.away))} <b>${pct}%</b>${odds}`);
       }
-      if (m.topWinner) {
-        const w = m.topWinner;
-        cn.push(`   💎 頂級贏家在押 ${esc(outLabel(w.outcome, m.home, m.away))}（歷史盈利 ${cUSD(w.allTimePnl)}）`);
-      } else if (m.topWhale) {
-        const tw = m.topWhale, pnl = tw.allTimePnl;
-        const tag = pnl == null ? "" : pnl > 0 ? `（歷史盈利 ${cUSD(pnl)}）` : pnl < 0 ? `（歷史虧損 ${cUSD(Math.abs(pnl))}）` : "";
-        cn.push(`   🐋 最大注在押 ${esc(outLabel(tw.outcome, m.home, m.away))}${tag}`);
-      }
-      const big = m.topWhale;
-      if (big && big.allTimePnl != null && big.allTimePnl <= -50000 && (!m.topWinner || big.wallet !== m.topWinner.wallet)) {
-        cn.push(`   ⚠️ 但最大注是輸家 押 ${esc(outLabel(big.outcome, m.home, m.away))}（歷史虧損 ${cUSD(Math.abs(big.allTimePnl))}）`);
-      }
+      for (const l of smartMoneyLines(m, (oc) => esc(outLabel(oc, m.home, m.away)))) cn.push(l);
       cn.push("");
       continue;
     }
@@ -898,18 +902,7 @@ function fmtPositioning(markets, threshold) {
       }
       cn.push(`   ${i === 0 ? "🟩" : "🔻"} ${ocLabel(b.outcome)} <b>${b.pct}%</b>${odds}`);
     });
-    if (m.topWinner) {
-      const w = m.topWinner;
-      cn.push(`   💎 頂級贏家在押 ${ocLabel(w.outcome)}（歷史盈利 ${cUSD(w.allTimePnl)}）`);
-    } else if (m.topWhale) {
-      const tw = m.topWhale, pnl = tw.allTimePnl;
-      const tag = pnl == null ? "" : pnl > 0 ? `（歷史盈利 ${cUSD(pnl)}）` : pnl < 0 ? `（歷史虧損 ${cUSD(Math.abs(pnl))}）` : "";
-      cn.push(`   🐋 最大注在押 ${ocLabel(tw.outcome)}${tag}`);
-    }
-    const big = m.topWhale;
-    if (big && big.allTimePnl != null && big.allTimePnl <= -50000 && (!m.topWinner || big.wallet !== m.topWinner.wallet)) {
-      cn.push(`   ⚠️ 但最大注是輸家（歷史虧損 ${cUSD(Math.abs(big.allTimePnl))}）`);
-    }
+    for (const l of smartMoneyLines(m, (o) => ocLabel(o))) cn.push(l);
     cn.push("");
   }
   cn.push(`🔭 Polaris Research · Polymarket ${LABEL} 聰明錢雷達`);
