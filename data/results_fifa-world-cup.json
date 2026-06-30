@@ -3023,7 +3023,17 @@
         "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
         "side": "draw",
         "pnl": 1265268
-      }
+      },
+      "clv": {
+        "capturedAt": "2026-06-30T23:45:29.648Z",
+        "ml": {
+          "side": "home",
+          "entry": 0.435,
+          "close": 0.435,
+          "clv": 0
+        }
+      },
+      "clvCaptured": true
     },
     "760492": {
       "match": "France vs Sweden",
@@ -5371,40 +5381,85 @@
         }
       },
       "settledAt": "2026-06-30T19:44:40.748Z"
+    },
+    {
+      "espnId": "760492",
+      "match": "France vs Sweden",
+      "home": "France",
+      "away": "Sweden",
+      "actual": "home",
+      "kickoffMs": 1782853200000,
+      "score": "3-0",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0xe9076a87c5ed90ef16e6fe6529c943baeca0cff6",
+        "side": "home",
+        "usd": 104777.170564,
+        "entryPrice": 0.7746043057392639,
+        "betTs": 1782569741,
+        "leadMin": 4724
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.765,
+          "win": true,
+          "profit": 0.3071895424836601
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.765,
+          "win": true,
+          "profit": 0.3071895424836601
+        },
+        "highConsensus": {
+          "side": "home",
+          "price": 0.765,
+          "win": true,
+          "profit": 0.3071895424836601
+        },
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.235,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-06-30T23:45:29.648Z"
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 42,
-      "wins": 31,
-      "profit": 8.406339648848274
+      "bets": 43,
+      "wins": 32,
+      "profit": 8.713529191331935
     },
     "followBig": {
-      "bets": 42,
-      "wins": 32,
-      "profit": 11.580942823451448
+      "bets": 43,
+      "wins": 33,
+      "profit": 11.888132365935109
     },
     "highConsensus": {
-      "bets": 33,
-      "wins": 25,
-      "profit": 4.27718995880041
+      "bets": 34,
+      "wins": 26,
+      "profit": 4.58437950128407
     },
     "fadeFav": {
-      "bets": 42,
+      "bets": 43,
       "wins": 11,
-      "profit": -13.82349650541136
+      "profit": -14.82349650541136
     }
   },
   "previewDay": "2026-06-30",
   "pinnedMsgId": 17,
-  "trackUpdatedAt": 1782859506899,
+  "trackUpdatedAt": 1782863131191,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782859507351,
+  "previewUpdatedAt": 1782863132511,
   "previewMsgId": 19,
-  "resultsUpdatedAt": 1782859507971,
+  "resultsUpdatedAt": 1782863131863,
   "resultsMsgId": 21
 }
