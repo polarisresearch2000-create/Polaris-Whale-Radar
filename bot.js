@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V5.6"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V5.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -172,6 +172,11 @@ async function capturePredictions(res, wc, pmEvents) {
       if (ex.kickoffMs == null && m.kickoffMs) ex.kickoffMs = m.kickoffMs; // 回填开赛时间(老预判没存)
       // 回填大小球信号: 仅在"从未尝试过"(undefined)时补一次, 失败置 null 不再每轮重试
       if (ex.totals === undefined && ex.eventSlug) ex.totals = (await getTotalsSignal(ex.eventSlug).catch(() => null)) || null;
+      // 回填胜负盘"最大赢家"(老预判没存); 只取 proWinner, 不覆盖已锁定的入场价/sides
+      if (ex.proWinner === undefined) {
+        const pr = await matchPrediction(m, pmEvents).catch(() => null);
+        ex.proWinner = (pr && pr.proWinner) || null;
+      }
       continue;
     }
     const pred = await matchPrediction(m, pmEvents).catch(() => null);
@@ -179,7 +184,7 @@ async function capturePredictions(res, wc, pmEvents) {
       const totals = await getTotalsSignal(pred.eventSlug).catch(() => null); // 大小球 O/U 2.5 聪明钱偏向
       res.predictions[m.id] = {
         match: `${m.home} vs ${m.away}`, home: m.home, away: m.away, kickoffMs: m.kickoffMs,
-        whaleSide: pred.whaleSide, consensusPct: pred.consensusPct, bigBettor: pred.bigBettor,
+        whaleSide: pred.whaleSide, consensusPct: pred.consensusPct, bigBettor: pred.bigBettor, proWinner: pred.proWinner || null,
         sides: pred.sides, eventSlug: pred.eventSlug, totals, state: m.state, capturedAt: new Date().toISOString(),
       };
     }
@@ -548,6 +553,30 @@ function clvStatsLines(res) {
 const totalsLine = (t) =>
   t && t.side ? `大戶偏 ${t.side === "Over" ? "大球" : "小球"} ${t.pct}%（O/U 2.5）` : null;
 
+// 详细信号行(个人自用版): 💎最大贏家 vs 🐋最大注 是否分歧(胜负盘) + 大小球(含💎赢家方向)。p 缺字段则自动省略对应行
+function signalDetailLines(p) {
+  const out = [];
+  const sideZh = (s) => esc(tTeam(sideLabel(s, p.home, p.away)));
+  const w = p.proWinner, b = p.bigBettor;
+  // 胜负盘: 最大赢家 vs 最大注
+  if (w && w.side) {
+    const bPart = b && b.side ? ` · 🐋最大注 押${sideZh(b.side)}（${cUSD(b.usd)}）` : "";
+    const tag = b && b.side ? (w.side === b.side ? " · ✓同向" : " · ⚠️分歧") : "";
+    out.push(`   💎最大贏家 押${sideZh(w.side)}（+${cUSD(w.pnl)}）${bPart}${tag}`);
+  } else if (b && b.side) {
+    out.push(`   🐋最大注 押${sideZh(b.side)}（${cUSD(b.usd)}）`);
+  }
+  // 大小球: 大户偏向 + 💎赢家是否同向
+  const tl = totalsLine(p.totals);
+  if (tl) {
+    const t = p.totals;
+    let extra = "";
+    if (t.winnerSide) extra = ` · 💎贏家偏${t.winnerSide === "Over" ? "大" : "小"}球${t.winnerSide === t.side ? "✓同向" : "⚠️分歧"}`;
+    out.push(`   ⚽ 大小球: ${tl}${extra}`);
+  }
+  return out;
+}
+
 // 每日固定: 今日巨鲸预判
 function fmtDailyPreview(matches, res) {
   const sub = LABEL === "World Cup" ? "今日世界盃 · 開賽時間 HKT" : "當前焦點";
@@ -560,8 +589,7 @@ function fmtDailyPreview(matches, res) {
     const ko = koHKT(p.kickoffMs);
     lines.push(`${p.home ? "🆚" : "🔥"} ${esc(translateTitle(p.match))}${ko ? ` · ⏰ ${ko}` : ""}`);
     lines.push(`   ⭐ 看好 <b>${esc(pick)}</b>（信心 ${cons}%）`);
-    const tl = totalsLine(p.totals);
-    if (tl) lines.push(`   ⚽ 大小球: ${tl}`);
+    for (const l of signalDetailLines(p)) lines.push(l);
   }
   lines.push("", "⚠️ 數據分析 · 非投注建議");
   const best = bestStrategy(res);
@@ -575,7 +603,7 @@ function fmtUpcomingPin(matches, res) {
   const show = (matches || []).slice(0, 6); // 最多6场, 保持可扫读
   const sportsLike = show.some((m) => res.predictions[m.id]?.home); // 体育有主客; 加密无
   const lines = sportsLike
-    ? ["📅 <b>即將開賽 · 賽前預判</b>（持續更新）", "（未開賽場次 · 開賽時間 HKT · 預判方向 + 大小球）", ""]
+    ? ["📅 <b>即將開賽 · 賽前預判</b>（持續更新）", "（💎最大贏家 vs 🐋最大注是否分歧 · 大小球 · 開賽 HKT）", ""]
     : ["📅 <b>待結算 · 賽前預判</b>（持續更新）", "（活躍市場 · 預判方向）", ""];
   if (!show.length) {
     lines.push("⏳ 暫無可顯示的場次,稍後自動更新");
@@ -588,8 +616,7 @@ function fmtUpcomingPin(matches, res) {
       const ko = koHKT(p.kickoffMs);
       lines.push(`${p.home ? "🆚" : "🔥"} ${esc(translateTitle(p.match))}${ko ? ` · ⏰ ${ko}` : ""}`);
       lines.push(`   ⭐ 看好 <b>${esc(pick)}</b>（信心 ${cons}%）`);
-      const tl = totalsLine(p.totals);
-      if (tl) lines.push(`   ⚽ 大小球: ${tl}`);
+      for (const l of signalDetailLines(p)) lines.push(l);
     }
     lines.push("", "⚠️ 數據分析 · 非投注建議");
   }

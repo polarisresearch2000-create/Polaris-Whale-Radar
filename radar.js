@@ -653,7 +653,18 @@ async function matchPrediction(m, pmEvents) {
       bigBettor = { wallet: w, side, usd: wr.usd, entryPrice, betTs, leadMin };
     }
   }
-  return { whaleSide, consensusPct, bigBettor, sides, eventSlug: pmEvent.slug };
+  // 历史盈利最大的赢家(PnL≥$50k)押哪边 —— 用来和"最大注(by size)"对比是否分歧。只评前6大钱包省 API
+  let proWinner = null, bestPnl = null;
+  const ranked = [...walletAgg.entries()].sort((a, b) => b[1].usd - a[1].usd).slice(0, 6);
+  for (const [w, wr] of ranked) {
+    const sc = await getWalletScore(w).catch(() => null);
+    if (sc && sc.allTimePnl >= 50000 && (bestPnl == null || sc.allTimePnl > bestPnl)) {
+      const side = [...wr.bySide.entries()].sort((a, b) => b[1].usd - a[1].usd)[0]?.[0];
+      bestPnl = sc.allTimePnl;
+      proWinner = { wallet: w, side, pnl: Math.round(sc.allTimePnl) };
+    }
+  }
+  return { whaleSide, consensusPct, bigBettor, proWinner, sides, eventSlug: pmEvent.slug };
 }
 
 // ---- 准确比分市场: 返回市场概率榜(按隐含概率排序的具体比分 + "其他比分"桶) ----
