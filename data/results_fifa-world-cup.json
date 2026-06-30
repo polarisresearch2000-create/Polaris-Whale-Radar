@@ -5024,18 +5024,58 @@
         }
       },
       "settledAt": "2026-06-29T23:41:03.724Z"
+    },
+    {
+      "espnId": "760488",
+      "match": "Netherlands vs Morocco",
+      "home": "Netherlands",
+      "away": "Morocco",
+      "actual": "draw",
+      "kickoffMs": 1782781200000,
+      "score": "1-1",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0x65018f9fc473f6e920b8929a375d39c26a461220",
+        "side": "draw",
+        "usd": 47817.92,
+        "entryPrice": 0.32,
+        "betTs": 1782680309,
+        "leadMin": 1682
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.425,
+          "win": false,
+          "profit": -1
+        },
+        "followBig": {
+          "side": "draw",
+          "price": 0.315,
+          "win": true,
+          "profit": 2.174603174603175
+        },
+        "highConsensus": null,
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.575,
+          "win": true,
+          "profit": 0.7391304347826089
+        }
+      },
+      "settledAt": "2026-06-30T04:41:57.537Z"
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 40,
+      "bets": 41,
       "wins": 30,
-      "profit": 8.208537451046077
+      "profit": 7.208537451046077
     },
     "followBig": {
-      "bets": 40,
-      "wins": 30,
-      "profit": 8.208537451046077
+      "bets": 41,
+      "wins": 31,
+      "profit": 10.38314062564925
     },
     "highConsensus": {
       "bets": 32,
@@ -5043,21 +5083,21 @@
       "profit": 3.0793877609982125
     },
     "fadeFav": {
-      "bets": 40,
-      "wins": 10,
-      "profit": -13.562626940193969
+      "bets": 41,
+      "wins": 11,
+      "profit": -12.82349650541136
     }
   },
   "previewDay": "2026-06-30",
   "pinnedMsgId": 1181,
-  "trackUpdatedAt": 1782790909038,
+  "trackUpdatedAt": 1782794519061,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782790909335,
+  "previewUpdatedAt": 1782794519872,
   "previewMsgId": 1002,
-  "resultsUpdatedAt": 1782790910029,
+  "resultsUpdatedAt": 1782794519367,
   "resultsMsgId": 1114
 }
