@@ -1165,7 +1165,11 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-24T10:44:49.449Z",
-      "kickoffMs": 1782327600000
+      "kickoffMs": 1782327600000,
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:29.867Z"
+      },
+      "clvCaptured": true
     },
     "760463": {
       "match": "Switzerland vs Canada",
@@ -1228,7 +1232,11 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-24T10:44:49.507Z",
-      "kickoffMs": 1782327600000
+      "kickoffMs": 1782327600000,
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.052Z"
+      },
+      "clvCaptured": true
     },
     "760464": {
       "match": "Morocco vs Haiti",
@@ -1291,7 +1299,11 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-24T10:44:49.570Z",
-      "kickoffMs": 1782338400000
+      "kickoffMs": 1782338400000,
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.088Z"
+      },
+      "clvCaptured": true
     },
     "760465": {
       "match": "Scotland vs Brazil",
@@ -1354,7 +1366,11 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-24T10:44:49.617Z",
-      "kickoffMs": 1782338400000
+      "kickoffMs": 1782338400000,
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.131Z"
+      },
+      "clvCaptured": true
     },
     "760466": {
       "match": "South Africa vs South Korea",
@@ -1417,7 +1433,11 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-24T10:44:49.757Z",
-      "kickoffMs": 1782349200000
+      "kickoffMs": 1782349200000,
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.264Z"
+      },
+      "clvCaptured": true
     },
     "760467": {
       "match": "Czechia vs Mexico",
@@ -1480,7 +1500,11 @@
       },
       "state": "pre",
       "capturedAt": "2026-06-24T10:44:49.681Z",
-      "kickoffMs": 1782349200000
+      "kickoffMs": 1782349200000,
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.419Z"
+      },
+      "clvCaptured": true
     },
     "760468": {
       "match": "Ecuador vs Germany",
@@ -1543,7 +1567,11 @@
         "other": 0.155
       },
       "state": "pre",
-      "capturedAt": "2026-06-25T07:11:02.575Z"
+      "capturedAt": "2026-06-25T07:11:02.575Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.618Z"
+      },
+      "clvCaptured": true
     },
     "760469": {
       "match": "Paraguay vs Australia",
@@ -1606,7 +1634,11 @@
         "other": 0.0565
       },
       "state": "pre",
-      "capturedAt": "2026-06-25T07:11:02.740Z"
+      "capturedAt": "2026-06-25T07:11:02.740Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.733Z"
+      },
+      "clvCaptured": true
     },
     "760470": {
       "match": "Türkiye vs United States",
@@ -1669,7 +1701,11 @@
         "other": 0.15
       },
       "state": "pre",
-      "capturedAt": "2026-06-25T07:11:02.798Z"
+      "capturedAt": "2026-06-25T07:11:02.798Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.791Z"
+      },
+      "clvCaptured": true
     },
     "760471": {
       "match": "Japan vs Sweden",
@@ -1732,7 +1768,11 @@
         "other": 0.135
       },
       "state": "pre",
-      "capturedAt": "2026-06-25T07:11:02.632Z"
+      "capturedAt": "2026-06-25T07:11:02.632Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.819Z"
+      },
+      "clvCaptured": true
     },
     "760472": {
       "match": "Tunisia vs Netherlands",
@@ -1795,7 +1835,11 @@
         "other": 0.36
       },
       "state": "pre",
-      "capturedAt": "2026-06-25T07:11:02.689Z"
+      "capturedAt": "2026-06-25T07:11:02.689Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.880Z"
+      },
+      "clvCaptured": true
     },
     "760473": {
       "match": "Curaçao vs Ivory Coast",
@@ -1858,7 +1902,11 @@
         "other": 0.315
       },
       "state": "pre",
-      "capturedAt": "2026-06-25T07:11:02.508Z"
+      "capturedAt": "2026-06-25T07:11:02.508Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.909Z"
+      },
+      "clvCaptured": true
     },
     "760474": {
       "match": "Senegal vs Iraq",
@@ -1921,7 +1969,11 @@
         "other": 0.28
       },
       "state": "pre",
-      "capturedAt": "2026-06-26T07:16:43.081Z"
+      "capturedAt": "2026-06-26T07:16:43.081Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.942Z"
+      },
+      "clvCaptured": true
     },
     "760475": {
       "match": "Norway vs France",
@@ -1984,7 +2036,11 @@
         "other": 0.175
       },
       "state": "pre",
-      "capturedAt": "2026-06-26T07:16:42.931Z"
+      "capturedAt": "2026-06-26T07:16:42.931Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:30.991Z"
+      },
+      "clvCaptured": true
     },
     "760476": {
       "match": "Egypt vs Iran",
@@ -2047,7 +2103,11 @@
         "other": 0.0465
       },
       "state": "pre",
-      "capturedAt": "2026-06-26T07:16:43.501Z"
+      "capturedAt": "2026-06-26T07:16:43.501Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.047Z"
+      },
+      "clvCaptured": true
     },
     "760477": {
       "match": "New Zealand vs Belgium",
@@ -2110,7 +2170,11 @@
         "other": 0.34
       },
       "state": "pre",
-      "capturedAt": "2026-06-26T07:16:43.663Z"
+      "capturedAt": "2026-06-26T07:16:43.663Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.080Z"
+      },
+      "clvCaptured": true
     },
     "760478": {
       "match": "Cape Verde vs Saudi Arabia",
@@ -2173,7 +2237,11 @@
         "other": 0.085
       },
       "state": "pre",
-      "capturedAt": "2026-06-26T07:16:43.193Z"
+      "capturedAt": "2026-06-26T07:16:43.193Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.123Z"
+      },
+      "clvCaptured": true
     },
     "760479": {
       "match": "Uruguay vs Spain",
@@ -2236,7 +2304,11 @@
         "other": 0.115
       },
       "state": "pre",
-      "capturedAt": "2026-06-26T07:16:43.349Z"
+      "capturedAt": "2026-06-26T07:16:43.349Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.156Z"
+      },
+      "clvCaptured": true
     },
     "760480": {
       "match": "Croatia vs Ghana",
@@ -2306,7 +2378,11 @@
         "pct": 81,
         "overUsd": 3359,
         "underUsd": 14068
-      }
+      },
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.270Z"
+      },
+      "clvCaptured": true
     },
     "760481": {
       "match": "Colombia vs Portugal",
@@ -2376,7 +2452,11 @@
         "pct": 84,
         "overUsd": 104024,
         "underUsd": 20461
-      }
+      },
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.385Z"
+      },
+      "clvCaptured": true
     },
     "760482": {
       "match": "Congo DR vs Uzbekistan",
@@ -2446,7 +2526,11 @@
         "pct": 93,
         "overUsd": 3770,
         "underUsd": 53791
-      }
+      },
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.530Z"
+      },
+      "clvCaptured": true
     },
     "760483": {
       "match": "Jordan vs Argentina",
@@ -2516,7 +2600,11 @@
         "pct": 85,
         "overUsd": 16637,
         "underUsd": 3036
-      }
+      },
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.588Z"
+      },
+      "clvCaptured": true
     },
     "760484": {
       "match": "Algeria vs Austria",
@@ -2586,7 +2674,11 @@
         "pct": 88,
         "overUsd": 5023,
         "underUsd": 36942
-      }
+      },
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.751Z"
+      },
+      "clvCaptured": true
     },
     "760485": {
       "match": "Panama vs England",
@@ -2656,7 +2748,11 @@
         "pct": 93,
         "overUsd": 63759,
         "underUsd": 4571
-      }
+      },
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.867Z"
+      },
+      "clvCaptured": true
     },
     "760486": {
       "match": "South Africa vs Canada",
@@ -2696,7 +2792,11 @@
         "underUsd": 6002
       },
       "state": "pre",
-      "capturedAt": "2026-06-28T07:26:00.582Z"
+      "capturedAt": "2026-06-28T07:26:00.582Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.926Z"
+      },
+      "clvCaptured": true
     },
     "760487": {
       "match": "Brazil vs Japan",
@@ -2736,7 +2836,11 @@
         "underUsd": 279780
       },
       "state": "pre",
-      "capturedAt": "2026-06-29T07:31:17.308Z"
+      "capturedAt": "2026-06-29T07:31:17.308Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:31.958Z"
+      },
+      "clvCaptured": true
     },
     "760488": {
       "match": "Netherlands vs Morocco",
@@ -2776,7 +2880,11 @@
         "underUsd": 37709
       },
       "state": "pre",
-      "capturedAt": "2026-06-29T07:31:17.836Z"
+      "capturedAt": "2026-06-29T07:31:17.836Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:32.068Z"
+      },
+      "clvCaptured": true
     },
     "760489": {
       "match": "Germany vs Paraguay",
@@ -2816,7 +2924,11 @@
         "underUsd": 84069
       },
       "state": "pre",
-      "capturedAt": "2026-06-29T07:31:17.582Z"
+      "capturedAt": "2026-06-29T07:31:17.582Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:32.102Z"
+      },
+      "clvCaptured": true
     },
     "760490": {
       "match": "Ivory Coast vs Norway",
@@ -2856,7 +2968,17 @@
         "underUsd": 327093
       },
       "state": "pre",
-      "capturedAt": "2026-06-30T07:42:23.921Z"
+      "capturedAt": "2026-06-30T07:42:23.921Z",
+      "clv": {
+        "capturedAt": "2026-06-30T18:44:32.130Z",
+        "ml": {
+          "side": "away",
+          "entry": 0.455,
+          "close": 0.245,
+          "clv": -0.21
+        }
+      },
+      "clvCaptured": true
     },
     "760491": {
       "match": "Mexico vs Ecuador",
@@ -5209,15 +5331,15 @@
     }
   },
   "previewDay": "2026-06-30",
-  "pinnedMsgId": 1181,
-  "trackUpdatedAt": 1782823398235,
+  "pinnedMsgId": 17,
+  "trackUpdatedAt": 1782845072131,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782823398557,
-  "previewMsgId": 1002,
-  "resultsUpdatedAt": 1782823399472,
-  "resultsMsgId": 1114
+  "previewUpdatedAt": 1782845073178,
+  "previewMsgId": 19,
+  "resultsUpdatedAt": 1782845074046,
+  "resultsMsgId": 21
 }
