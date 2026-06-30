@@ -28,7 +28,7 @@ jobs:
       - name: Run World Cup radar (hourly for ~6h)
         env:
           SPORTS_BOT_TOKEN: ${{ secrets.SPORTS_BOT_TOKEN }}
-          SPORTS_CHANNEL: "@polarisresearch2000_PE"
+          SPORTS_CHANNEL: "7903017148"
           PROFILE: SPORTS
           POLY_TAG: fifa-world-cup
           VERTICAL_LABEL: World Cup
