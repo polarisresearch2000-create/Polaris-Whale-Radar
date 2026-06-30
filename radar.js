@@ -708,6 +708,44 @@ async function getTotalsSignal(eventSlug) {
   return { line: 2.5, side, pct, overUsd: Math.round(overUsd), underUsd: Math.round(underUsd), overPrice, underPrice, winnerSide, winnerPnl: winnerPnl ? Math.round(winnerPnl) : null };
 }
 
+// ---- 收盘线价值(CLV)用: 仅抓"临近开赛"的当前盘口价(零钱包分析), 胜负盘 + O/U 2.5 ----
+// 用于对比"入场价 vs 近开赛价": 价格朝你那一侧移动(close>entry)=你买在了好价位=正 CLV(有 edge 的领先指标)
+async function getClosingPrices(eventSlug, homeTokens, awayTokens) {
+  if (!eventSlug) return null;
+  const out = { moneyline: {}, ou: {} };
+  const yesPrice = (mk) => {
+    try {
+      const outs = JSON.parse(mk.outcomes || "[]"), px = JSON.parse(mk.outcomePrices || "[]");
+      const yi = outs.findIndex((o) => /yes/i.test(o));
+      return yi >= 0 ? Number(px[yi]) : null;
+    } catch { return null; }
+  };
+  // 胜负盘(主事件): 每个结果是独立 Yes/No 盘, 按问题里的队名/draw 映射 side
+  const ev = await getJSON(`${GAMMA}/events?slug=${eventSlug}`).catch(() => null);
+  const e = Array.isArray(ev) ? ev[0] : null;
+  for (const mk of (e && e.markets) || []) {
+    const q = (mk.question || "").toLowerCase();
+    let side = null;
+    if (/draw/.test(q)) side = "draw";
+    else if ((homeTokens || []).some((t) => q.includes(t))) side = "home";
+    else if ((awayTokens || []).some((t) => q.includes(t))) side = "away";
+    if (side && out.moneyline[side] == null) out.moneyline[side] = yesPrice(mk);
+  }
+  // O/U 2.5(more-markets)
+  const arr = await getJSON(`${GAMMA}/events?slug=${eventSlug}-more-markets`).catch(() => null);
+  const e2 = Array.isArray(arr) ? arr[0] : null;
+  const mk2 = ((e2 && e2.markets) || []).find((m) => /:\s*o\/u\s*2\.5\b/i.test(m.question || "") && !/half|1st|2nd/i.test(m.question || ""));
+  if (mk2) {
+    try {
+      const outs = JSON.parse(mk2.outcomes || "[]"), px = JSON.parse(mk2.outcomePrices || "[]");
+      const oi = outs.findIndex((o) => /over|yes/i.test(o)), ui = outs.findIndex((o) => /under|no/i.test(o));
+      if (oi >= 0) out.ou.overPrice = Number(px[oi]);
+      if (ui >= 0) out.ou.underPrice = Number(px[ui]);
+    } catch {}
+  }
+  return out;
+}
+
 // ---- 加密版预判: 单个二元市场(Yes/No)的巨鲸方向 ----
 async function cryptoPrediction(mk) {
   if (!mk.conditionId) return null;
@@ -775,6 +813,6 @@ async function getMarketResolution(gammaId) {
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction, getTotalsSignal, cryptoPrediction, getMarketResolution,
+  getWcResults, matchPrediction, getTotalsSignal, getClosingPrices, cryptoPrediction, getMarketResolution,
   fmtUSD, CONFIG, isDirectional,
 };

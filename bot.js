@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getClosingPrices, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V5.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V5.6"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -205,6 +205,32 @@ async function trackResults() {
   }
   // 1) 捕捉赛前预判
   await capturePredictions(res, wc, pmEvents);
+  // 1.5) 捕捉「近开赛收盘价」算 CLV(收盘线价值): 每场只抓一次, 临近开赛(≤90分钟)首次轮询时锁定
+  //      CLV = 近开赛价 − 入场价, 正=价格朝你那侧移动=你买在好价位; 是"有没有 edge"最快的领先指标(不必等赛果)
+  const CLV_WINDOW_MS = 90 * 60 * 1000;
+  for (const id in res.predictions) {
+    const p = res.predictions[id];
+    if (p.clvCaptured || p.kickoffMs == null) continue;
+    if (Date.now() < p.kickoffMs - CLV_WINDOW_MS) continue; // 还没临近开赛, 下轮再看
+    const m = wc.find((x) => x.id === id);
+    const hT = m ? m.homeTokens : (p.home || "").toLowerCase().split(/\s+/).filter(Boolean);
+    const aT = m ? m.awayTokens : (p.away || "").toLowerCase().split(/\s+/).filter(Boolean);
+    const close = await getClosingPrices(p.eventSlug, hT, aT).catch(() => null);
+    if (!close) continue; // 抓不到下轮再试(不置 captured)
+    const clv = { capturedAt: new Date().toISOString() };
+    const entryMl = p.sides && p.sides[p.whaleSide] ? p.sides[p.whaleSide].price : null;
+    const closeMl = close.moneyline ? close.moneyline[p.whaleSide] : null;
+    if (entryMl > 0 && entryMl < 1 && closeMl > 0 && closeMl < 1)
+      clv.ml = { side: p.whaleSide, entry: entryMl, close: closeMl, clv: +(closeMl - entryMl).toFixed(4) };
+    if (p.totals && p.totals.side) {
+      const entryOu = p.totals.side === "Over" ? p.totals.overPrice : p.totals.underPrice;
+      const closeOu = p.totals.side === "Over" ? close.ou.overPrice : close.ou.underPrice;
+      if (entryOu > 0 && entryOu < 1 && closeOu > 0 && closeOu < 1)
+        clv.ou = { side: p.totals.side, entry: entryOu, close: closeOu, clv: +(closeOu - entryOu).toFixed(4) };
+    }
+    p.clv = clv;
+    p.clvCaptured = true;
+  }
   // 2) 结算完赛、有(带价)预测、未结算的
   let newSettle = 0;
   for (const m of wc) {
@@ -466,6 +492,7 @@ function fmtTrackRecord(res) {
   if (best && any) lines.push(`🏆 目前最佳: ${best.label} (ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%)`);
   if (!any) lines.push("⏳ 等待首批賽果結算中…"); // 取消"样本仍小"警告行(保留空态占位)
   for (const l of ouStatsLines(res)) lines.push(l); // ⚽ 大小球前向战绩(有结算才显示)
+  for (const l of clvStatsLines(res)) lines.push(l); // 📈 CLV 收盘线价值(有捕捉才显示)
   lines.push(`🔭 ROI=每$1淨回報 · 賠率=入場價隱含倍數 · 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
   return lines.join("\n");
 }
@@ -500,6 +527,21 @@ function ouStatsLines(res) {
   };
   const segs = [seg("Over"), seg("Under")].filter(Boolean);
   return ["", "⚽ <b>大小球戰績</b>（O/U 2.5 · 前向測試）", ...body, ...(segs.length ? ["   ── 分段（跟大戶口徑）──", ...segs] : [])];
+}
+
+// CLV(收盘线价值)前向战绩: 入场价 vs 近开赛价。正 CLV=你买在了好价位; 是"有没有 edge"最快的领先指标(不必等赛果)
+function clvStatsLines(res) {
+  const preds = Object.values(res.predictions || {});
+  const pick = (kind) => preds.map((p) => p.clv && p.clv[kind]).filter(Boolean);
+  const row = (arr, label) => {
+    if (!arr.length) return null;
+    const avg = arr.reduce((s, x) => s + x.clv, 0) / arr.length;
+    const pos = arr.filter((x) => x.clv > 0).length;
+    return `   ${label}: ${arr.length}場 · 均CLV ${avg >= 0 ? "+" : ""}${(avg * 100).toFixed(1)}pt · 贏線率 ${Math.round((pos / arr.length) * 100)}%`;
+  };
+  const ml = row(pick("ml"), "勝負盤"), ou = row(pick("ou"), "大小球");
+  if (!ml && !ou) return [];
+  return ["", "📈 <b>CLV 收盤線價值</b>（入場價 vs 近開賽價 · 正=買在好價位 → edge 領先指標）", ...(ml ? [ml] : []), ...(ou ? [ou] : [])];
 }
 
 // 大小球(O/U 2.5)聪明钱偏向(一行): "大戶偏 大球 66%（O/U 2.5）"
@@ -1025,6 +1067,8 @@ async function main() {
       for (const l of ouStatsLines(r)) { const t = l.replace(/<[^>]+>/g, "").trim(); if (t) console.log(`     ${t}`); }
       (r.ouSettled || []).slice(-10).forEach((x) => console.log(`     ${x.win ? "✅" : "❌"} ${x.match} 进${x.goals}球→${x.actualOU === "Over" ? "大" : "小"} · 大户偏${x.side === "Over" ? "大" : "小"}${x.winnerSide ? ` · 💎偏${x.winnerSide === "Over" ? "大" : "小"}` : ""}`));
     }
+    const clvL = clvStatsLines(r);
+    if (clvL.length) { console.log("  📈 CLV 收盘线价值(入场价 vs 近开赛价):"); for (const l of clvL) { const t = l.replace(/<[^>]+>/g, "").trim(); if (t && !t.startsWith("📈")) console.log(`     ${t}`); } }
     return;
   }
 
