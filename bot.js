@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getClosingPrices, multiSportSentiment, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V5.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V6.0"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -172,6 +172,8 @@ async function capturePredictions(res, wc, pmEvents) {
       if (ex.kickoffMs == null && m.kickoffMs) ex.kickoffMs = m.kickoffMs; // 回填开赛时间(老预判没存)
       // 回填大小球信号: 仅在"从未尝试过"(undefined)时补一次, 失败置 null 不再每轮重试
       if (ex.totals === undefined && ex.eventSlug) ex.totals = (await getTotalsSignal(ex.eventSlug).catch(() => null)) || null;
+      // 回填让球信号(同上): 从未尝试过才补
+      if (ex.spread === undefined && ex.eventSlug) ex.spread = (await getSpreadSignal(ex.eventSlug).catch(() => null)) || null;
       // 回填胜负盘"最大赢家"(老预判没存); 只取 proWinner, 不覆盖已锁定的入场价/sides
       if (ex.proWinner === undefined) {
         const pr = await matchPrediction(m, pmEvents).catch(() => null);
@@ -182,10 +184,11 @@ async function capturePredictions(res, wc, pmEvents) {
     const pred = await matchPrediction(m, pmEvents).catch(() => null);
     if (pred && pred.sides) {
       const totals = await getTotalsSignal(pred.eventSlug).catch(() => null); // 大小球 O/U 2.5 聪明钱偏向
+      const spread = await getSpreadSignal(pred.eventSlug).catch(() => null); // 让球 -1.5 聪明钱偏向
       res.predictions[m.id] = {
         match: `${m.home} vs ${m.away}`, home: m.home, away: m.away, kickoffMs: m.kickoffMs,
         whaleSide: pred.whaleSide, consensusPct: pred.consensusPct, bigBettor: pred.bigBettor, proWinner: pred.proWinner || null,
-        sides: pred.sides, eventSlug: pred.eventSlug, totals, state: m.state, capturedAt: new Date().toISOString(),
+        sides: pred.sides, eventSlug: pred.eventSlug, totals, spread, state: m.state, capturedAt: new Date().toISOString(),
       };
     }
   }
@@ -287,6 +290,42 @@ async function trackResults() {
         winnerSide: t.winnerSide, win: ouStrat.followBig ? ouStrat.followBig.win : null, settledAt: rec.settledAt,
       });
       rec.ou = { actualOU, goals, side: t.side, winnerSide: t.winnerSide, win: ouStrat.followBig ? ouStrat.followBig.win : null };
+    }
+    // 让球前向测: 让球方赢2+球=cover, 否则受让方+1.5=not; 评策略 ROI(跟大户 / 跟💎盈利大户 / 强共识)
+    if (p.spread && p.spread.favTeam && m.homeScore != null && m.awayScore != null) {
+      const sp = p.spread;
+      const favTok = String(sp.favTeam).toLowerCase().split(/\s+/).filter(Boolean);
+      const hitH = favTok.filter((tk) => String(p.home).toLowerCase().includes(tk)).length;
+      const hitA = favTok.filter((tk) => String(p.away).toLowerCase().includes(tk)).length;
+      const favHome = hitH >= hitA; // 让球方是主队?
+      const favGoals = favHome ? m.homeScore : m.awayScore;
+      const dogGoals = favHome ? m.awayScore : m.homeScore;
+      const actualSide = favGoals - dogGoals > sp.line ? "cover" : "not"; // 赢>1.5球=cover
+      const priceOf = (sd) => (sd === "cover" ? sp.coverPrice : sp.notPrice);
+      const evalSp = (betSide) => {
+        if (!betSide) return null;
+        const price = priceOf(betSide);
+        if (!(price > 0 && price < 1)) return null;
+        const win = actualSide === betSide;
+        return { side: betSide, price, win, profit: win ? (1 - price) / price : -1 };
+      };
+      const spStrat = {
+        followBig: evalSp(sp.side),
+        followWinner: sp.winnerSide ? evalSp(sp.winnerSide) : null,
+        highConsensus: sp.pct >= 75 ? evalSp(sp.side) : null,
+      };
+      const spS = (res.spreadStrategies = res.spreadStrategies || {});
+      for (const key in spStrat) {
+        const r = spStrat[key];
+        if (!r) continue;
+        const s = (spS[key] = spS[key] || { bets: 0, wins: 0, profit: 0 });
+        s.bets++; if (r.win) s.wins++; s.profit += r.profit;
+      }
+      (res.spreadSettled = res.spreadSettled || []).push({
+        match: p.match, favTeam: sp.favTeam, favGoals, dogGoals, actualSide, side: sp.side, pct: sp.pct, price: priceOf(sp.side),
+        winnerSide: sp.winnerSide, win: spStrat.followBig ? spStrat.followBig.win : null, settledAt: rec.settledAt,
+      });
+      rec.spread = { actualSide, favTeam: sp.favTeam, side: sp.side, winnerSide: sp.winnerSide, win: spStrat.followBig ? spStrat.followBig.win : null };
     }
     res.settled.push(rec);
     newSettle++;
@@ -497,6 +536,7 @@ function fmtTrackRecord(res) {
   if (best && any) lines.push(`🏆 目前最佳: ${best.label} (ROI ${best.roi >= 0 ? "+" : ""}${best.roi}%)`);
   if (!any) lines.push("⏳ 等待首批賽果結算中…"); // 取消"样本仍小"警告行(保留空态占位)
   for (const l of ouStatsLines(res)) lines.push(l); // ⚽ 大小球前向战绩(有结算才显示)
+  for (const l of spreadStatsLines(res)) lines.push(l); // ⚖️ 让球前向战绩(有结算才显示)
   for (const l of clvStatsLines(res)) lines.push(l); // 📈 CLV 收盘线价值(有捕捉才显示)
   lines.push(`🔭 ROI=每$1淨回報 · 賠率=入場價隱含倍數 · 更新 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · ${VERSION}`);
   return lines.join("\n");
@@ -552,6 +592,9 @@ function clvStatsLines(res) {
 // 大小球(O/U 2.5)聪明钱偏向(一行): "大戶偏 大球 66%（O/U 2.5）"
 const totalsLine = (t) =>
   t && t.side ? `大戶偏 ${t.side === "Over" ? "大球" : "小球"} ${t.pct}%（O/U 2.5）` : null;
+// 让球(-1.5)聪明钱偏向(一行): cover=让球方赢2+; not=受让方+1.5
+const spreadLine = (s) =>
+  s && s.favTeam ? (s.side === "cover" ? `大戶偏 ${tTeam(s.favTeam)} -1.5（贏2+球）${s.pct}%` : `大戶偏 ${tTeam(s.dogTeam)} +1.5（受讓）${s.pct}%`) : null;
 
 // 详细信号行(个人自用版): 💎最大贏家 vs 🐋最大注 是否分歧(胜负盘) + 大小球(含💎赢家方向)。p 缺字段则自动省略对应行
 function signalDetailLines(p) {
@@ -572,9 +615,44 @@ function signalDetailLines(p) {
     const t = p.totals;
     let extra = "";
     if (t.winnerSide) extra = ` · 💎贏家偏${t.winnerSide === "Over" ? "大" : "小"}球${t.winnerSide === t.side ? "✓同向" : "⚠️分歧"}`;
-    out.push(`   ⚽ 大小球: ${tl}${extra}`);
+    out.push(`   ⚽ 大小球: ${esc(tl)}${extra}`);
+  }
+  // 让球: 大户偏向 + 💎赢家是否同向
+  const sl = spreadLine(p.spread);
+  if (sl) {
+    const sp = p.spread;
+    let extra = "";
+    if (sp.winnerSide) {
+      const wZh = sp.winnerSide === "cover" ? `${tTeam(sp.favTeam)}-1.5` : `${tTeam(sp.dogTeam)}+1.5`;
+      extra = ` · 💎贏家偏${esc(wZh)}${sp.winnerSide === sp.side ? "✓同向" : "⚠️分歧"}`;
+    }
+    out.push(`   ⚖️ 讓球: ${esc(sl)}${extra}`);
   }
   return out;
+}
+
+// 让球(-1.5)前向战绩: 跟💎盈利大户 / 跟大户 / 强共识 + 让球方/受让方 分段
+function spreadStatsLines(res) {
+  const os = res.spreadStrategies;
+  if (!os) return [];
+  const order = [["followWinner", "跟💎盈利大戶"], ["followBig", "跟大戶(資金多數方)"], ["highConsensus", "僅強共識≥75%才跟"]];
+  const body = [];
+  for (const [key, label] of order) {
+    const s = os[key];
+    if (!s || !s.bets) continue;
+    body.push(`${label}: ${s.bets}場 命中${Math.round((s.wins / s.bets) * 100)}% · ROI ${Math.round((s.profit / s.bets) * 100) >= 0 ? "+" : ""}${Math.round((s.profit / s.bets) * 100)}%`);
+  }
+  if (!body.length) return [];
+  const seg = (sd) => {
+    const a = (res.spreadSettled || []).filter((x) => x.side === sd && x.win != null);
+    if (!a.length) return null;
+    const w = a.filter((x) => x.win).length;
+    const priced = a.filter((x) => x.price > 0 && x.price < 1);
+    const roi = priced.length ? Math.round((priced.reduce((s, x) => s + (x.win ? (1 - x.price) / x.price : -1), 0) / priced.length) * 100) : null;
+    return `   ${sd === "cover" ? "讓球方(-1.5)" : "受讓方(+1.5)"}: ${a.length}場 命中${Math.round((w / a.length) * 100)}%${roi != null ? ` · ROI ${roi >= 0 ? "+" : ""}${roi}%` : ""}`;
+  };
+  const segs = [seg("cover"), seg("not")].filter(Boolean);
+  return ["", "⚖️ <b>讓球戰績</b>（-1.5 · 前向測試）", ...body, ...(segs.length ? ["   ── 分段 ──", ...segs] : [])];
 }
 
 // 每日固定: 今日巨鲸预判
@@ -603,7 +681,7 @@ function fmtUpcomingPin(matches, res) {
   const show = (matches || []).slice(0, 6); // 最多6场, 保持可扫读
   const sportsLike = show.some((m) => res.predictions[m.id]?.home); // 体育有主客; 加密无
   const lines = sportsLike
-    ? ["📅 <b>即將開賽 · 賽前預判</b>（持續更新）", "（💎最大贏家 vs 🐋最大注是否分歧 · 大小球 · 開賽 HKT）", ""]
+    ? ["📅 <b>即將開賽 · 賽前預判</b>（持續更新）", "（💎贏家vs🐋最大注 · 大小球 · 讓球 · 開賽 HKT）", ""]
     : ["📅 <b>待結算 · 賽前預判</b>（持續更新）", "（活躍市場 · 預判方向）", ""];
   if (!show.length) {
     lines.push("⏳ 暫無可顯示的場次,稍後自動更新");
@@ -1123,6 +1201,11 @@ async function main() {
       console.log("  ⚽ 大小球(O/U 2.5)前向战绩:");
       for (const l of ouStatsLines(r)) { const t = l.replace(/<[^>]+>/g, "").trim(); if (t) console.log(`     ${t}`); }
       (r.ouSettled || []).slice(-10).forEach((x) => console.log(`     ${x.win ? "✅" : "❌"} ${x.match} 进${x.goals}球→${x.actualOU === "Over" ? "大" : "小"} · 大户偏${x.side === "Over" ? "大" : "小"}${x.winnerSide ? ` · 💎偏${x.winnerSide === "Over" ? "大" : "小"}` : ""}`));
+    }
+    if (r.spreadStrategies) {
+      console.log("  ⚖️ 让球(-1.5)前向战绩:");
+      for (const l of spreadStatsLines(r)) { const t = l.replace(/<[^>]+>/g, "").trim(); if (t) console.log(`     ${t}`); }
+      (r.spreadSettled || []).slice(-10).forEach((x) => console.log(`     ${x.win ? "✅" : "❌"} ${x.match} ${x.favTeam}${x.favGoals}-${x.dogGoals}→${x.actualSide === "cover" ? "让球方赢2+" : "受让方+1.5"} · 大户偏${x.side === "cover" ? "让球方" : "受让方"}${x.winnerSide ? ` · 💎偏${x.winnerSide === "cover" ? "让球方" : "受让方"}` : ""}`));
     }
     const clvL = clvStatsLines(r);
     if (clvL.length) { console.log("  📈 CLV 收盘线价值(入场价 vs 近开赛价):"); for (const l of clvL) { const t = l.replace(/<[^>]+>/g, "").trim(); if (t && !t.startsWith("📈")) console.log(`     ${t}`); } }

@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V5.9**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V6.0**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -95,7 +95,7 @@ node index.js          # 命令行信号报告
 - `seen_<tag>.json` — 逐条信号去重
 - `watchlist_<tag>.json` — 加密活跃常胜钱包缓存(6h)
 - `digest_<tag>.json` — 持仓/风格摘要上次推送时间戳
-- `results_<tag>.json` — 赛果追踪：`predictions`(赛前锁定的预判, 含 `eventSlug`+`totals`大小球信号{side,pct,overPrice,underPrice,winnerSide,winnerPnl}+`clv`收盘线价值{ml,ou:{side,entry,close,clv}}+`clvCaptured`) / `settled`(含 `ou`大小球结果) / `strategies`(胜负盘各策略 bets/wins/profit) / `ouStrategies`(大小球 followWinner/followBig/highConsensus 各 bets/wins/profit) / `ouSettled`(逐场大小球记录, 供分段分析) / `pinnedMsgId` / `trackUpdatedAt`
+- `results_<tag>.json` — 赛果追踪：`predictions`(赛前锁定, 含 `eventSlug`+`totals`大小球+`spread`让球{favTeam,dogTeam,side(cover/not),pct,coverPrice,notPrice,winnerSide,winnerPnl}+`proWinner`胜负盘最赚+`clv`收盘线价值+`clvCaptured`) / `settled`(含 `ou`/`spread`结果) / `strategies`(胜负盘) / `ouStrategies`+`ouSettled`(大小球) / `spreadStrategies`+`spreadSettled`(让球 followWinner/followBig/highConsensus + cover/not分段) / `pinnedMsgId` / `trackUpdatedAt`
 
 **重置追踪记录**：删对应 `results_<tag>.json`（干净起跑；现无已结算数据时无损失）。
 
@@ -111,6 +111,7 @@ node index.js          # 命令行信号报告
 
 赛前(state=pre)锁定每场预判(无前视偏差)，完赛/结算后按**下注价算 ROI**(非胜率)，并行测 4 策略：跟巨鲸多数方 / 跟最大单大户 / 高共识>85%才跟 / 反向 fade。`node bot.js --results` 查看。
 **大小球前向追踪(V5.4)**：同一套纪律用到 O/U 2.5 —— 赛前锁定大户偏向+入场价+盈利大户押哪边(`getTotalsSignal`)，赛后用 ESPN 总进球判 Over/Under(≥3=大球)，并行测 3 假设：**跟💎盈利大户 / 跟大户(资金多数方) / 仅强共识≥75%才跟**，外加大球/小球分段。置顶战绩底部 + `--results` 显示。目的是**实测大小球到底有没有含金量**(押≠赢)，不是已证明的 edge。
+**让球前向追踪(V6.0)**：同一套用到 spread -1.5(`getSpreadSignal`取成交量最高的-1.5盘)。依据=分析11个赢家按盘口类型,让球是第三大类(14%钱、单笔更大)。赛后按"让球方净胜球>1.5"判 cover/受让,测同3策略 + cover/not分段。至此跟踪覆盖赢家~80%的钱(胜负+大小球+让球)。
 **当前样本太小，不足以证明任何 edge** —— 让 forward 跑、攒到几十场再说。**绝不拿小样本的漂亮数字对外宣传。**
 
 **CLV 收盘线价值(V5.6)**：`getClosingPrices` 临近开赛(≤90分钟)抓一次价，存 `prediction.clv`，算 `近开赛价 − 入场价`。**正 CLV = 买在好价位 = 有 edge 最快的领先指标(不必等赛果)**。置顶+`--results` 显示均CLV+赢线率。

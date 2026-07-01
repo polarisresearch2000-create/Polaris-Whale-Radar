@@ -777,6 +777,50 @@ async function getTotalsSignal(eventSlug) {
   return { line: 2.5, side, pct, overUsd: Math.round(overUsd), underUsd: Math.round(underUsd), overPrice, underPrice, winnerSide, winnerPnl: winnerPnl ? Math.round(winnerPnl) : null };
 }
 
+// ---- 让球/让分(spread -1.5)聪明钱信号: 大户在「让球方赢2+球 vs 受让方+1.5」上偏哪边 ----
+// (数据: 盈利大户第三大类=让球, 14%资金、单笔更大=更像重仓有观点; 仅次于胜负盘/大小球)
+async function getSpreadSignal(eventSlug) {
+  if (!eventSlug) return null;
+  const arr = await getJSON(`${GAMMA}/events?slug=${eventSlug}-more-markets`).catch(() => null);
+  const e = Array.isArray(arr) ? arr[0] : null;
+  if (!e || !Array.isArray(e.markets)) return null;
+  // 主让球盘 = "-1.5"线里成交量最高的(标准亚盘主盘); "Spread: {让球方} (-1.5)" outcomes=[让球方(赢2+), 受让方]
+  const cands = e.markets.filter((m) => m.conditionId && /^\s*spread:/i.test(m.question || "") && /\(-1\.5\)/.test(m.question || ""));
+  if (!cands.length) return null;
+  const mk = cands.sort((a, b) => (b.volume || 0) - (a.volume || 0))[0];
+  let outs, px;
+  try { outs = JSON.parse(mk.outcomes || "[]"); px = JSON.parse(mk.outcomePrices || "[]"); } catch { return null; }
+  if (outs.length !== 2) return null;
+  const favTeam = outs[0], dogTeam = outs[1];
+  const coverPrice = Number(px[0]), notPrice = Number(px[1]);
+  const tr = await getJSON(`${DATA}/trades?market=${mk.conditionId}&filterType=CASH&filterAmount=${CONFIG.POSITIONING_MIN_NOTIONAL}&limit=500`).catch(() => null);
+  const buys = Array.isArray(tr) ? tr.filter((t) => t.side === "BUY") : [];
+  let coverUsd = 0, notUsd = 0;
+  const byWallet = new Map();
+  for (const t of buys) {
+    let idx = t.outcomeIndex != null ? Number(t.outcomeIndex) : outs.findIndex((o) => o === t.outcome);
+    if (idx !== 0 && idx !== 1) continue;
+    const u = (t.size || 0) * (t.price || 0);
+    if (idx === 0) coverUsd += u; else notUsd += u;
+    if (!byWallet.has(t.proxyWallet)) byWallet.set(t.proxyWallet, { cover: 0, not: 0 });
+    const w = byWallet.get(t.proxyWallet);
+    if (idx === 0) w.cover += u; else w.not += u;
+  }
+  const total = coverUsd + notUsd;
+  if (total <= 0) return null;
+  const side = coverUsd >= notUsd ? "cover" : "not"; // cover=让球方赢2+; not=受让方+1.5
+  const pct = Math.round((Math.max(coverUsd, notUsd) / total) * 100);
+  const tops = [...byWallet.entries()]
+    .map(([w, v]) => ({ w, usd: v.cover + v.not, side: v.cover >= v.not ? "cover" : "not" }))
+    .sort((a, b) => b.usd - a.usd).slice(0, 6);
+  let winnerSide = null, winnerPnl = null;
+  for (const tw of tops) {
+    const sc = await getWalletScore(tw.w).catch(() => null);
+    if (sc && sc.allTimePnl >= 50000 && (winnerPnl == null || sc.allTimePnl > winnerPnl)) { winnerPnl = sc.allTimePnl; winnerSide = tw.side; }
+  }
+  return { line: 1.5, favTeam, dogTeam, side, pct, coverUsd: Math.round(coverUsd), notUsd: Math.round(notUsd), coverPrice, notPrice, winnerSide, winnerPnl: winnerPnl ? Math.round(winnerPnl) : null };
+}
+
 // ---- 收盘线价值(CLV)用: 仅抓"临近开赛"的当前盘口价(零钱包分析), 胜负盘 + O/U 2.5 ----
 // 用于对比"入场价 vs 近开赛价": 价格朝你那一侧移动(close>entry)=你买在了好价位=正 CLV(有 edge 的领先指标)
 async function getClosingPrices(eventSlug, homeTokens, awayTokens) {
@@ -882,6 +926,6 @@ async function getMarketResolution(gammaId) {
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction, getTotalsSignal, getClosingPrices, multiSportSentiment, cryptoPrediction, getMarketResolution,
+  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, cryptoPrediction, getMarketResolution,
   fmtUSD, CONFIG, isDirectional,
 };
