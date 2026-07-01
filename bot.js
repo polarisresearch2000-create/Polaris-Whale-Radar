@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V6.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V6.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1165,6 +1165,84 @@ async function trackMultiSport() {
   return { ms, newN, games };
 }
 
+// ==== 每钱包前向记分卡: 找出"跟哪几个地址真能赚"(跟随者视角, 按能成交价算 ROI + CLV) ====
+const SC_FILE = path.join(__dirname, "data", "wallet_scorecard.json");
+function loadScorecard() { try { return JSON.parse(fs.readFileSync(SC_FILE, "utf8")); } catch { return { wallets: {} }; } }
+function saveScorecard(sc) { try { fs.mkdirSync(path.dirname(SC_FILE), { recursive: true }); fs.writeFileSync(SC_FILE, JSON.stringify(sc, null, 2)); } catch {} }
+// 锁定赢家赛前出手(按跟随者当前能成交价) → 每轮刷新近开赛价(CLV 用) → 赛后按市场解析结算
+async function trackScorecard(raw) {
+  const sc = loadScorecard(); sc.wallets = sc.wallets || {};
+  const now = Date.now();
+  let touched = 0;
+  // 1) 捕捉 / 刷新最新价(只锁真赛前, 杜绝 look-ahead)
+  for (const b of raw || []) {
+    if (!b.wallet || !b.cid || b.gammaId == null) continue;
+    const p = Number(b.mktPrice);
+    if (!(p > 0.02 && p < 0.98)) continue;
+    if (!(b.kickoffMs && now < b.kickoffMs)) continue;
+    const W = (sc.wallets[b.wallet] = sc.wallets[b.wallet] || { name: b.name, pnl: b.profit, bets: {} });
+    W.name = b.name || W.name; W.pnl = b.profit || W.pnl;
+    const key = b.cid + "|" + b.outcome;
+    if (!W.bets[key]) { W.bets[key] = { eventSlug: b.eventSlug, gammaId: b.gammaId, outcome: b.outcome, entry: p, entryTs: Math.round(now / 1000), kickoffMs: b.kickoffMs, last: p, settled: false }; touched++; }
+    else if (!W.bets[key].settled) W.bets[key].last = p; // 最后观测价 ≈ 收盘价, 用来算 CLV
+  }
+  // 2) 结算(开赛后 · 未结算 · 有 gammaId)
+  for (const wallet in sc.wallets) {
+    for (const key in sc.wallets[wallet].bets) {
+      const bt = sc.wallets[wallet].bets[key];
+      if (bt.settled || bt.gammaId == null || (bt.kickoffMs && now < bt.kickoffMs)) continue;
+      const winnerName = await getMarketResolution(bt.gammaId).catch(() => null);
+      if (!winnerName) continue;
+      bt.win = bt.outcome === winnerName;
+      bt.profit = bt.win ? (1 - bt.entry) / bt.entry : -1; // 按跟随者入场价算
+      bt.clv = bt.last != null && bt.entry != null ? +(bt.last - bt.entry).toFixed(4) : null;
+      bt.settled = true; touched++;
+    }
+  }
+  saveScorecard(sc);
+  return touched;
+}
+// 每钱包汇总: n结算/命中/ROI/均CLV/未结算, 按 ROI 排序
+function scorecardRows(sc) {
+  const rows = [];
+  for (const wallet in (sc.wallets || {})) {
+    const W = sc.wallets[wallet];
+    const bets = Object.values(W.bets || {});
+    const done = bets.filter((b) => b.settled);
+    const open = bets.length - done.length;
+    if (!done.length && !open) continue;
+    const n = done.length, wins = done.filter((b) => b.win).length;
+    const roi = n ? Math.round((done.reduce((s, b) => s + (b.profit || 0), 0) / n) * 100) : null;
+    const cA = done.filter((b) => b.clv != null);
+    const clv = cA.length ? +((cA.reduce((s, b) => s + b.clv, 0) / cA.length) * 100).toFixed(1) : null;
+    rows.push({ wallet, name: W.name, pnl: W.pnl || 0, n, wins, wr: n ? Math.round((wins / n) * 100) : null, roi, clv, open });
+  }
+  return rows.sort((a, b) => (b.roi ?? -999) - (a.roi ?? -999) || b.n - a.n);
+}
+function fmtScorecard(sc) {
+  const all = scorecardRows(sc);
+  const settled = all.filter((r) => r.n >= 1);
+  const cn = ["📇 <b>每錢包前向記分卡</b>（跟隨者視角 · 按你能成交的價算）", "（找出真正值得跟的地址：ROI+CLV 持續為正才是真赢家）", ""];
+  if (!settled.length) {
+    cn.push(`⏳ 還沒有已結算的跟隨樣本（已鎖定 ${all.reduce((s, r) => s + r.open, 0)} 筆未結算，賽後逐步結算）`);
+  } else {
+    for (const r of settled.slice(0, 15)) {
+      cn.push(`${r.roi >= 0 ? "🟢" : "🔴"} <code>${esc(r.wallet.slice(0, 6))}…</code>${r.name ? " " + esc(String(r.name).slice(0, 10)) : ""}（歷史$${Math.round(r.pnl / 1e5) / 10}M）`);
+      cn.push(`   ${r.n}場 命中${r.wr}% · ROI ${r.roi >= 0 ? "+" : ""}${r.roi}% · 均CLV ${r.clv != null ? (r.clv >= 0 ? "+" : "") + r.clv + "pt" : "-"}${r.open ? ` · 未結算${r.open}` : ""}`);
+    }
+  }
+  cn.push("", "⚠️ 樣本少別信 · 只有 ROI 與 CLV 都持續為正的地址才值得專門跟 · 未證明 edge");
+  cn.push(`🔭 持續更新 · ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
+  return cn.join("\n");
+}
+async function postOrUpdateScorecardPin(sc, state) {
+  const text = fmtScorecard(sc);
+  if (!text) return;
+  if (state.scorecardPinId && (await editMsg(state.scorecardPinId, text))) return;
+  const id = await sendReturn(text);
+  if (id) { state.scorecardPinId = id; await pinMsg(id); }
+}
+
 // 顶级赢家风格榜
 function fmtProfiles(profiles) {
   const lines = [
@@ -1309,8 +1387,9 @@ async function pollOnce() {
     const WB_ON = RESULTS_ON && (process.env.WINNER_BETS_ENABLED || "on") !== "off";
     if (WB_ON && now - (d.winnerBets || 0) >= Number(process.env.WINNER_MIN || 90) * 60000) {
       try {
-        const bets = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) });
-        if (bets.length) { await postOrUpdateWinnerPin(bets, d); console.log(`  → 已更新赢家最新出手置顶(${bets.length}笔)`); }
+        const { list, raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) });
+        if (list.length) { await postOrUpdateWinnerPin(list, d); console.log(`  → 已更新赢家最新出手置顶(${list.length}笔)`); }
+        try { const n = await trackScorecard(raw); if (n) console.log(`  → 记分卡: 新捕捉/结算 ${n}`); await postOrUpdateScorecardPin(loadScorecard(), d); } catch (e) { console.error("记分卡出错:", e.message); }
         d.winnerBets = now;
       } catch (e) {
         console.error("赢家最新出手出错:", e.message);
@@ -1398,11 +1477,26 @@ async function main() {
   }
 
   if (process.argv.includes("--winner-bets")) {
-    const bets = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) });
-    const text = fmtWinnerBets(bets);
+    const { list, raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) });
+    try { await trackScorecard(raw); } catch (e) { console.error("记分卡出错:", e.message); }
+    const text = fmtWinnerBets(list);
     if (process.argv.includes("--dry")) console.log(text ? text.replace(/<[^>]+>/g, "") : "(近期无赢家方向性大注; 可调 WINNER_HOURS/WINNER_MIN_BET/WINNER_MIN_PNL)");
-    else if (text) { const d = loadDigest(); await postOrUpdateWinnerPin(bets, d); saveDigest(d); console.log(`✅ 已更新赢家最新出手置顶(${bets.length}笔) → ${CHANNEL} (msgId ${d.winnerPinId})`); }
+    else if (text) { const d = loadDigest(); await postOrUpdateWinnerPin(list, d); saveDigest(d); console.log(`✅ 已更新赢家最新出手置顶(${list.length}笔) → ${CHANNEL} (msgId ${d.winnerPinId})`); }
     else console.log("(近期无符合条件的赢家出手)");
+    return;
+  }
+
+  if (process.argv.includes("--scorecard")) {
+    // 先跑一轮捕捉/结算(用当前赢家出手), 再打印每钱包前向记分卡
+    try { const { raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) }); await trackScorecard(raw); } catch (e) { console.error("记分卡刷新出错:", e.message); }
+    const sc = loadScorecard();
+    const rows = scorecardRows(sc);
+    console.log(`每钱包前向记分卡（跟随者视角 · 按能成交价算 · 已锁定 ${rows.reduce((s, r) => s + r.open, 0)} 未结算 / ${rows.reduce((s, r) => s + r.n, 0)} 已结算）`);
+    if (!rows.length) { console.log("(还没有任何跟随样本; 让它跑几天)"); return; }
+    for (const r of rows) {
+      const perf = r.n ? `${r.n}结算 命中${r.wr}% ROI ${r.roi >= 0 ? "+" : ""}${r.roi}% 均CLV ${r.clv != null ? (r.clv >= 0 ? "+" : "") + r.clv + "pt" : "-"}` : "尚无结算";
+      console.log(`  ${r.wallet.slice(0, 8)}… ${(r.name || "").slice(0, 12).padEnd(12)} 历史$${Math.round(r.pnl / 1e6 * 10) / 10}M | ${perf} | 未结算${r.open}`);
+    }
     return;
   }
 

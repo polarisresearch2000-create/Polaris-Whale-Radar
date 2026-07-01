@@ -692,16 +692,28 @@ async function winnerRecentBets(opts = {}) {
   // 只保留"市场还开着=还能下注"的注: 剔除已完赛/已结算的场(event.closed=true)。取最近80笔再查, 省 API
   const recent = out.sort((a, b) => b.ts - a.ts).slice(0, 80);
   const slugs = [...new Set(recent.map((b) => b.eventSlug).filter(Boolean))];
-  const evMap = new Map(); // slug → { closed, startMs } (同一次拉取顺便拿开赛时间)
+  const evMap = new Map(); // slug → { closed, startMs, mkts: Map(cid → {id, price:{outcome→价}}) }
   await mapLimit(slugs, CONFIG.WALLET_CONCURRENCY, async (slug) => {
     const ev = await getJSON(`${GAMMA}/events?slug=${slug}`).catch(() => null);
     const e = Array.isArray(ev) ? ev[0] : null;
-    evMap.set(slug, { closed: e ? !!e.closed : false, startMs: e && e.startTime ? Date.parse(e.startTime) : null });
+    const mkts = new Map();
+    for (const m of (e && e.markets) || []) {
+      if (!m.conditionId) continue;
+      let outs = [], px = [];
+      try { outs = JSON.parse(m.outcomes || "[]"); px = JSON.parse(m.outcomePrices || "[]"); } catch {}
+      const pm = {}; outs.forEach((o, i) => { pm[o] = Number(px[i]); });
+      mkts.set(m.conditionId, { id: m.id, price: pm });
+    }
+    evMap.set(slug, { closed: e ? !!e.closed : false, startMs: e && e.startTime ? Date.parse(e.startTime) : null, mkts });
   });
   const open = recent.filter((b) => {
     const m = evMap.get(b.eventSlug);
     if (m && m.closed) return false; // 剔除已完赛/已结算
-    if (m) b.kickoffMs = m.startMs; // 附上开赛时间(供显示)
+    if (m) {
+      b.kickoffMs = m.startMs; // 开赛时间(供显示)
+      const mk = m.mkts.get(b.cid);
+      if (mk) { b.gammaId = mk.id; b.mktPrice = mk.price[b.outcome]; } // 当前盘口价(≈跟随者能成交的价) + gamma市场id(供结算)
+    }
     return true;
   });
   // 跨钱包去重: 同一(市场+方向)只留一条(取盈利最高的赢家 + 最新时间), 记有几位赢家在押 → 看到更多不同场次
@@ -715,7 +727,8 @@ async function winnerRecentBets(opts = {}) {
     if (b.ts > ex.ts) ex.ts = b.ts;
     if (b.profit > ex.profit) { ex.profit = b.profit; ex.name = b.name; ex.wallet = b.wallet; ex.price = b.price; }
   }
-  return [...byKey.values()].sort((a, b) => b.ts - a.ts).slice(0, opts.max || 50);
+  const list = [...byKey.values()].sort((a, b) => b.ts - a.ts).slice(0, opts.max || 50);
+  return { list, raw: open }; // list=跨钱包去重(显示用); raw=逐钱包原始(记分卡用)
 }
 
 // ---- 顶级赢家风格画像 ----

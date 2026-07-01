@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V6.8**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V6.9**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -70,6 +70,7 @@ node index.js          # 命令行信号报告
 | 🎯 近期聪明钱·全体育（世界杯以外 MLB/网球…💎赢家vs🐋最大注 + 大小球/让球） | 每 `SHARP_MIN` 分(默6h) | ❌ | ✅(仅体育) |
 | 🎯 全体育战绩（MLB/网球 前向 ROI，按市场解析结算，胜负/大小球/让球×跟💎/跟大户） | 有新结算时(随 sharps digest) | ❌ | ✅(仅体育) |
 | 📌 置顶④赢家最新出手（盈利大户近期方向性注 · 按体育分类 · 就地编辑刷新+置顶，winnerPinId存digest） | 每 `WINNER_MIN` 分(默90) | ❌ | ✅(仅体育) |
+| 📌 置顶⑤每钱包前向记分卡（跟随者视角·按能成交价算·每地址 ROI/命中/CLV，找出真正值得跟的地址） | 随赢家出手digest | ❌ | ✅(仅体育) |
 | 🐋/👑 逐条实时信号 | 每轮 | ✅ | ❌(已关，整合进持仓分析) |
 | 🏆 全站顶级赢家风格榜 | 每天 | ✅ | ❌(跑题，已关) |
 
@@ -104,7 +105,10 @@ node index.js          # 命令行信号报告
 
 - `results_multisport.json` — 全体育(MLB/网球…)前向追踪：`predictions[eventSlug]`(赛前锁定, 每类 {id(gamma市场id), outcomes, prices, backedIdx, winnerIdx, settled}) / `strategies`(ml/ou/spread × followBig/followWinner 各 bets/wins/profit) / `settled`(逐项)。**按 Polymarket 市场解析结算**(`getMarketResolution`, 免 ESPN 队名匹配), 只锁"有开赛时间且未开赛"的真赛前场。
 
-**重置追踪记录**：删对应 `results_<tag>.json` / `results_multisport.json`（干净起跑；现无已结算数据时无损失）。
+- `wallet_scorecard.json` — **每钱包前向记分卡**(V6.9)：`wallets[addr]`= {name, pnl, bets:{[cid+outcome]:{eventSlug,gammaId,outcome,entry(跟随者当前能成交价),entryTs,kickoffMs,last(最后观测价,CLV用),settled,win,profit,clv}}}。捕捉赢家赛前出手→赛后 `getMarketResolution` 结算→每地址 ROI/命中/均CLV。**只锁真赛前(kickoffMs>now)杜绝 look-ahead**。`node bot.js --scorecard` 查看。
+- `winners_sports.json` — 体育赢家名单缓存(12h,`buildSportsWinners`)
+
+**重置追踪记录**：删对应 `results_<tag>.json` / `results_multisport.json` / `wallet_scorecard.json`（干净起跑；现无已结算数据时无损失）。
 
 ## 8. 数据源
 
