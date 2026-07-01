@@ -527,13 +527,39 @@ async function marketSentiment(opts = {}) {
   return { markets: matches, threshold: minUsd };
 }
 
+// 通用: 任意 2-outcome 盘的大户资金偏哪边 + 💎盈利大户押哪边(用于多体育的 O/U / 让球子信号)
+async function sideSignal(mk, minUsd) {
+  if (!mk || !mk.conditionId) return null;
+  let outs, px;
+  try { outs = JSON.parse(mk.outcomes || "[]"); px = JSON.parse(mk.outcomePrices || "[]"); } catch { return null; }
+  if (outs.length !== 2) return null;
+  const tr = await getJSON(`${DATA}/trades?market=${mk.conditionId}&filterType=CASH&filterAmount=${minUsd}&limit=500`).catch(() => null);
+  const buys = Array.isArray(tr) ? tr.filter((t) => t.side === "BUY") : [];
+  const usd = [0, 0]; const byW = new Map();
+  for (const t of buys) {
+    let idx = t.outcomeIndex != null ? Number(t.outcomeIndex) : outs.findIndex((o) => o === t.outcome);
+    if (idx !== 0 && idx !== 1) continue;
+    const u = (t.size || 0) * (t.price || 0);
+    usd[idx] += u;
+    if (!byW.has(t.proxyWallet)) byW.set(t.proxyWallet, [0, 0]);
+    byW.get(t.proxyWallet)[idx] += u;
+  }
+  const total = usd[0] + usd[1]; if (total <= 0) return null;
+  const side = usd[0] >= usd[1] ? 0 : 1;
+  const pct = Math.round((Math.max(usd[0], usd[1]) / total) * 100);
+  const tops = [...byW.entries()].map(([w, v]) => ({ w, idx: v[0] >= v[1] ? 0 : 1, usd: v[0] + v[1] })).sort((a, b) => b.usd - a.usd).slice(0, 6);
+  let winnerIdx = null, winnerPnl = null;
+  for (const tw of tops) { const sc = await getWalletScore(tw.w).catch(() => null); if (sc && sc.allTimePnl >= 50000 && (winnerPnl == null || sc.allTimePnl > winnerPnl)) { winnerPnl = sc.allTimePnl; winnerIdx = tw.idx; } }
+  return { outs, prices: px.map(Number), side, pct, winnerIdx };
+}
+
 // ---- 多体育(2-outcome 胜负盘: MLB/网球/篮球等)聪明钱持仓 ----
 // 与世界杯不同: 这些运动是"一个盘、两个 outcome=两支队/两名球员"(非每结果一个 Yes/No 盘)。
 // 每场取主胜负盘(无冒号、含 vs), 聚合大户资金偏哪边 + 💎顶级赢家 / 🐋最大注(供分歧标记)。给用户"世界杯之外的更多场次"。
 async function multiSportSentiment(tags, opts = {}) {
   const minUsd = opts.minNotional || CONFIG.POSITIONING_MIN_NOTIONAL;
   const topN = opts.topMarkets || 10;
-  const windowMs = opts.windowMs || 14 * 24 * 3600 * 1000; // 只看未来这么久内开赛的(默认14天): 聪明钱多在赛前数天~两周布局, 太远的满赛季远期盘噪音大
+  const windowMs = opts.windowMs || 21 * 24 * 3600 * 1000; // 只看未来这么久内开赛的(默认21天): MLB 有量的对局(含 O/U/让球)多在2~3周内, 太远=满赛季远期噪音
   const DIR_MIN = 0.8;
   // 主胜负盘识别: 恰好2个 outcome、outcome 是队名/球员名(非 Yes/No、非 Over/Under)、且问题不含衍生玩法关键词
   const isYesNo = (o) => /^(yes|no)$/i.test(o[0]) && /^(yes|no)$/i.test(o[1]);
@@ -579,10 +605,31 @@ async function multiSportSentiment(tags, opts = {}) {
       const topWhale = dirOnly[0] || null; // 最大注(方向性·按金额)
       const winners = dirOnly.filter((w) => w.allTimePnl != null && w.allTimePnl >= 50000);
       const topWinner = winners.length ? winners.reduce((a, b) => (b.allTimePnl > a.allTimePnl ? b : a)) : null; // 💎最赚
-      games.push({ sport: tag, eventSlug: ev.slug, title: ev.title, kickoffMs, outcomes: outs, prices: px.map(Number), sideUsd, total, wallets: walletAgg.size, topWhale, topWinner });
+      games.push({ sport: tag, eventSlug: ev.slug, title: ev.title, kickoffMs, outcomes: outs, prices: px.map(Number), sideUsd, total, wallets: walletAgg.size, topWhale, topWinner, markets: ev.markets });
     }
   }
-  return { games: games.sort((a, b) => b.total - a.total).slice(0, topN), threshold: minUsd };
+  const top = games.sort((a, b) => b.total - a.total).slice(0, topN);
+  // 只给要展示的场补 O/U(大小球) + 让球子信号(省 API): 从该场已有的 markets 里找主盘
+  for (const g of top) {
+    const mkts = g.markets || [];
+    const ouMk = mkts.filter((m) => {
+      if (!/o\/u|over\/under/i.test(m.question || "") || /set \d|inning|1st|first|\bhalf\b|games/i.test(m.question || "")) return false;
+      let o; try { o = JSON.parse(m.outcomes || "[]"); } catch { return false; }
+      return o.length === 2 && /^over/i.test(o[0]);
+    }).sort((a, b) => (b.volume || 0) - (a.volume || 0))[0];
+    if (ouMk) {
+      const s = await sideSignal(ouMk, minUsd);
+      if (s) { const line = ((ouMk.question || "").match(/o\/u\s*([\d.]+)/i) || [])[1] || ""; g.ou = { line, side: s.side === 0 ? "Over" : "Under", pct: s.pct, winnerSide: s.winnerIdx == null ? null : s.winnerIdx === 0 ? "Over" : "Under" }; }
+    }
+    let spMk = mkts.filter((m) => /spread|handicap/i.test(m.question || "") && /\(-1\.5\)/.test(m.question || "")).sort((a, b) => (b.volume || 0) - (a.volume || 0))[0];
+    if (!spMk) spMk = mkts.filter((m) => { if (!/spread|handicap/i.test(m.question || "")) return false; let o; try { o = JSON.parse(m.outcomes || "[]"); } catch { return false; } return o.length === 2 && !/^over/i.test(o[0]); }).sort((a, b) => (b.volume || 0) - (a.volume || 0))[0];
+    if (spMk) {
+      const s = await sideSignal(spMk, minUsd);
+      if (s) { const line = ((spMk.question || "").match(/\(-([\d.]+)\)/) || [])[1] || "1.5"; g.spread = { favTeam: s.outs[0], dogTeam: s.outs[1], line, side: s.side === 0 ? "cover" : "not", pct: s.pct, winnerSide: s.winnerIdx == null ? null : s.winnerIdx === 0 ? "cover" : "not" }; }
+    }
+    delete g.markets;
+  }
+  return { games: top, threshold: minUsd };
 }
 
 // ---- 顶级赢家风格画像 ----
@@ -825,7 +872,7 @@ async function getSpreadSignal(eventSlug) {
 // 用于对比"入场价 vs 近开赛价": 价格朝你那一侧移动(close>entry)=你买在了好价位=正 CLV(有 edge 的领先指标)
 async function getClosingPrices(eventSlug, homeTokens, awayTokens) {
   if (!eventSlug) return null;
-  const out = { moneyline: {}, ou: {} };
+  const out = { moneyline: {}, ou: {}, spread: {} };
   const yesPrice = (mk) => {
     try {
       const outs = JSON.parse(mk.outcomes || "[]"), px = JSON.parse(mk.outcomePrices || "[]");
@@ -854,6 +901,15 @@ async function getClosingPrices(eventSlug, homeTokens, awayTokens) {
       const oi = outs.findIndex((o) => /over|yes/i.test(o)), ui = outs.findIndex((o) => /under|no/i.test(o));
       if (oi >= 0) out.ou.overPrice = Number(px[oi]);
       if (ui >= 0) out.ou.underPrice = Number(px[ui]);
+    } catch {}
+  }
+  // 让球 -1.5(more-markets): 成交量最高的 -1.5 盘 → cover/not 收盘价 + favTeam(供匹配同一场的入场信号)
+  const spCands = ((e2 && e2.markets) || []).filter((m) => /^\s*spread:/i.test(m.question || "") && /\(-1\.5\)/.test(m.question || ""));
+  if (spCands.length) {
+    const sm = spCands.sort((a, b) => (b.volume || 0) - (a.volume || 0))[0];
+    try {
+      const outs = JSON.parse(sm.outcomes || "[]"), px = JSON.parse(sm.outcomePrices || "[]");
+      if (outs.length === 2) { out.spread.favTeam = outs[0]; out.spread.coverPrice = Number(px[0]); out.spread.notPrice = Number(px[1]); }
     } catch {}
   }
   return out;

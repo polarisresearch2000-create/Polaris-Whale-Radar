@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V6.0**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V6.1**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -86,7 +86,7 @@ node index.js          # 命令行信号报告
 | `SIGNALS_ENABLED` | on | 逐条信号开关；世界杯=off |
 | `PROFILES_ENABLED` | on | 全站赢家风格榜；世界杯=off |
 | `DIGESTS` | on | 持仓/风格摘要总开关 |
-| `SHARP_ENABLED` / `SHARP_SPORTS` / `SHARP_MIN` / `SHARP_WINDOW_H` / `SHARP_TOP` | on / `mlb,tennis` / 360 / 336 / 8 | 全体育聪明钱digest：开关 / 扫哪些tag / 间隔(分) / 只看未来N小时开赛 / 最多几场。`node bot.js --sharps [--dry]` 手动跑 |
+| `SHARP_ENABLED` / `SHARP_SPORTS` / `SHARP_MIN` / `SHARP_WINDOW_H` / `SHARP_TOP` | on / `mlb,tennis` / 360 / 504 / 8 | 全体育聪明钱digest：开关 / 扫哪些tag / 间隔(分) / 只看未来N小时开赛 / 最多几场。`node bot.js --sharps [--dry]` 手动跑 |
 
 机密(在 `.env`)：`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHANNEL`(加密)、`SPORTS_BOT_TOKEN`/`SPORTS_CHANNEL`(世界杯)。
 
@@ -114,7 +114,8 @@ node index.js          # 命令行信号报告
 **让球前向追踪(V6.0)**：同一套用到 spread -1.5(`getSpreadSignal`取成交量最高的-1.5盘)。依据=分析11个赢家按盘口类型,让球是第三大类(14%钱、单笔更大)。赛后按"让球方净胜球>1.5"判 cover/受让,测同3策略 + cover/not分段。至此跟踪覆盖赢家~80%的钱(胜负+大小球+让球)。
 **当前样本太小，不足以证明任何 edge** —— 让 forward 跑、攒到几十场再说。**绝不拿小样本的漂亮数字对外宣传。**
 
-**CLV 收盘线价值(V5.6)**：`getClosingPrices` 临近开赛(≤90分钟)抓一次价，存 `prediction.clv`，算 `近开赛价 − 入场价`。**正 CLV = 买在好价位 = 有 edge 最快的领先指标(不必等赛果)**。置顶+`--results` 显示均CLV+赢线率。
+**CLV 收盘线价值(V5.6，V6.1扩)**：`getClosingPrices` 临近开赛(≤90分钟)抓一次价，存 `prediction.clv`(含 `ml`胜负/`ou`大小球/`spread`让球 三条)，算 `近开赛价 − 入场价`。**正 CLV = 买在好价位 = 有 edge 最快的领先指标(不必等赛果)**。置顶+`--results` 显示三线均CLV+赢线率。
+**多体育 O/U/让球(V6.1)**：`multiSportSentiment` 里非世界杯(MLB/网球)每场除胜负盘外，用 `sideSignal(mk)` 从该场已有 markets 找**主 O/U 盘 + 主让球盘**(成交量最高)算大户偏向+💎赢家，显示在「🎯 近期聪明钱·全体育」里。子盘太薄(<门槛)自动省略。窗口默认放宽到21天(MLB 有量的对局多在2~3周内)。
 
 ## 9.5 个人自用转型 & ROI 路线（V5.6 起）
 
@@ -139,7 +140,7 @@ node index.js          # 命令行信号报告
 | **聪明钱 vs 做市机器人** | ⚠️ | V4.5 上了**本场对冲过滤**:押注分散在多个互斥结果(集中度 `DIR_MIN`<80%)的钱包不当 💎/🐋(`marketSentiment` 用 `byOutcome` 算，零额外 API)。仍未做:全局 MM 识别(需拉钱包交易史看频率/breadth)、同一市场 Yes+No 对冲(三方只取 Yes 侧漏此型) |
 | **同一钱包多地址聚类** | ❌ | 一个人用多地址会虚增"人数/共识"。TODO:按出入金关联或行为指纹聚类 |
 | **赛前才算"提前聪明钱"** | ✅ | 赛果追踪(`capturePredictions`)只在 `state==="pre"` 捕捉；持仓分析(`marketSentiment`)按 `event.startTime` 过滤,**`now>=开赛`整场跳过**(V4.4 修复)。 |
-| **不碰的体育市场** | ✅ | 衍生盘(exact score/spread/O-U/corners/halftime/BTTS/player props)由 `SPORTS_NOISE` 正则排除，只统计主胜/平/客胜 |
+| **不碰的体育市场** | ✅/更新 | **持仓digest**(`marketSentiment`)仍只统计主胜/平/客胜(SPORTS_NOISE 排除衍生)。但 O/U大小球 与 spread让球 现在有**专用信号+前向追踪**(getTotalsSignal/getSpreadSignal, V5.3/V6.0) —— 因数据证明赢家把80%的钱押在 胜负+大小球+让球。仍不碰:准确比分/球员props/半场/网球分盘(=散户) |
 | **流动性下限** | ❌ | 低流动性盘价格不可信。TODO:`liquidity < $X` 不发(gamma `liquidity` 字段已有) |
 | **价差(spread)上限** | ❌ | spread 过大=没真实价格。TODO:用 `clob/book` 买卖一档算 spread，`> X%` 不发 |
 | **金额门槛** | ✅ | `MIN_NOTIONAL` 等(世界杯=$5000)；持仓快照独立低门槛 `POSITIONING_MIN_NOTIONAL=$500` |
