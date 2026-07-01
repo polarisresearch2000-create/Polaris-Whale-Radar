@@ -689,7 +689,16 @@ async function winnerRecentBets(opts = {}) {
       taken++;
     }
   });
-  return out.sort((a, b) => b.ts - a.ts).slice(0, opts.max || 50);
+  // 只保留"市场还开着=还能下注"的注: 剔除已完赛/已结算的场(event.closed=true)。取最近80笔再查, 省 API
+  const recent = out.sort((a, b) => b.ts - a.ts).slice(0, 80);
+  const slugs = [...new Set(recent.map((b) => b.eventSlug).filter(Boolean))];
+  const closedMap = new Map();
+  await mapLimit(slugs, CONFIG.WALLET_CONCURRENCY, async (slug) => {
+    const ev = await getJSON(`${GAMMA}/events?slug=${slug}`).catch(() => null);
+    const e = Array.isArray(ev) ? ev[0] : null;
+    closedMap.set(slug, e ? !!e.closed : false);
+  });
+  return recent.filter((b) => !closedMap.get(b.eventSlug)).slice(0, opts.max || 50);
 }
 
 // ---- 顶级赢家风格画像 ----

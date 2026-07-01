@@ -3,6 +3,9 @@
 > 每次迭代升级在此记录并更新版本号。当前版本同步显示在：
 > 启动脚本横幅（`启动世界杯雷达.bat`）+ bot 启动日志（`bot.js` 的 `VERSION`）。
 
+## V6.7 — 2026-07-01
+- **修 bug：赢家最新出手会把"已完赛"的场也推出来**(用户反馈:3场 06-30 的 MLB 昨天就结束了还在列)。原因:只按下注时间(4~8h前)过滤,没查那场是否还开着。修复:`winnerRecentBets` 取最近80笔后,按 `eventSlug` 查 gamma `event.closed`,**剔除已结算/已完赛的场**(只留还能下注的);已完赛=`closed:true`,未开赛=`closed:false`,验证有效。
+
 ## V6.6 — 2026-07-01
 - **「💎赢家最新出手」改成自动更新的置顶**(用户要置顶这条)。原本每次发新消息(tx去重);现在 `postOrUpdateWinnerPin` **就地编辑同一条 + 置顶**(像策略战绩/即将开赛那两条置顶),`winnerPinId` 持久化在 `digest_<tag>.json`。加了「持續更新 · HH:MM HKT」时间戳行(保证每次内容不同、避免 editMessageText "not modified" 报错回退成发新消息)。`--winner-bets` 手动跑现在也是创建/刷新该置顶。每 `WINNER_MIN`(默90分, .bat 里=60分)刷新一次。
 
