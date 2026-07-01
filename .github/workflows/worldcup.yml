@@ -4,10 +4,15 @@ name: Polaris World Cup Radar
 # 一次运行连续约 5h, 期间每小时跑一轮 --once 并回写状态; 跑满后用 PAT 令牌(secrets.WORKFLOW_PAT)
 # 触发下一轮(内置 GITHUB_TOKEN 不能触发工作流, PAT 可以) → 一个接一个、几乎零空窗。
 # cron 每小时保留作兜底(万一某次没接上)。公开仓库 Actions 免费无限。
+# ⛔ 已取消 GitHub 部署 → 改本地运行(2026-07-01)。
+# 同时去掉 schedule(停 cron) 与 workflow_dispatch(断掉 PAT 自我重启接力), 否则正在跑的那轮会自己续上。
+# 恢复云端: 把下面 4 行注释还原成 schedule + workflow_dispatch, 删掉占位 push 触发即可。
 on:
-  schedule:
-    - cron: "9 * * * *"
-  workflow_dispatch: {}
+  #  schedule:
+  #    - cron: "9 * * * *"
+  #  workflow_dispatch: {}
+  push:
+    branches: [__deploy_disabled__] # 永不触发的占位(YAML 要求 on: 至少一个触发)
 
 permissions:
   contents: write

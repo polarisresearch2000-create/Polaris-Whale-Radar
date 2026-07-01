@@ -52,7 +52,9 @@ node index.js          # 命令行信号报告
 ```
 > bot 走哪个频道由环境变量 `PROFILE` 决定：`PROFILE=SPORTS` → 世界杯；空 → 加密(默认)。启动脚本里已设好。
 
-**云端**：GitHub Actions。世界杯 = `worldcup.yml`。**GitHub 免费 cron 极不可靠**(实测 */5 与 30 分钟都只 4-12h 才跑一次)，故改**长任务版**：一次运行连续 ~5h、`while` 循环每小时 `node bot.js --once` 并 commit/push 回写状态；cron 每小时尝试重启，并发锁(group=worldcup)保证同时只一个、自然接力 → 近乎不间断、每小时推一次。公开仓库 Actions 免费无限。要真·零空窗(无重启缝)需长任务自重启(PAT)或换常驻托管(Railway/Render)。
+**运行模式(2026-07-01起)：本地运行，云端已停。** 双击 `启动世界杯雷达.bat`(PROFILE=SPORTS，推送去 `.env` 的 `SPORTS_CHANNEL`=私聊 DM `7903017148`)，窗口开着=运行。`worldcup.yml` 的 `on:` 触发器已注释停用(去掉 schedule 停 cron + 去掉 workflow_dispatch 断 PAT 自重启)。要恢复云端见该文件顶部注释。**本地/云端勿同跑同一 DM**(会重复)。
+
+**云端(已停用)**：GitHub Actions。世界杯 = `worldcup.yml`。**GitHub 免费 cron 极不可靠**(实测 */5 与 30 分钟都只 4-12h 才跑一次)，故改**长任务版**：一次运行连续 ~5h、`while` 循环每小时 `node bot.js --once` 并 commit/push 回写状态；cron 每小时尝试重启，并发锁(group=worldcup)保证同时只一个、自然接力 → 近乎不间断、每小时推一次。公开仓库 Actions 免费无限。要真·零空窗(无重启缝)需长任务自重启(PAT)或换常驻托管(Railway/Render)。
 启用步骤：GitHub 仓库 → Settings → Secrets and variables → Actions → New secret，名 `SPORTS_BOT_TOKEN`、值见 `.env`；然后 Actions 页 Run workflow。**启用云端后关掉本地世界杯窗口**（避免重复）。
 
 ## 5. 频道里会推什么
