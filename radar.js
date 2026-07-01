@@ -527,6 +527,64 @@ async function marketSentiment(opts = {}) {
   return { markets: matches, threshold: minUsd };
 }
 
+// ---- 多体育(2-outcome 胜负盘: MLB/网球/篮球等)聪明钱持仓 ----
+// 与世界杯不同: 这些运动是"一个盘、两个 outcome=两支队/两名球员"(非每结果一个 Yes/No 盘)。
+// 每场取主胜负盘(无冒号、含 vs), 聚合大户资金偏哪边 + 💎顶级赢家 / 🐋最大注(供分歧标记)。给用户"世界杯之外的更多场次"。
+async function multiSportSentiment(tags, opts = {}) {
+  const minUsd = opts.minNotional || CONFIG.POSITIONING_MIN_NOTIONAL;
+  const topN = opts.topMarkets || 10;
+  const windowMs = opts.windowMs || 14 * 24 * 3600 * 1000; // 只看未来这么久内开赛的(默认14天): 聪明钱多在赛前数天~两周布局, 太远的满赛季远期盘噪音大
+  const DIR_MIN = 0.8;
+  // 主胜负盘识别: 恰好2个 outcome、outcome 是队名/球员名(非 Yes/No、非 Over/Under)、且问题不含衍生玩法关键词
+  const isYesNo = (o) => /^(yes|no)$/i.test(o[0]) && /^(yes|no)$/i.test(o[1]);
+  const isOU = (o) => o.some((x) => /^(over|under)/i.test(x));
+  const DERIV = /\bset\b|handicap|o\/u|over\/under|\btotal\b|games|completed|winner:|inning|spread|first|correct|margin|\bhalf\b/i;
+  const games = [];
+  for (const tag of tags) {
+    const evs = await getJSON(`${GAMMA}/events?tag_slug=${tag}&closed=false&limit=80&order=volume24hr&ascending=false`).catch(() => null);
+    for (const ev of Array.isArray(evs) ? evs : []) {
+      if (!/ vs\.? /i.test(ev.title || "")) continue; // 只看对局盘
+      const gs = ev.startTime || (ev.markets || []).find((x) => x.gameStartTime)?.gameStartTime;
+      const kickoffMs = gs ? Date.parse(String(gs).replace(" ", "T")) : null;
+      if (kickoffMs && (Date.now() >= kickoffMs || kickoffMs > Date.now() + windowMs)) continue; // 只看"临近未开赛"(赛前布局窗口内)
+      const mk = (ev.markets || []).find((m) => {
+        if (!m.conditionId || !/ vs\.? /i.test(m.question || "") || DERIV.test(m.question || "")) return false;
+        let o; try { o = JSON.parse(m.outcomes || "[]"); } catch { return false; }
+        return o.length === 2 && !isYesNo(o) && !isOU(o);
+      });
+      if (!mk) continue;
+      let outs, px;
+      try { outs = JSON.parse(mk.outcomes || "[]"); px = JSON.parse(mk.outcomePrices || "[]"); } catch { continue; }
+      if (outs.length !== 2) continue;
+      const tr = await getJSON(`${DATA}/trades?market=${mk.conditionId}&filterType=CASH&filterAmount=${minUsd}&limit=500`).catch(() => null);
+      const buys = Array.isArray(tr) ? tr.filter((t) => t.side === "BUY") : [];
+      const sideUsd = [0, 0];
+      const walletAgg = new Map();
+      for (const t of buys) {
+        let idx = t.outcomeIndex != null ? Number(t.outcomeIndex) : outs.findIndex((o) => o === t.outcome);
+        if (idx !== 0 && idx !== 1) continue;
+        const u = (t.size || 0) * (t.price || 0);
+        sideUsd[idx] += u;
+        if (!walletAgg.has(t.proxyWallet)) walletAgg.set(t.proxyWallet, { usd: 0, byIdx: [0, 0], name: t.name });
+        const w = walletAgg.get(t.proxyWallet);
+        w.usd += u; w.byIdx[idx] += u;
+      }
+      const total = sideUsd[0] + sideUsd[1];
+      if (total <= 0) continue;
+      const topWallets = [...walletAgg.entries()]
+        .map(([w, v]) => { const idx = v.byIdx[0] >= v.byIdx[1] ? 0 : 1; return { wallet: w, name: v.name, usd: v.usd, idx, outcome: outs[idx], dir: v.usd > 0 ? Math.max(v.byIdx[0], v.byIdx[1]) / v.usd : 0 }; })
+        .sort((a, b) => b.usd - a.usd).slice(0, 6);
+      for (const tw of topWallets) { const sc = await getWalletScore(tw.wallet).catch(() => null); tw.allTimePnl = sc ? sc.allTimePnl : null; tw.directional = tw.dir >= DIR_MIN; }
+      const dirOnly = topWallets.filter((w) => w.directional !== false);
+      const topWhale = dirOnly[0] || null; // 最大注(方向性·按金额)
+      const winners = dirOnly.filter((w) => w.allTimePnl != null && w.allTimePnl >= 50000);
+      const topWinner = winners.length ? winners.reduce((a, b) => (b.allTimePnl > a.allTimePnl ? b : a)) : null; // 💎最赚
+      games.push({ sport: tag, eventSlug: ev.slug, title: ev.title, kickoffMs, outcomes: outs, prices: px.map(Number), sideUsd, total, wallets: walletAgg.size, topWhale, topWinner });
+    }
+  }
+  return { games: games.sort((a, b) => b.total - a.total).slice(0, topN), threshold: minUsd };
+}
+
 // ---- 顶级赢家风格画像 ----
 const catOf = (title) => {
   const t = String(title || "").toLowerCase();
@@ -824,6 +882,6 @@ async function getMarketResolution(gammaId) {
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction, getTotalsSignal, getClosingPrices, cryptoPrediction, getMarketResolution,
+  getWcResults, matchPrediction, getTotalsSignal, getClosingPrices, multiSportSentiment, cryptoPrediction, getMarketResolution,
   fmtUSD, CONFIG, isDirectional,
 };

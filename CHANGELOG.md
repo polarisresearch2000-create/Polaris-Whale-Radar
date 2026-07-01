@@ -3,6 +3,13 @@
 > 每次迭代升级在此记录并更新版本号。当前版本同步显示在：
 > 启动脚本横幅（`启动世界杯雷达.bat`）+ bot 启动日志（`bot.js` 的 `VERSION`）。
 
+## V5.9 — 2026-07-01
+- **「🎯 近期聪明钱 · 全体育」—— 世界杯之外的更多可分析场次**(个人自用)。需求:世界杯每天才几场,想要更多"赢家在押哪边"的场。经实测,当前 Polymarket 上有量的还有 **MLB(天天打~15场)** 与 **网球Wimbledon(每天多场)**;且各运动是各自的一批 sharp(世界杯的赢家≈只玩世界杯的扫单党)。
+  - `radar.multiSportSentiment(tags, {windowMs,minNotional,topMarkets})`:扫 MLB/网球等 tag 的**对局盘**。这些是 **2-outcome 盘(队名/球员名,非世界杯的每结果 Yes/No)**,主胜负盘识别=2 outcome + 非 Yes/No + 非 Over/Under + 问题不含衍生关键词(set/handicap/o\/u/spread/inning/completed…)。聚合大户资金 + `getWalletScore` 评前6钱包 → `topWinner`(💎≥$50k)/`topWhale`(🐋最大注)。只看未来 `windowMs`(默认14天)内开赛的场(聪明钱多在赛前数天~两周布局;太近的场大钱还没进,太远的满赛季远期盘噪音大)。
+  - `bot.fmtMultiSport` 复用 `smartMoneyLines` 显示每场:资金分布 + 盘口价 + 💎赢家 vs 🐋最大注 `✓同向/⚠️分歧`。
+  - 推送:`node bot.js --sharps [--dry]` 手动;并接入体育 digest 循环(`SHARP_ENABLED/SHARP_SPORTS/SHARP_MIN/SHARP_WINDOW_H/SHARP_TOP`,默认 mlb,tennis · 6h · 14天窗口 · 8场)。
+  - 实测立见分歧信号:Molcan/Altmaier 网球——盘口74%+最大注($967k输家)押Altmaier,但$475k赢家押Molcan(⚠️分歧);Sinner/Borges——盘口84%押Sinner,$397k赢家押冷门Borges(⚠️分歧)。
+
 ## V5.8 — 2026-07-01
 - **持仓分析(📊 巨鯨持倉分析)也加上「💎顶级赢家 vs 🐋最大注 分歧」标记**(个人自用·更详细)。原先二者只显示其一(else-if),现在两条都显示并标 `✓同向 / ⚠️分歧`;最大注是输家时内联 `⚠️歷史虧損`;最大注本身就是顶级赢家则合成 `💎🐋 最大注即頂級贏家` 一行。新 `smartMoneyLines(m,label)` 体育/加密两路共用。
   - 实测即时见效:墨西哥vs厄瓜多尔——盘口74%押墨西哥、最大注($1.1M输家)押墨西哥,但 **$1.1M 顶级赢家押平局(⚠️分歧)**;葡萄牙——$14.4M赢家与$2.2M最大注同押葡萄牙(✓同向)。

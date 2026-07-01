@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getClosingPrices, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getClosingPrices, multiSportSentiment, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V5.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V5.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -909,6 +909,31 @@ function fmtPositioning(markets, threshold) {
   return cn.join("\n");
 }
 
+// 「今日聪明钱 · 全体育」: 世界杯以外(MLB/网球…)每场胜负盘的💎赢家 vs 🐋最大注(2-outcome 版)
+const SPORT_EMOJI = { mlb: "⚾", tennis: "🎾", nba: "🏀", basketball: "🏀", nhl: "🏒", nfl: "🏈" };
+function fmtMultiSport(games) {
+  if (!games || !games.length) return null;
+  const url = (g) => (g.eventSlug ? `https://polymarket.com/event/${g.eventSlug}` : "https://polymarket.com");
+  const cn = ["🎯 <b>近期聰明錢 · 全體育</b>", "（世界盃以外 · 未來約兩週 · 各運動自己的 💎贏家 在押誰）", ""];
+  for (const g of games) {
+    const emo = SPORT_EMOJI[g.sport] || "🏟";
+    const ko = koHKT(g.kickoffMs);
+    cn.push(`${emo} <a href="${url(g)}">${esc(g.title)}</a>${ko ? ` · ⏰ ${ko}` : ""}  <i>${cUSD(g.total)} · ${g.wallets}人</i>`);
+    const rows = g.outcomes.map((o, i) => ({ o, usd: g.sideUsd[i], price: g.prices[i] })).sort((a, b) => b.usd - a.usd);
+    const topUsd = rows[0].usd;
+    for (const x of rows) {
+      const pct = g.total ? Math.round((x.usd / g.total) * 100) : 0;
+      const odds = x.price != null ? `（盤口 ${Math.round(x.price * 100)}¢）` : "";
+      cn.push(`   ${x.usd === topUsd ? "🟩" : "🟥"} ${esc(x.o)} <b>${pct}%</b>${odds}`);
+    }
+    for (const l of smartMoneyLines(g, (o) => esc(o))) cn.push(l);
+    cn.push("");
+  }
+  cn.push("⚠️ 數據分析 · 非投注建議");
+  cn.push(`🔭 Polaris Research · Polymarket 聰明錢雷達`);
+  return cn.join("\n");
+}
+
 // 顶级赢家风格榜
 function fmtProfiles(profiles) {
   const lines = [
@@ -1036,6 +1061,18 @@ async function pollOnce() {
         console.error("持仓快照出错:", e.message);
       }
     }
+    // 全体育聪明钱(世界杯以外: MLB/网球…) —— 仅体育频道, 独立较慢节奏(默认6h), 给"更多可分析的场"
+    const SHARP_ON = RESULTS_ON && (process.env.SHARP_ENABLED || "on") !== "off";
+    if (SHARP_ON && now - (d.sharps || 0) >= Number(process.env.SHARP_MIN || 360) * 60000) {
+      try {
+        const sports = (process.env.SHARP_SPORTS || "mlb,tennis").split(",").map((s) => s.trim()).filter(Boolean);
+        const { games } = await multiSportSentiment(sports, { topMarkets: Number(process.env.SHARP_TOP || 8), windowMs: Number(process.env.SHARP_WINDOW_H || 336) * 3600 * 1000 });
+        const text = fmtMultiSport(games);
+        if (text) { await send(text); d.sharps = now; console.log(`  → 已推全体育聪明钱(${games.length}场)`); }
+      } catch (e) {
+        console.error("全体育聪明钱出错:", e.message);
+      }
+    }
     if (PROFILES_ENABLED && now - (d.profiles || 0) >= PROFILES_MIN * 60000) {
       try {
         const p = await analyzeTopTraders(12);
@@ -1097,6 +1134,18 @@ async function main() {
     await postOrUpdateTrackRecord(r);
     saveResults(r);
     console.log(`📌 已刷新置顶战绩 → ${CHANNEL} (msgId ${r.pinnedMsgId})`);
+    return;
+  }
+
+  if (process.argv.includes("--sharps")) {
+    // 「今日聪明钱 · 全体育」: 世界杯以外(默认 MLB+网球)每场胜负盘的💎赢家 vs 🐋最大注
+    const sports = (process.env.SHARP_SPORTS || "mlb,tennis").split(",").map((s) => s.trim()).filter(Boolean);
+    console.log(`扫描全体育聪明钱: ${sports.join(", ")} …`);
+    const { games } = await multiSportSentiment(sports, { topMarkets: Number(process.env.SHARP_TOP || 10), windowMs: Number(process.env.SHARP_WINDOW_H || 336) * 3600 * 1000 });
+    const text = fmtMultiSport(games);
+    if (!text) { console.log("(暂无未开赛的对局盘)"); return; }
+    if (process.argv.includes("--dry")) console.log(text.replace(/<[^>]+>/g, ""));
+    else { await send(text); console.log(`✅ 已推送 ${games.length} 场 → ${CHANNEL}`); }
     return;
   }
 
