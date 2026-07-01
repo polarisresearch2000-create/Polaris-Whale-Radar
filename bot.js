@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V6.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V6.6"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1054,7 +1054,16 @@ function fmtWinnerBets(bets) {
     cn.push("");
   }
   cn.push("⚠️ 數據分析 · 非投注建議 · 未證明 edge（更多信號≠更多勝率）");
+  cn.push(`🔭 持續更新 · ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
   return cn.join("\n");
+}
+// 置顶: 赢家最新出手(就地编辑同一条; winnerPinId 持久化在 digest 状态)
+async function postOrUpdateWinnerPin(bets, state) {
+  const text = fmtWinnerBets(bets);
+  if (!text) return;
+  if (state.winnerPinId && (await editMsg(state.winnerPinId, text))) return;
+  const id = await sendReturn(text);
+  if (id) { state.winnerPinId = id; await pinMsg(id); }
 }
 
 // 成本感知报价: 每个可下注方向的 能成交价 + 点差 + 滑点 + 流动性闸门(转个人下注/上 Kelly 前看真实成本)
@@ -1299,13 +1308,7 @@ async function pollOnce() {
     if (WB_ON && now - (d.winnerBets || 0) >= Number(process.env.WINNER_MIN || 90) * 60000) {
       try {
         const bets = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) });
-        const seen = new Set(d.winnerSeen || []);
-        const fresh = bets.filter((b) => b.tx && !seen.has(b.tx));
-        if (fresh.length) {
-          const text = fmtWinnerBets(fresh);
-          if (text) { await send(text); console.log(`  → 已推赢家最新出手(${fresh.length}新)`); }
-          d.winnerSeen = [...seen, ...fresh.map((b) => b.tx)].slice(-500);
-        }
+        if (bets.length) { await postOrUpdateWinnerPin(bets, d); console.log(`  → 已更新赢家最新出手置顶(${bets.length}笔)`); }
         d.winnerBets = now;
       } catch (e) {
         console.error("赢家最新出手出错:", e.message);
@@ -1396,7 +1399,7 @@ async function main() {
     const bets = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) });
     const text = fmtWinnerBets(bets);
     if (process.argv.includes("--dry")) console.log(text ? text.replace(/<[^>]+>/g, "") : "(近期无赢家方向性大注; 可调 WINNER_HOURS/WINNER_MIN_BET/WINNER_MIN_PNL)");
-    else if (text) { await send(text); console.log(`✅ 已推送赢家最新出手(${bets.length}笔) → ${CHANNEL}`); }
+    else if (text) { const d = loadDigest(); await postOrUpdateWinnerPin(bets, d); saveDigest(d); console.log(`✅ 已更新赢家最新出手置顶(${bets.length}笔) → ${CHANNEL} (msgId ${d.winnerPinId})`); }
     else console.log("(近期无符合条件的赢家出手)");
     return;
   }
