@@ -5426,18 +5426,58 @@
         }
       },
       "settledAt": "2026-06-30T23:45:29.648Z"
+    },
+    {
+      "espnId": "760491",
+      "match": "Mexico vs Ecuador",
+      "home": "Mexico",
+      "away": "Ecuador",
+      "actual": "home",
+      "kickoffMs": 1782867600000,
+      "score": "2-0",
+      "whaleSide": "home",
+      "bigBettor": {
+        "wallet": "0x0346afae2603313d2bbee96b628536c8cbe352a5",
+        "side": "home",
+        "usd": 123339.8232,
+        "entryPrice": 0.43999999999999995,
+        "betTs": 1782700853,
+        "leadMin": 2779
+      },
+      "strat": {
+        "followWhale": {
+          "side": "home",
+          "price": 0.435,
+          "win": true,
+          "profit": 1.2988505747126435
+        },
+        "followBig": {
+          "side": "home",
+          "price": 0.435,
+          "win": true,
+          "profit": 1.2988505747126435
+        },
+        "highConsensus": null,
+        "fadeFav": {
+          "side": "No(home)",
+          "price": 0.565,
+          "win": false,
+          "profit": -1
+        }
+      },
+      "settledAt": "2026-07-01T04:47:04.743Z"
     }
   ],
   "strategies": {
     "followWhale": {
-      "bets": 43,
-      "wins": 32,
-      "profit": 8.713529191331935
+      "bets": 44,
+      "wins": 33,
+      "profit": 10.012379766044578
     },
     "followBig": {
-      "bets": 43,
-      "wins": 33,
-      "profit": 11.888132365935109
+      "bets": 44,
+      "wins": 34,
+      "profit": 13.186982940647752
     },
     "highConsensus": {
       "bets": 34,
@@ -5445,21 +5485,21 @@
       "profit": 4.58437950128407
     },
     "fadeFav": {
-      "bets": 43,
+      "bets": 44,
       "wins": 11,
-      "profit": -14.82349650541136
+      "profit": -15.82349650541136
     }
   },
   "previewDay": "2026-07-01",
   "pinnedMsgId": 17,
-  "trackUpdatedAt": 1782877571931,
+  "trackUpdatedAt": 1782881226247,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782877572462,
+  "previewUpdatedAt": 1782881227208,
   "previewMsgId": 19,
-  "resultsUpdatedAt": 1782877573260,
+  "resultsUpdatedAt": 1782881226717,
   "resultsMsgId": 21
 }
