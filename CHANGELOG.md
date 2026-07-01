@@ -3,6 +3,13 @@
 > 每次迭代升级在此记录并更新版本号。当前版本同步显示在：
 > 启动脚本横幅（`启动世界杯雷达.bat`）+ bot 启动日志（`bot.js` 的 `VERSION`）。
 
+## V6.3 — 2026-07-01
+- **MLB/网球 前向 ROI 追踪(全体育战绩)** —— 让非世界杯的 胜负/大小球/让球 也能像世界杯一样前向测 ROI,不只是快照。**改用 Polymarket 市场解析结算(非 ESPN)**:更 uniform、免去 ESPN 队名/球员名匹配的脆弱性。
+  - `multiSportSentiment` 每场信号补上 gamma 市场 id + backed/winner outcome 索引 + 入场价(`mlId/mlBackedIdx/mlWinnerIdx` 及 `ou/spread` 的 `id/prices/sideIdx/winnerIdx`)。
+  - `trackMultiSport()`(bot): ①锁定赛前信号到 `data/results_multisport.json`(**只锁"有开赛时间且未开赛"的真赛前场**,杜绝锁到已解析/in-play 盘造成假 ROI);②开赛后对每个市场 `getMarketResolution(id)` 拿赢家 outcome,按下注价算 `跟💎赢家 / 跟大户` 的命中率+ROI(胜负/大小球/让球 各一套)。
+  - `node bot.js --sharps-results` 查看; sharps digest 每轮顺带 捕捉+结算,有新结算自动推「🎯 全体育战绩」。新增 `SHARP_TRACK_TOP`(默15,锁定几场)。
+  - 端到端验证:`getMarketResolution` 在已结算 MLB 盘(Twins vs Astros → Astros)正确返回赢家 outcome,settle 逻辑正确判赢输。仍是**未证明 edge**,前向攒样本。
+
 ## V6.2 — 2026-07-01
 - **成本感知 ROI(订单簿真实点差/深度 → 能成交的价 + 流动性闸门)** —— 转个人下注、上 Kelly 前的必经一步(§11 两个 ❌ 闸门的引擎):
   - `getBook(tokenId)`(clob `/book`)+ `execQuote(book, $)`:算最优买/卖价、**点差**、吃单到成交的**加权均价(VWAP)+滑点**、**深度够不够**吃满目标额;`getExecQuote(tokenId,$)` 一步到位。

@@ -606,7 +606,7 @@ async function multiSportSentiment(tags, opts = {}) {
       const topWhale = dirOnly[0] || null; // 最大注(方向性·按金额)
       const winners = dirOnly.filter((w) => w.allTimePnl != null && w.allTimePnl >= 50000);
       const topWinner = winners.length ? winners.reduce((a, b) => (b.allTimePnl > a.allTimePnl ? b : a)) : null; // 💎最赚
-      games.push({ sport: tag, eventSlug: ev.slug, title: ev.title, kickoffMs, outcomes: outs, prices: px.map(Number), sideUsd, total, wallets: walletAgg.size, topWhale, topWinner, markets: ev.markets });
+      games.push({ sport: tag, eventSlug: ev.slug, title: ev.title, kickoffMs, outcomes: outs, prices: px.map(Number), sideUsd, total, wallets: walletAgg.size, topWhale, topWinner, markets: ev.markets, mlId: mk.id, mlBackedIdx: sideUsd[0] >= sideUsd[1] ? 0 : 1, mlWinnerIdx: topWinner ? topWinner.idx : null });
     }
   }
   const top = games.sort((a, b) => b.total - a.total).slice(0, topN);
@@ -620,13 +620,13 @@ async function multiSportSentiment(tags, opts = {}) {
     }).sort((a, b) => (b.volume || 0) - (a.volume || 0))[0];
     if (ouMk) {
       const s = await sideSignal(ouMk, minUsd);
-      if (s) { const line = ((ouMk.question || "").match(/o\/u\s*([\d.]+)/i) || [])[1] || ""; g.ou = { line, side: s.side === 0 ? "Over" : "Under", pct: s.pct, winnerSide: s.winnerIdx == null ? null : s.winnerIdx === 0 ? "Over" : "Under" }; }
+      if (s) { const line = ((ouMk.question || "").match(/o\/u\s*([\d.]+)/i) || [])[1] || ""; g.ou = { line, side: s.side === 0 ? "Over" : "Under", pct: s.pct, winnerSide: s.winnerIdx == null ? null : s.winnerIdx === 0 ? "Over" : "Under", id: ouMk.id, outcomes: s.outs, prices: s.prices, sideIdx: s.side, winnerIdx: s.winnerIdx }; }
     }
     let spMk = mkts.filter((m) => /spread|handicap/i.test(m.question || "") && /\(-1\.5\)/.test(m.question || "")).sort((a, b) => (b.volume || 0) - (a.volume || 0))[0];
     if (!spMk) spMk = mkts.filter((m) => { if (!/spread|handicap/i.test(m.question || "")) return false; let o; try { o = JSON.parse(m.outcomes || "[]"); } catch { return false; } return o.length === 2 && !/^over/i.test(o[0]); }).sort((a, b) => (b.volume || 0) - (a.volume || 0))[0];
     if (spMk) {
       const s = await sideSignal(spMk, minUsd);
-      if (s) { const line = ((spMk.question || "").match(/\(-([\d.]+)\)/) || [])[1] || "1.5"; g.spread = { favTeam: s.outs[0], dogTeam: s.outs[1], line, side: s.side === 0 ? "cover" : "not", pct: s.pct, winnerSide: s.winnerIdx == null ? null : s.winnerIdx === 0 ? "cover" : "not" }; }
+      if (s) { const line = ((spMk.question || "").match(/\(-([\d.]+)\)/) || [])[1] || "1.5"; g.spread = { favTeam: s.outs[0], dogTeam: s.outs[1], line, side: s.side === 0 ? "cover" : "not", pct: s.pct, winnerSide: s.winnerIdx == null ? null : s.winnerIdx === 0 ? "cover" : "not", id: spMk.id, outcomes: s.outs, prices: s.prices, sideIdx: s.side, winnerIdx: s.winnerIdx }; }
     }
     delete g.markets;
   }

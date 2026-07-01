@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V6.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V6.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1043,6 +1043,80 @@ function fmtQuote(qm) {
   return lines.join("\n");
 }
 
+// 全体育(MLB/网球…)前向战绩: 按 Polymarket 市场解析结算(非 ESPN, 免队名/球员名匹配), 胜负/大小球/让球 × 跟💎/跟大户
+const MS_FILE = path.join(__dirname, "data", "results_multisport.json");
+function fmtMultiSportStats(ms) {
+  const lbl = { ml: "胜负盘", ou: "大小球", spread: "让球" };
+  const out = ["🎯 <b>全體育戰績</b>（世界盃以外 · 按市場解析結算 · 前向）", ""];
+  let any = false;
+  for (const kind of ["ml", "ou", "spread"]) {
+    const S = ms.strategies && ms.strategies[kind];
+    if (!S) continue;
+    const parts = [];
+    for (const [key, name] of [["followWinner", "跟💎贏家"], ["followBig", "跟大戶"]]) {
+      const s = S[key];
+      if (!s || !s.bets) continue;
+      parts.push(`${name} ${s.bets}場 命中${Math.round((s.wins / s.bets) * 100)}% ROI ${Math.round((s.profit / s.bets) * 100) >= 0 ? "+" : ""}${Math.round((s.profit / s.bets) * 100)}%`);
+    }
+    if (parts.length) { any = true; out.push(`<b>${lbl[kind]}</b>: ${parts.join(" · ")}`); }
+  }
+  if (!any) return null;
+  out.push("", "⚠️ 未證明 edge · 前向攢樣本中");
+  return out.join("\n");
+}
+// 捕捉(锁定赛前信号) + 结算(市场解析) 全体育, 返回 {ms, newN, games}
+async function trackMultiSport() {
+  let ms;
+  try { ms = JSON.parse(fs.readFileSync(MS_FILE, "utf8")); } catch { ms = {}; }
+  ms.predictions = ms.predictions || {};
+  ms.strategies = ms.strategies || {};
+  ms.settled = ms.settled || [];
+  const sports = (process.env.SHARP_SPORTS || "mlb,tennis").split(",").map((s) => s.trim()).filter(Boolean);
+  let games = [];
+  try {
+    const r = await multiSportSentiment(sports, { topMarkets: Number(process.env.SHARP_TRACK_TOP || 15), windowMs: Number(process.env.SHARP_WINDOW_H || 504) * 3600 * 1000 });
+    games = r.games || [];
+  } catch (e) { console.error("全体育捕捉出错:", e.message); }
+  // 1) 锁定赛前信号(每场每类只锁一次)
+  for (const g of games) {
+    if (ms.predictions[g.eventSlug]) continue;
+    if (!g.kickoffMs || Date.now() >= g.kickoffMs) continue; // 只锁"有开赛时间且未开赛"的真·赛前场, 杜绝锁到已解析/in-play盘造成假 ROI
+    const seg = (kind) => {
+      if (kind === "ml") return g.mlId == null ? null : { id: g.mlId, outcomes: g.outcomes, prices: g.prices, backedIdx: g.mlBackedIdx, winnerIdx: g.mlWinnerIdx };
+      const o = g[kind];
+      return o && o.id != null ? { id: o.id, outcomes: o.outcomes, prices: o.prices, backedIdx: o.sideIdx, winnerIdx: o.winnerIdx } : null;
+    };
+    ms.predictions[g.eventSlug] = { eventSlug: g.eventSlug, title: g.title, sport: g.sport, kickoffMs: g.kickoffMs, capturedAt: new Date().toISOString(), ml: seg("ml"), ou: seg("ou"), spread: seg("spread") };
+  }
+  // 2) 结算已解析的市场(开赛后)
+  let newN = 0;
+  for (const slug in ms.predictions) {
+    const p = ms.predictions[slug];
+    if (p.kickoffMs && Date.now() < p.kickoffMs) continue;
+    for (const kind of ["ml", "ou", "spread"]) {
+      const s = p[kind];
+      if (!s || s.settled || s.id == null) continue;
+      const winnerName = await getMarketResolution(s.id).catch(() => null);
+      if (!winnerName) continue; // 还没解析
+      const evalOne = (idx) => {
+        if (idx == null || !s.outcomes || !s.prices) return null;
+        const price = Number(s.prices[idx]);
+        if (!(price > 0 && price < 1)) return null;
+        const win = s.outcomes[idx] === winnerName;
+        return { win, profit: win ? (1 - price) / price : -1 };
+      };
+      const strat = { followBig: evalOne(s.backedIdx), followWinner: evalOne(s.winnerIdx) };
+      const S = (ms.strategies[kind] = ms.strategies[kind] || {});
+      for (const key in strat) { const r = strat[key]; if (!r) continue; const st = (S[key] = S[key] || { bets: 0, wins: 0, profit: 0 }); st.bets++; if (r.win) st.wins++; st.profit += r.profit; }
+      s.settled = true;
+      ms.settled.push({ eventSlug: slug, sport: p.sport, kind, winner: winnerName, backed: s.outcomes[s.backedIdx], bigWin: strat.followBig ? strat.followBig.win : null, settledAt: new Date().toISOString() });
+      newN++;
+    }
+  }
+  try { fs.mkdirSync(path.dirname(MS_FILE), { recursive: true }); fs.writeFileSync(MS_FILE, JSON.stringify(ms, null, 2)); } catch {}
+  return { ms, newN, games };
+}
+
 // 顶级赢家风格榜
 function fmtProfiles(profiles) {
   const lines = [
@@ -1174,10 +1248,11 @@ async function pollOnce() {
     const SHARP_ON = RESULTS_ON && (process.env.SHARP_ENABLED || "on") !== "off";
     if (SHARP_ON && now - (d.sharps || 0) >= Number(process.env.SHARP_MIN || 360) * 60000) {
       try {
-        const sports = (process.env.SHARP_SPORTS || "mlb,tennis").split(",").map((s) => s.trim()).filter(Boolean);
-        const { games } = await multiSportSentiment(sports, { topMarkets: Number(process.env.SHARP_TOP || 8), windowMs: Number(process.env.SHARP_WINDOW_H || 504) * 3600 * 1000 });
-        const text = fmtMultiSport(games);
-        if (text) { await send(text); d.sharps = now; console.log(`  → 已推全体育聪明钱(${games.length}场)`); }
+        const { ms, newN, games } = await trackMultiSport(); // 一次扫描搞定: 快照 + 捕捉赛前信号 + 结算已解析市场
+        const text = fmtMultiSport((games || []).slice(0, Number(process.env.SHARP_TOP || 8)));
+        if (text) { await send(text); console.log(`  → 已推全体育聪明钱(${games.length}场)`); }
+        if (newN > 0) { const st = fmtMultiSportStats(ms); if (st) await send(st); console.log(`  → 全体育新结算 ${newN} 项`); }
+        d.sharps = now;
       } catch (e) {
         console.error("全体育聪明钱出错:", e.message);
       }
@@ -1260,6 +1335,14 @@ async function main() {
     const text = fmtQuote(qm);
     if (process.argv.includes("--dry")) console.log(text.replace(/<[^>]+>/g, ""));
     else { await send(text); console.log(`✅ 已推送报价 → ${CHANNEL}`); }
+    return;
+  }
+
+  if (process.argv.includes("--sharps-results")) {
+    const { ms, newN } = await trackMultiSport();
+    console.log(`全体育追踪: 已锁定 ${Object.keys(ms.predictions).length} 场 · 已结算 ${ms.settled.length} 项(本次新增 ${newN})`);
+    const text = fmtMultiSportStats(ms);
+    console.log(text ? text.replace(/<[^>]+>/g, "") : "(还没有已结算的全体育市场; 世界杯以外多为远期赛, 需等其解析)");
     return;
   }
 

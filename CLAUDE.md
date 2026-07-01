@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V6.2**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V6.3**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -65,7 +65,8 @@ node index.js          # 命令行信号报告
 | 📌 置顶①策略战绩(自动更新) | 有新结算时 + 每≥30分钟刷新 | ✅ | ✅ |
 | 📅 置顶②即将开赛预判(自动更新) | 每≥30分钟刷新(只列 state=pre) | ✅ | ✅(世界杯) |
 | 🏁 置顶③今日赛果(自动更新) | 有新结算时 + 每≥30分钟刷新(按最近比赛日HKT分组) | ❌ | ✅(世界杯) |
-| 🎯 近期聪明钱·全体育（世界杯以外 MLB/网球…每场💎赢家vs🐋最大注分歧） | 每 `SHARP_MIN` 分(默6h) | ❌ | ✅(仅体育) |
+| 🎯 近期聪明钱·全体育（世界杯以外 MLB/网球…💎赢家vs🐋最大注 + 大小球/让球） | 每 `SHARP_MIN` 分(默6h) | ❌ | ✅(仅体育) |
+| 🎯 全体育战绩（MLB/网球 前向 ROI，按市场解析结算，胜负/大小球/让球×跟💎/跟大户） | 有新结算时(随 sharps digest) | ❌ | ✅(仅体育) |
 | 🐋/👑 逐条实时信号 | 每轮 | ✅ | ❌(已关，整合进持仓分析) |
 | 🏆 全站顶级赢家风格榜 | 每天 | ✅ | ❌(跑题，已关) |
 
@@ -86,7 +87,7 @@ node index.js          # 命令行信号报告
 | `SIGNALS_ENABLED` | on | 逐条信号开关；世界杯=off |
 | `PROFILES_ENABLED` | on | 全站赢家风格榜；世界杯=off |
 | `DIGESTS` | on | 持仓/风格摘要总开关 |
-| `SHARP_ENABLED` / `SHARP_SPORTS` / `SHARP_MIN` / `SHARP_WINDOW_H` / `SHARP_TOP` | on / `mlb,tennis` / 360 / 504 / 8 | 全体育聪明钱digest：开关 / 扫哪些tag / 间隔(分) / 只看未来N小时开赛 / 最多几场。`node bot.js --sharps [--dry]` 手动跑 |
+| `SHARP_ENABLED` / `SHARP_SPORTS` / `SHARP_MIN` / `SHARP_WINDOW_H` / `SHARP_TOP` / `SHARP_TRACK_TOP` | on / `mlb,tennis` / 360 / 504 / 8 / 15 | 全体育聪明钱digest：开关 / 扫哪些tag / 间隔(分) / 只看未来N小时开赛 / 显示几场 / 前向追踪锁定几场。`--sharps [--dry]` 手动快照; `--sharps-results` 前向战绩; `--quote <slug> [额]` 成本报价 |
 
 机密(在 `.env`)：`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHANNEL`(加密)、`SPORTS_BOT_TOKEN`/`SPORTS_CHANNEL`(世界杯)。
 
@@ -97,7 +98,9 @@ node index.js          # 命令行信号报告
 - `digest_<tag>.json` — 持仓/风格摘要上次推送时间戳
 - `results_<tag>.json` — 赛果追踪：`predictions`(赛前锁定, 含 `eventSlug`+`totals`大小球+`spread`让球{favTeam,dogTeam,side(cover/not),pct,coverPrice,notPrice,winnerSide,winnerPnl}+`proWinner`胜负盘最赚+`clv`收盘线价值+`clvCaptured`) / `settled`(含 `ou`/`spread`结果) / `strategies`(胜负盘) / `ouStrategies`+`ouSettled`(大小球) / `spreadStrategies`+`spreadSettled`(让球 followWinner/followBig/highConsensus + cover/not分段) / `pinnedMsgId` / `trackUpdatedAt`
 
-**重置追踪记录**：删对应 `results_<tag>.json`（干净起跑；现无已结算数据时无损失）。
+- `results_multisport.json` — 全体育(MLB/网球…)前向追踪：`predictions[eventSlug]`(赛前锁定, 每类 {id(gamma市场id), outcomes, prices, backedIdx, winnerIdx, settled}) / `strategies`(ml/ou/spread × followBig/followWinner 各 bets/wins/profit) / `settled`(逐项)。**按 Polymarket 市场解析结算**(`getMarketResolution`, 免 ESPN 队名匹配), 只锁"有开赛时间且未开赛"的真赛前场。
+
+**重置追踪记录**：删对应 `results_<tag>.json` / `results_multisport.json`（干净起跑；现无已结算数据时无损失）。
 
 ## 8. 数据源
 
@@ -116,6 +119,7 @@ node index.js          # 命令行信号报告
 
 **CLV 收盘线价值(V5.6，V6.1扩)**：`getClosingPrices` 临近开赛(≤90分钟)抓一次价，存 `prediction.clv`(含 `ml`胜负/`ou`大小球/`spread`让球 三条)，算 `近开赛价 − 入场价`。**正 CLV = 买在好价位 = 有 edge 最快的领先指标(不必等赛果)**。置顶+`--results` 显示三线均CLV+赢线率。
 **多体育 O/U/让球(V6.1)**：`multiSportSentiment` 里非世界杯(MLB/网球)每场除胜负盘外，用 `sideSignal(mk)` 从该场已有 markets 找**主 O/U 盘 + 主让球盘**(成交量最高)算大户偏向+💎赢家，显示在「🎯 近期聪明钱·全体育」里。子盘太薄(<门槛)自动省略。窗口默认放宽到21天(MLB 有量的对局多在2~3周内)。
+**多体育前向 ROI 追踪(V6.3)**：`trackMultiSport` 锁定赛前信号(存 gamma 市场 id + backed/winner outcome + 入场价) → 开赛后用 `getMarketResolution(id)` 拿赢家 outcome → 按下注价算 ROI(胜负/大小球/让球 × 跟💎/跟大户)。**用 Polymarket 解析结算, 不接 ESPN**(uniform、免球队/球员名匹配)。`--sharps-results` 查看; digest 有新结算自动推「🎯 全体育战绩」。⚠️只锁"有开赛时间且未开赛"的场杜绝 look-ahead。
 
 ## 9.5 个人自用转型 & ROI 路线（V5.6 起）
 
