@@ -667,10 +667,14 @@ async function winnerRecentBets(opts = {}) {
   const minUsd = opts.minUsd || Number(process.env.WINNER_MIN_BET || 2000);
   const perWallet = opts.perWallet || 3;
   const cutoff = Date.now() / 1000 - hours * 3600;
-  const winners = await buildSportsWinners(opts).catch(() => []);
+  const active = await buildSportsWinners(opts).catch(() => []);
+  // 稳定 watchlist: 已跟踪地址(记分卡里的)优先且必扫, 再补当周活跃赢家 → 已发现的地址不会因掉出活跃榜而断更
+  const tracked = (opts.trackedWallets || []).map((t) => ({ wallet: t.wallet, name: t.name, profit: t.pnl != null ? t.pnl : t.profit }));
+  const seenW = new Set(); const winners = [];
+  for (const w of [...tracked, ...active]) { const k = (w.wallet || "").toLowerCase(); if (!k || seenW.has(k)) continue; seenW.add(k); winners.push(w); }
   const isSport = (x) => /fifwc|world.?cup|\bmlb\b|baseball|tennis|wimbledon|\batp\b|\bwta\b|\bnba\b|\bnhl\b|\bnfl\b|soccer|\bucl\b|\bepl\b|laliga| vs\.? /i.test(x);
   const out = [];
-  await mapLimit(winners.slice(0, 40), CONFIG.WALLET_CONCURRENCY, async (w) => {
+  await mapLimit(winners.slice(0, opts.scanMax || 60), CONFIG.WALLET_CONCURRENCY, async (w) => {
     const act = await getJSON(`${DATA}/activity?user=${w.wallet}&limit=100`).catch(() => null);
     if (!Array.isArray(act)) return;
     const seen = new Set(); let taken = 0;
@@ -1130,9 +1134,34 @@ async function getMarketResolution(gammaId) {
   return wi >= 0 ? outs[wi] : null;
 }
 
+// 个人台账用: 按 eventSlug + outcome 名找到对应市场(主事件 + more-markets 都搜), 返回 gamma市场id + 精确outcome
+async function findBetMarket(eventSlug, outcomeQuery) {
+  const q = String(outcomeQuery || "").toLowerCase().trim();
+  const grab = async (slug) => { const a = await getJSON(`${GAMMA}/events?slug=${slug}`).catch(() => null); const e = Array.isArray(a) ? a[0] : null; return (e && e.markets) || []; };
+  const mkts = [...(await grab(eventSlug)), ...(await grab(`${eventSlug}-more-markets`))];
+  for (const m of mkts) {
+    if (!m.id) continue;
+    let outs = []; try { outs = JSON.parse(m.outcomes || "[]"); } catch {}
+    const hit = outs.find((o) => String(o).toLowerCase() === q) || outs.find((o) => String(o).toLowerCase().includes(q));
+    if (hit) return { gammaId: m.id, outcome: hit, question: m.question, conditionId: m.conditionId };
+  }
+  return null;
+}
+
+// 取市场当前状态: 是否已解析(closed) + 各 outcome 现价 + (已解析则)赢家 outcome。一次拉取兼做"刷新收盘价"与"结算"
+async function getMarketNow(gammaId) {
+  const m = await getJSON(`${GAMMA}/markets/${gammaId}`).catch(() => null);
+  if (!m) return null;
+  let outs = [], px = [];
+  try { outs = JSON.parse(m.outcomes || "[]"); px = JSON.parse(m.outcomePrices || "[]"); } catch {}
+  const price = {}; outs.forEach((o, i) => (price[o] = Number(px[i])));
+  const wi = px.findIndex((p) => Number(p) >= 0.99);
+  return { closed: !!m.closed, price, winner: m.closed && wi >= 0 ? outs[wi] : null };
+}
+
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, buildSportsWinners, winnerRecentBets, getExecQuote, quoteMatch, cryptoPrediction, getMarketResolution,
+  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, buildSportsWinners, winnerRecentBets, getExecQuote, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket,
   fmtUSD, CONFIG, isDirectional,
 };

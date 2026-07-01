@@ -10,12 +10,11 @@ set MIN_NOTIONAL=5000
 set SIGNAL_MIN_PNL=20000
 set WATCHLIST_MIN_PNL=50000
 set WATCHLIST_MIN_NOTIONAL=500
-rem positioning snapshot independent low threshold (stats only, not signals)
 set POSITIONING_MIN_NOTIONAL=500
-rem cadence: positioning 1h, all-sports sharps 3h
-set POSITIONING_MIN=60
-set SHARP_MIN=180
-rem winner latest-bets feed (proven winners' recent directional bets, tx-deduped so no repeats)
+rem declutter: focus is the winner pin + scorecard pin; drop the hourly positioning message + slow all-sports to 6h
+set POSITIONING_ENABLED=off
+set SHARP_MIN=360
+rem winner latest-bets pin + per-wallet scorecard, refresh every 60 min
 set WINNER_MIN=60
 set WINNER_HOURS=24
 set WINNER_MIN_BET=2000
@@ -25,8 +24,8 @@ set PROFILES_ENABLED=off
 rem turn off per-signal spam; consolidate into the periodic digests
 set SIGNALS_ENABLED=off
 echo ==========================================
-echo   Polaris Radar V6.9 - World Cup (personal DM)
-echo   winners' latest bets 1h - positioning 1h - sharps 3h
+echo   Polaris Radar V7.0 - World Cup (personal DM)
+echo   focus: winner-bets pin + per-wallet scorecard
 echo   Close this window to STOP.
 echo ==========================================
 echo.

@@ -106,7 +106,8 @@ node index.js          # 命令行信号报告
 - `results_multisport.json` — 全体育(MLB/网球…)前向追踪：`predictions[eventSlug]`(赛前锁定, 每类 {id(gamma市场id), outcomes, prices, backedIdx, winnerIdx, settled}) / `strategies`(ml/ou/spread × followBig/followWinner 各 bets/wins/profit) / `settled`(逐项)。**按 Polymarket 市场解析结算**(`getMarketResolution`, 免 ESPN 队名匹配), 只锁"有开赛时间且未开赛"的真赛前场。
 
 - `wallet_scorecard.json` — **每钱包前向记分卡**(V6.9)：`wallets[addr]`= {name, pnl, bets:{[cid+outcome]:{eventSlug,gammaId,outcome,entry(跟随者当前能成交价),entryTs,kickoffMs,last(最后观测价,CLV用),settled,win,profit,clv}}}。捕捉赢家赛前出手→赛后 `getMarketResolution` 结算→每地址 ROI/命中/均CLV。**只锁真赛前(kickoffMs>now)杜绝 look-ahead**。`node bot.js --scorecard` 查看。
-- `winners_sports.json` — 体育赢家名单缓存(12h,`buildSportsWinners`)
+- `winners_sports.json` — 体育赢家名单缓存(12h,`buildSportsWinners`)。⚠️记分卡地址会**并回扫描集**(`trackedWallets`)持续跟踪,不受此12h名单漂移影响(V7.0 修)。
+- `my_ledger.json` — **个人下注台账**(V7.0)：你真实下的注 {eventSlug,gammaId,outcome,price,stake,settled,win,pnl}。`node bot.js --log-bet <eventSlug> <outcome> <price> <stake>` 记录;`--ledger` 结算+看已实现ROI;digest 每轮自动结算。
 
 **重置追踪记录**：删对应 `results_<tag>.json` / `results_multisport.json` / `wallet_scorecard.json`（干净起跑；现无已结算数据时无损失）。
 
@@ -134,7 +135,7 @@ node index.js          # 命令行信号报告
 项目从「卖铲子内容产品」转为**个人自用工具**。⚠️ 立项结论仍是「散户数据无可交易 edge」，转去下注=推翻地基，故纪律更严。**Kelly 不创造 ROI，只放大已有 edge；顺序必须是先证明 edge、再控成本、最后才 Kelly**：
 1. **✅ CLV 追踪(V5.6 已建)** — 最快判断有没有 edge。
 2. **✅ 成本感知 ROI(V6.2 已建)** — `getExecQuote`/`quoteMatch` 用 `clob/book` 算真实点差/深度/VWAP 滑点，`node bot.js --quote <slug> [额]` 报"能成交的价"+点差/流动性闸门。(TODO:自动挂到 preview)
-3. **❌ 个人下注台账** — 记真实每注，跟踪已实现 ROI vs 预测。
+3. **✅ 个人下注台账(V7.0 已建)** — `--log-bet`/`--ledger` 记真实每注 + 自动结算 + 已实现 ROI/胜率。存 `my_ledger.json`。
 4. **❌ 分数 Kelly(¼~½)** — 仅在 1-3 成立后，按实测 edge/方差定仓，叠单注上限+流动性上限。GIGO。
 > 自用解锁：可显示裸地址/订单簿/点差(不再为"干净独家"美化)。**非投资/博彩建议；任何投入当可全亏的风险资金。**
 

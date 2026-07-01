@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, winnerRecentBets, quoteMatch, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, winnerRecentBets, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V6.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V7.0"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1168,6 +1168,8 @@ async function trackMultiSport() {
 // ==== 每钱包前向记分卡: 找出"跟哪几个地址真能赚"(跟随者视角, 按能成交价算 ROI + CLV) ====
 const SC_FILE = path.join(__dirname, "data", "wallet_scorecard.json");
 function loadScorecard() { try { return JSON.parse(fs.readFileSync(SC_FILE, "utf8")); } catch { return { wallets: {} }; } }
+// 稳定 watchlist: 记分卡里已跟踪过的地址(持续跟踪, 不因掉出活跃榜而断更)
+function trackedWalletsFromScorecard() { const sc = loadScorecard(); return Object.entries(sc.wallets || {}).map(([wallet, W]) => ({ wallet, name: W.name, pnl: W.pnl })); }
 function saveScorecard(sc) { try { fs.mkdirSync(path.dirname(SC_FILE), { recursive: true }); fs.writeFileSync(SC_FILE, JSON.stringify(sc, null, 2)); } catch {} }
 // 锁定赢家赛前出手(按跟随者当前能成交价) → 每轮刷新近开赛价(CLV 用) → 赛后按市场解析结算
 async function trackScorecard(raw) {
@@ -1186,17 +1188,24 @@ async function trackScorecard(raw) {
     if (!W.bets[key]) { W.bets[key] = { eventSlug: b.eventSlug, gammaId: b.gammaId, outcome: b.outcome, entry: p, entryTs: Math.round(now / 1000), kickoffMs: b.kickoffMs, last: p, settled: false }; touched++; }
     else if (!W.bets[key].settled) W.bets[key].last = p; // 最后观测价 ≈ 收盘价, 用来算 CLV
   }
-  // 2) 结算(开赛后 · 未结算 · 有 gammaId)
+  // 2) 临近开赛刷新收盘价(修 CLV) + 结算 —— 一次 getMarketNow 兼做两件事
+  const REFRESH_MS = 3 * 3600 * 1000; // 开赛前3小时内的未结算注, 每轮用真实盘口价刷新 last(≈收盘价)
   for (const wallet in sc.wallets) {
     for (const key in sc.wallets[wallet].bets) {
       const bt = sc.wallets[wallet].bets[key];
-      if (bt.settled || bt.gammaId == null || (bt.kickoffMs && now < bt.kickoffMs)) continue;
-      const winnerName = await getMarketResolution(bt.gammaId).catch(() => null);
-      if (!winnerName) continue;
-      bt.win = bt.outcome === winnerName;
-      bt.profit = bt.win ? (1 - bt.entry) / bt.entry : -1; // 按跟随者入场价算
-      bt.clv = bt.last != null && bt.entry != null ? +(bt.last - bt.entry).toFixed(4) : null;
-      bt.settled = true; touched++;
+      if (bt.settled || bt.gammaId == null) continue;
+      const nearKick = bt.kickoffMs && now >= bt.kickoffMs - REFRESH_MS; // 临近开赛或已开赛
+      if (!nearKick) continue; // 太早不动(省 API), 等临近再刷/结算
+      const mk = await getMarketNow(bt.gammaId).catch(() => null);
+      if (!mk) continue;
+      const p = mk.price[bt.outcome];
+      if (p > 0 && p < 1) bt.last = p; // 刷新收盘价(最后一次赛前刷新 ≈ 真收盘价)
+      if (mk.closed && mk.winner) { // 已解析 → 结算
+        bt.win = bt.outcome === mk.winner;
+        bt.profit = bt.win ? (1 - bt.entry) / bt.entry : -1; // 按跟随者入场价算
+        bt.clv = bt.last != null && bt.entry != null ? +(bt.last - bt.entry).toFixed(4) : null;
+        bt.settled = true; touched++;
+      }
     }
   }
   saveScorecard(sc);
@@ -1241,6 +1250,38 @@ async function postOrUpdateScorecardPin(sc, state) {
   if (state.scorecardPinId && (await editMsg(state.scorecardPinId, text))) return;
   const id = await sendReturn(text);
   if (id) { state.scorecardPinId = id; await pinMsg(id); }
+}
+
+// ==== 个人下注台账: 记录你真实下的每一注 → 赛后自动结算 → 已实现 ROI(上 Kelly 前的第3步) ====
+const LEDGER_FILE = path.join(__dirname, "data", "my_ledger.json");
+function loadLedger() { try { return JSON.parse(fs.readFileSync(LEDGER_FILE, "utf8")); } catch { return { bets: [] }; } }
+function saveLedger(l) { try { fs.mkdirSync(path.dirname(LEDGER_FILE), { recursive: true }); fs.writeFileSync(LEDGER_FILE, JSON.stringify(l, null, 2)); } catch {} }
+// 结算未结算的注(市场已解析则算输赢)
+async function settleLedger(l) {
+  let n = 0;
+  for (const b of l.bets || []) {
+    if (b.settled || b.gammaId == null) continue;
+    const mk = await getMarketNow(b.gammaId).catch(() => null);
+    if (!mk || !mk.closed || !mk.winner) continue;
+    b.win = b.outcome === mk.winner;
+    b.pnl = b.win ? b.stake * (1 - b.price) / b.price : -b.stake; // 赢: 赚 stake*(1-price)/price; 输: 亏 stake
+    b.settled = true; n++;
+  }
+  if (n) saveLedger(l);
+  return n;
+}
+function fmtLedgerText(l) {
+  const bets = l.bets || [];
+  const done = bets.filter((b) => b.settled), open = bets.filter((b) => !b.settled);
+  const staked = done.reduce((s, b) => s + b.stake, 0);
+  const pnl = done.reduce((s, b) => s + (b.pnl || 0), 0);
+  const wins = done.filter((b) => b.win).length;
+  const lines = ["📒 我的下注台账", `已结算 ${done.length} 注 · 未结算 ${open.length} 注`];
+  if (done.length) lines.push(`总投入 $${Math.round(staked)} · 已实现盈亏 ${pnl >= 0 ? "+" : ""}$${Math.round(pnl)} · ROI ${staked ? (pnl / staked * 100 >= 0 ? "+" : "") + Math.round(pnl / staked * 100) + "%" : "-"} · 胜率 ${done.length ? Math.round(wins / done.length * 100) : 0}%`);
+  lines.push("");
+  for (const b of open.slice(-12)) lines.push(`  ⏳ ${b.eventSlug} · ${b.outcome} @${Math.round(b.price * 100)}¢ · $${b.stake}`);
+  for (const b of done.slice(-12)) lines.push(`  ${b.win ? "✅" : "❌"} ${b.eventSlug} · ${b.outcome} @${Math.round(b.price * 100)}¢ · $${b.stake} → ${b.pnl >= 0 ? "+" : ""}$${Math.round(b.pnl)}`);
+  return lines.join("\n");
 }
 
 // 顶级赢家风格榜
@@ -1358,7 +1399,7 @@ async function pollOnce() {
   if (DIGESTS) {
     const d = loadDigest();
     const now = Date.now();
-    if (now - (d.positioning || 0) >= POSITIONING_MIN * 60000) {
+    if ((process.env.POSITIONING_ENABLED || "on") !== "off" && now - (d.positioning || 0) >= POSITIONING_MIN * 60000) {
       try {
         const { markets, threshold } = await marketSentiment({ topMarkets: 5 });
         if (markets.length) {
@@ -1387,9 +1428,10 @@ async function pollOnce() {
     const WB_ON = RESULTS_ON && (process.env.WINNER_BETS_ENABLED || "on") !== "off";
     if (WB_ON && now - (d.winnerBets || 0) >= Number(process.env.WINNER_MIN || 90) * 60000) {
       try {
-        const { list, raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) });
+        const { list, raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24), trackedWallets: trackedWalletsFromScorecard() });
         if (list.length) { await postOrUpdateWinnerPin(list, d); console.log(`  → 已更新赢家最新出手置顶(${list.length}笔)`); }
         try { const n = await trackScorecard(raw); if (n) console.log(`  → 记分卡: 新捕捉/结算 ${n}`); await postOrUpdateScorecardPin(loadScorecard(), d); } catch (e) { console.error("记分卡出错:", e.message); }
+        try { const l = loadLedger(); if ((l.bets || []).some((b) => !b.settled)) { const sn = await settleLedger(l); if (sn) console.log(`  → 台账新结算 ${sn} 注`); } } catch {}
         d.winnerBets = now;
       } catch (e) {
         console.error("赢家最新出手出错:", e.message);
@@ -1477,7 +1519,7 @@ async function main() {
   }
 
   if (process.argv.includes("--winner-bets")) {
-    const { list, raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) });
+    const { list, raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24), trackedWallets: trackedWalletsFromScorecard() });
     try { await trackScorecard(raw); } catch (e) { console.error("记分卡出错:", e.message); }
     const text = fmtWinnerBets(list);
     if (process.argv.includes("--dry")) console.log(text ? text.replace(/<[^>]+>/g, "") : "(近期无赢家方向性大注; 可调 WINNER_HOURS/WINNER_MIN_BET/WINNER_MIN_PNL)");
@@ -1488,7 +1530,7 @@ async function main() {
 
   if (process.argv.includes("--scorecard")) {
     // 先跑一轮捕捉/结算(用当前赢家出手), 再打印每钱包前向记分卡
-    try { const { raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) }); await trackScorecard(raw); } catch (e) { console.error("记分卡刷新出错:", e.message); }
+    try { const { raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24), trackedWallets: trackedWalletsFromScorecard() }); await trackScorecard(raw); } catch (e) { console.error("记分卡刷新出错:", e.message); }
     const sc = loadScorecard();
     const rows = scorecardRows(sc);
     console.log(`每钱包前向记分卡（跟随者视角 · 按能成交价算 · 已锁定 ${rows.reduce((s, r) => s + r.open, 0)} 未结算 / ${rows.reduce((s, r) => s + r.n, 0)} 已结算）`);
@@ -1497,6 +1539,31 @@ async function main() {
       const perf = r.n ? `${r.n}结算 命中${r.wr}% ROI ${r.roi >= 0 ? "+" : ""}${r.roi}% 均CLV ${r.clv != null ? (r.clv >= 0 ? "+" : "") + r.clv + "pt" : "-"}` : "尚无结算";
       console.log(`  ${r.wallet.slice(0, 8)}… ${(r.name || "").slice(0, 12).padEnd(12)} 历史$${Math.round(r.pnl / 1e6 * 10) / 10}M | ${perf} | 未结算${r.open}`);
     }
+    return;
+  }
+
+  if (process.argv.includes("--log-bet")) {
+    // 用法: node bot.js --log-bet <eventSlug> <outcome...> <price0~1> <stake美元>
+    const i = process.argv.indexOf("--log-bet");
+    const rest = process.argv.slice(i + 1).filter((x) => x !== "--dry");
+    if (rest.length < 4) { console.log("用法: node bot.js --log-bet <eventSlug> <outcome> <price(0~1)> <stake$>\n例:  node bot.js --log-bet fifwc-fra-swe-2026-06-30 France 0.55 100"); return; }
+    const stake = Number(rest[rest.length - 1]), price = Number(rest[rest.length - 2]);
+    const eventSlug = rest[0], outcomeQ = rest.slice(1, rest.length - 2).join(" ");
+    if (!(price > 0 && price < 1) || !(stake > 0)) { console.log("price 要在 0~1 之间, stake 要 >0"); return; }
+    const mk = await findBetMarket(eventSlug, outcomeQ).catch(() => null);
+    if (!mk) { console.log(`找不到 ${eventSlug} 里名为 "${outcomeQ}" 的下注方向。检查 eventSlug 和 outcome 拼写`); return; }
+    const l = loadLedger();
+    l.bets.push({ eventSlug, gammaId: mk.gammaId, outcome: mk.outcome, question: mk.question, price, stake, ts: Math.round(Date.now() / 1000), settled: false });
+    saveLedger(l);
+    console.log(`✅ 已记录: ${eventSlug} · ${mk.outcome} @${Math.round(price * 100)}¢ · $${stake}（市场: ${mk.question}）。共 ${l.bets.length} 注`);
+    return;
+  }
+
+  if (process.argv.includes("--ledger")) {
+    const l = loadLedger();
+    const n = await settleLedger(l);
+    if (n) console.log(`(本次新结算 ${n} 注)`);
+    console.log(fmtLedgerText(l));
     return;
   }
 
