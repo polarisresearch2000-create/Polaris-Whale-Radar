@@ -3089,6 +3089,192 @@
         "side": "home",
         "pnl": 3400599
       }
+    },
+    "760493": {
+      "match": "Belgium vs Senegal",
+      "home": "Belgium",
+      "away": "Senegal",
+      "kickoffMs": 1782936000000,
+      "whaleSide": "home",
+      "consensusPct": 0.7948068476949162,
+      "bigBettor": {
+        "wallet": "0x56b4729cae227ba1cbeb35e4d8d219f1c6fba84b",
+        "side": "home",
+        "usd": 132144.5356,
+        "entryPrice": 0.44,
+        "betTs": 1782800228,
+        "leadMin": 2263
+      },
+      "proWinner": {
+        "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+        "side": "away",
+        "pnl": 13264149
+      },
+      "sides": {
+        "home": {
+          "usd": 216437.98059094988,
+          "price": 0.455
+        },
+        "draw": {
+          "usd": 7425.22299799422,
+          "price": 0.295
+        },
+        "away": {
+          "usd": 48451.98999382289,
+          "price": 0.255
+        }
+      },
+      "eventSlug": "fifwc-bel-sen-2026-07-01",
+      "totals": {
+        "line": 2.5,
+        "side": "Over",
+        "pct": 75,
+        "overUsd": 77689,
+        "underUsd": 26513,
+        "overPrice": 0.485,
+        "underPrice": 0.515,
+        "winnerSide": "Under",
+        "winnerPnl": 13264149
+      },
+      "spread": {
+        "line": 1.5,
+        "favTeam": "Senegal",
+        "dogTeam": "Belgium",
+        "side": "not",
+        "pct": 100,
+        "coverUsd": 0,
+        "notUsd": 502,
+        "coverPrice": 0.095,
+        "notPrice": 0.905,
+        "winnerSide": null,
+        "winnerPnl": null
+      },
+      "state": "pre",
+      "capturedAt": "2026-07-01T07:47:59.010Z"
+    },
+    "760494": {
+      "match": "United States vs Bosnia-Herzegovina",
+      "home": "United States",
+      "away": "Bosnia-Herzegovina",
+      "kickoffMs": 1782950400000,
+      "whaleSide": "home",
+      "consensusPct": 0.9301039561543507,
+      "bigBettor": {
+        "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+        "side": "home",
+        "usd": 58245.83999999999,
+        "entryPrice": 0.7199999999999999,
+        "betTs": 1782615613,
+        "leadMin": 5580
+      },
+      "proWinner": {
+        "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+        "side": "home",
+        "pnl": 13264149
+      },
+      "sides": {
+        "home": {
+          "usd": 202774.46893200005,
+          "price": 0.705
+        },
+        "draw": {
+          "usd": 9954.2508,
+          "price": 0.195
+        },
+        "away": {
+          "usd": 5283.974,
+          "price": 0.105
+        }
+      },
+      "eventSlug": "fifwc-usa-bih-2026-07-01",
+      "totals": {
+        "line": 2.5,
+        "side": "Over",
+        "pct": 95,
+        "overUsd": 75398,
+        "underUsd": 3642,
+        "overPrice": 0.555,
+        "underPrice": 0.445,
+        "winnerSide": "Over",
+        "winnerPnl": 405071
+      },
+      "spread": {
+        "line": 1.5,
+        "favTeam": "United States",
+        "dogTeam": "Bosnia and Herzegovina",
+        "side": "not",
+        "pct": 91,
+        "coverUsd": 28138,
+        "notUsd": 297098,
+        "coverPrice": 0.445,
+        "notPrice": 0.555,
+        "winnerSide": "not",
+        "winnerPnl": 1483204
+      },
+      "state": "pre",
+      "capturedAt": "2026-07-01T07:48:00.137Z"
+    },
+    "760495": {
+      "match": "England vs Congo DR",
+      "home": "England",
+      "away": "Congo DR",
+      "kickoffMs": 1782921600000,
+      "whaleSide": "home",
+      "consensusPct": 0.5258657958302391,
+      "bigBettor": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "draw",
+        "usd": 110677.1294,
+        "entryPrice": 0.17974424887123436,
+        "betTs": 1782697169,
+        "leadMin": 3741
+      },
+      "proWinner": {
+        "wallet": "0xe549581668a5751c1972d3ad2d1991d900bd2d54",
+        "side": "draw",
+        "pnl": 1181960
+      },
+      "sides": {
+        "home": {
+          "usd": 164759.18805032238,
+          "price": 0.765
+        },
+        "draw": {
+          "usd": 135559.735398,
+          "price": 0.185
+        },
+        "away": {
+          "usd": 12991.410398738233,
+          "price": 0.055
+        }
+      },
+      "eventSlug": "fifwc-eng-cdr-2026-07-01",
+      "totals": {
+        "line": 2.5,
+        "side": "Over",
+        "pct": 63,
+        "overUsd": 188686,
+        "underUsd": 112465,
+        "overPrice": 0.475,
+        "underPrice": 0.525,
+        "winnerSide": "Over",
+        "winnerPnl": 13264149
+      },
+      "spread": {
+        "line": 1.5,
+        "favTeam": "England",
+        "dogTeam": "DR Congo",
+        "side": "not",
+        "pct": 84,
+        "coverUsd": 62768,
+        "notUsd": 324388,
+        "coverPrice": 0.495,
+        "notPrice": 0.505,
+        "winnerSide": "not",
+        "winnerPnl": 13264149
+      },
+      "state": "pre",
+      "capturedAt": "2026-07-01T07:47:57.855Z"
     }
   },
   "settled": [
@@ -5492,14 +5678,14 @@
   },
   "previewDay": "2026-07-01",
   "pinnedMsgId": 17,
-  "trackUpdatedAt": 1782888468250,
+  "trackUpdatedAt": 1782892080138,
   "scoreStats": {
     "n": 28,
     "hit1": 6,
     "hit3": 8
   },
-  "previewUpdatedAt": 1782888468765,
+  "previewUpdatedAt": 1782892080808,
   "previewMsgId": 19,
-  "resultsUpdatedAt": 1782888469425,
+  "resultsUpdatedAt": 1782892081503,
   "resultsMsgId": 21
 }
