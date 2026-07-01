@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V6.1**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V6.2**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -121,7 +121,7 @@ node index.js          # 命令行信号报告
 
 项目从「卖铲子内容产品」转为**个人自用工具**。⚠️ 立项结论仍是「散户数据无可交易 edge」，转去下注=推翻地基，故纪律更严。**Kelly 不创造 ROI，只放大已有 edge；顺序必须是先证明 edge、再控成本、最后才 Kelly**：
 1. **✅ CLV 追踪(V5.6 已建)** — 最快判断有没有 edge。
-2. **❌ 成本感知 ROI** — 用 `clob/book` 算真实点差/深度，报"能成交的价"，加点差/流动性闸门(§11 两个 ❌ TODO)。
+2. **✅ 成本感知 ROI(V6.2 已建)** — `getExecQuote`/`quoteMatch` 用 `clob/book` 算真实点差/深度/VWAP 滑点，`node bot.js --quote <slug> [额]` 报"能成交的价"+点差/流动性闸门。(TODO:自动挂到 preview)
 3. **❌ 个人下注台账** — 记真实每注，跟踪已实现 ROI vs 预测。
 4. **❌ 分数 Kelly(¼~½)** — 仅在 1-3 成立后，按实测 edge/方差定仓，叠单注上限+流动性上限。GIGO。
 > 自用解锁：可显示裸地址/订单簿/点差(不再为"干净独家"美化)。**非投资/博彩建议；任何投入当可全亏的风险资金。**
@@ -141,8 +141,8 @@ node index.js          # 命令行信号报告
 | **同一钱包多地址聚类** | ❌ | 一个人用多地址会虚增"人数/共识"。TODO:按出入金关联或行为指纹聚类 |
 | **赛前才算"提前聪明钱"** | ✅ | 赛果追踪(`capturePredictions`)只在 `state==="pre"` 捕捉；持仓分析(`marketSentiment`)按 `event.startTime` 过滤,**`now>=开赛`整场跳过**(V4.4 修复)。 |
 | **不碰的体育市场** | ✅/更新 | **持仓digest**(`marketSentiment`)仍只统计主胜/平/客胜(SPORTS_NOISE 排除衍生)。但 O/U大小球 与 spread让球 现在有**专用信号+前向追踪**(getTotalsSignal/getSpreadSignal, V5.3/V6.0) —— 因数据证明赢家把80%的钱押在 胜负+大小球+让球。仍不碰:准确比分/球员props/半场/网球分盘(=散户) |
-| **流动性下限** | ❌ | 低流动性盘价格不可信。TODO:`liquidity < $X` 不发(gamma `liquidity` 字段已有) |
-| **价差(spread)上限** | ❌ | spread 过大=没真实价格。TODO:用 `clob/book` 买卖一档算 spread，`> X%` 不发 |
+| **流动性下限** | ✅引擎 | V6.2 `getExecQuote`/`quoteMatch` 用 clob/book 算**能成交价+吃单深度**;`node bot.js --quote <slug> [额]` 报深度不足⚠️。TODO:把闸门自动挂到 preview(现为按需查) |
+| **价差(spread)上限** | ✅引擎 | V6.2 `quoteMatch` 用 clob/book 买卖一档算真实点差 + VWAP 滑点;点差>`SPREAD_MAX_CENTS`(默5¢) 标⚠️點差過大。TODO:自动挂到 preview |
 | **金额门槛** | ✅ | `MIN_NOTIONAL` 等(世界杯=$5000)；持仓快照独立低门槛 `POSITIONING_MIN_NOTIONAL=$500` |
 
 ## 12. 代码审查清单（资金信号专项 · 每次改信号逻辑必查）

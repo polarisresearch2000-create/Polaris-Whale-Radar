@@ -3,6 +3,12 @@
 > 每次迭代升级在此记录并更新版本号。当前版本同步显示在：
 > 启动脚本横幅（`启动世界杯雷达.bat`）+ bot 启动日志（`bot.js` 的 `VERSION`）。
 
+## V6.2 — 2026-07-01
+- **成本感知 ROI(订单簿真实点差/深度 → 能成交的价 + 流动性闸门)** —— 转个人下注、上 Kelly 前的必经一步(§11 两个 ❌ 闸门的引擎):
+  - `getBook(tokenId)`(clob `/book`)+ `execQuote(book, $)`:算最优买/卖价、**点差**、吃单到成交的**加权均价(VWAP)+滑点**、**深度够不够**吃满目标额;`getExecQuote(tokenId,$)` 一步到位。
+  - `quoteMatch(eventSlug, $)`:对一场的 胜负盘/大小球2.5/让球-1.5 每个可下注方向都报价(用 gamma `clobTokenIds` 拿每 outcome 的 token)。
+  - `node bot.js --quote <eventSlug> [美元额] [--dry]` → 「💰 成本感知報價」:每方向 买价+点差+成交均价+滑点,点差>`SPREAD_MAX_CENTS`(默5¢)或吃不满=⚠️慎入。**成本计入才是真 ROI —— 点差/滑点吃掉的就是 edge**。
+
 ## V6.1 — 2026-07-01
 - **CLV 扩展到让球** —— `getClosingPrices` 现在也返回主 -1.5 让球盘的 cover/not 收盘价 + favTeam;CLV 捕捉环按 favTeam 匹配同一场,算 `clv.spread`。`clvStatsLines` 加「讓球」行 → 胜负/大小球/让球 三条都能用"买没买到好价"提前判断有没有 edge。
 - **多体育(MLB/网球)也接 O/U + 让球子信号** —— 新增通用 `sideSignal(mk, minUsd)`(任意 2-outcome 盘的大户偏向 + 💎盈利大户押哪边)。`multiSportSentiment` 对要展示的 topN 场,从该场已有 markets 里找**主 O/U 盘**(成交量最高、非分盘/半场)和**主让球盘**(-1.5/让分),算子信号,显示在「🎯 近期聪明钱·全体育」每场下:`⚽ 大小球: 大戶偏 大 76%（O/U 7.5）` / `⚖️ 讓球: 大戶偏 X +1.5 81%`(带💎赢家✓/⚠️分歧)。子盘太薄自动省略(网球衍生盘多半太薄;MLB 有量的对局齐全)。

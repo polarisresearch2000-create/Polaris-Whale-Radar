@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, quoteMatch, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V6.1"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V6.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1020,6 +1020,29 @@ function fmtMultiSport(games) {
   return cn.join("\n");
 }
 
+// 成本感知报价: 每个可下注方向的 能成交价 + 点差 + 滑点 + 流动性闸门(转个人下注/上 Kelly 前看真实成本)
+function fmtQuote(qm) {
+  const SPREAD_MAX = Number(process.env.SPREAD_MAX_CENTS || 5) / 100; // 点差上限(默认5¢)
+  const c = (x) => (x == null ? "?" : `${Math.round(x * 100)}¢`);
+  const lines = [`💰 <b>成本感知報價</b> · ${esc(qm.eventSlug)}`, `（目標下注 $${qm.notional} · 買價=你要付的價 · 閘門: 點差>${Math.round(SPREAD_MAX * 100)}¢ 或吃不滿=慎入）`, ""];
+  const grp = (title, arr) => {
+    if (!arr || !arr.length) return;
+    lines.push(`<b>${title}</b>`);
+    for (const r of arr) {
+      if (r.none) { lines.push(`   ${esc(r.label)}: 無盤口/無流動性 ⚠️`); continue; }
+      const bad = (!r.depthOk ? " ⚠️深度不足" : "") + (r.spread > SPREAD_MAX ? " ⚠️點差過大" : "");
+      const slip = r.slippage != null ? `${r.slippage >= 0 ? "+" : ""}${Math.round(r.slippage * 100)}¢` : "?";
+      lines.push(`   ${esc(r.label)}: 買 ${c(r.bestAsk)}（點差${c(r.spread)}）→ 成交均價 ${c(r.fillPrice)}（滑點${slip}）${bad || " ✅"}`);
+    }
+    lines.push("");
+  };
+  grp("胜负盘", qm.moneyline);
+  grp("大小球 O/U 2.5", qm.ou);
+  grp("让球 -1.5", qm.spread);
+  lines.push("🔭 成本已计入才是真 ROI — 点差/滑点吃掉的就是你的 edge");
+  return lines.join("\n");
+}
+
 // 顶级赢家风格榜
 function fmtProfiles(profiles) {
   const lines = [
@@ -1225,6 +1248,18 @@ async function main() {
     await postOrUpdateTrackRecord(r);
     saveResults(r);
     console.log(`📌 已刷新置顶战绩 → ${CHANNEL} (msgId ${r.pinnedMsgId})`);
+    return;
+  }
+
+  if (process.argv.includes("--quote")) {
+    const i = process.argv.indexOf("--quote");
+    const slug = process.argv[i + 1];
+    const notional = Number(process.argv[i + 2]) || 500;
+    if (!slug || slug.startsWith("--")) { console.log("用法: node bot.js --quote <eventSlug> [美元额] [--dry]"); return; }
+    const qm = await quoteMatch(slug, notional);
+    const text = fmtQuote(qm);
+    if (process.argv.includes("--dry")) console.log(text.replace(/<[^>]+>/g, ""));
+    else { await send(text); console.log(`✅ 已推送报价 → ${CHANNEL}`); }
     return;
   }
 

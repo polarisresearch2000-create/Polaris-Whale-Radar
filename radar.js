@@ -30,6 +30,7 @@ const GAMMA = "https://gamma-api.polymarket.com";
 const DATA = "https://data-api.polymarket.com";
 const PNL = "https://user-pnl-api.polymarket.com";
 const LB = "https://lb-api.polymarket.com";
+const CLOB = "https://clob.polymarket.com";
 // 赛道(可配置)：crypto / fifa-world-cup / sports / politics ... 默认 crypto
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const WL_FILE = path.join(__dirname, "data", `watchlist_${TAG}.json`); // 每个赛道独立缓存
@@ -915,6 +916,58 @@ async function getClosingPrices(eventSlug, homeTokens, awayTokens) {
   return out;
 }
 
+// ==== 成本感知: 订单簿真实点差/深度 → "能成交的价" + 流动性闸门 ====
+// clob /book?token_id= 返回 {bids:[{price,size}], asks:[{price,size}]}(全档)。每个 outcome 有 clobTokenIds。
+async function getBook(tokenId) {
+  const b = await getJSON(`${CLOB}/book?token_id=${tokenId}`).catch(() => null);
+  if (!b) return null;
+  const bids = (b.bids || []).map((x) => ({ price: Number(x.price), size: Number(x.size) })).filter((x) => x.price > 0 && x.size > 0);
+  const asks = (b.asks || []).map((x) => ({ price: Number(x.price), size: Number(x.size) })).filter((x) => x.price > 0 && x.size > 0);
+  return { bids, asks };
+}
+// 给定订单簿 + 想买入的美元额, 算: 最优买/卖价、点差、吃单到成交的加权均价(VWAP)与滑点、深度是否够
+function execQuote(book, notionalUsd) {
+  if (!book || !book.asks.length || !book.bids.length) return null;
+  const bestAsk = Math.min(...book.asks.map((a) => a.price));
+  const bestBid = Math.max(...book.bids.map((b) => b.price));
+  const mid = (bestAsk + bestBid) / 2;
+  const spread = bestAsk - bestBid;
+  const asks = [...book.asks].sort((a, b) => a.price - b.price); // 从最便宜的卖单开始吃
+  let spent = 0, shares = 0;
+  for (const lvl of asks) {
+    const lvlCost = lvl.price * lvl.size;
+    if (spent + lvlCost >= notionalUsd) { shares += (notionalUsd - spent) / lvl.price; spent = notionalUsd; break; }
+    spent += lvlCost; shares += lvl.size;
+  }
+  const depthOk = spent >= notionalUsd - 1e-6;
+  const fillPrice = shares > 0 ? spent / shares : null; // 你实际成交的加权均价
+  return { bestBid, bestAsk, mid, spread, spreadPct: mid > 0 ? spread / mid : null, fillPrice, slippage: fillPrice != null ? fillPrice - bestAsk : null, filledUsd: spent, depthOk };
+}
+async function getExecQuote(tokenId, notionalUsd) { const b = await getBook(tokenId); return b ? execQuote(b, notionalUsd) : null; }
+
+// 一场比赛的成本感知报价: 胜负盘/大小球2.5/让球-1.5 每个可下注方向的 能成交价+点差+深度闸门
+async function quoteMatch(eventSlug, notionalUsd = 500) {
+  const parse = (m, f) => { try { return JSON.parse(m[f] || "[]"); } catch { return []; } };
+  const q = async (tid, label) => { const eq = await getExecQuote(tid, notionalUsd); return eq ? { label, ...eq } : { label, none: true }; };
+  const out = { eventSlug, notional: notionalUsd, moneyline: [], ou: [], spread: [] };
+  const ev = await getJSON(`${GAMMA}/events?slug=${eventSlug}`).catch(() => null);
+  const e = Array.isArray(ev) ? ev[0] : null;
+  for (const m of (e && e.markets) || []) {
+    if (/spread|o\/u|over\/under|handicap|exact|corner|halftime|player|inning|set \d/i.test(m.question || "")) continue;
+    const outs = parse(m, "outcomes"), ids = parse(m, "clobTokenIds");
+    const yi = outs.findIndex((o) => /yes/i.test(o));
+    if (yi >= 0 && ids[yi]) out.moneyline.push(await q(ids[yi], (m.question || "").replace(/^Will\s+/i, "").replace(/\?$/, "")));
+    else if (outs.length === 2 && !/^(over|under)/i.test(outs[0]) && ids[0] && ids[1]) { out.moneyline.push(await q(ids[0], outs[0])); out.moneyline.push(await q(ids[1], outs[1])); } // MLB/网球 2-outcome 胜负盘
+  }
+  const arr = await getJSON(`${GAMMA}/events?slug=${eventSlug}-more-markets`).catch(() => null);
+  const e2 = Array.isArray(arr) ? arr[0] : null;
+  const ouMk = ((e2 && e2.markets) || []).find((m) => /:\s*o\/u\s*2\.5\b/i.test(m.question || "") && !/half|1st|2nd/i.test(m.question || ""));
+  if (ouMk) { const outs = parse(ouMk, "outcomes"), ids = parse(ouMk, "clobTokenIds"); for (let i = 0; i < 2 && i < outs.length; i++) if (ids[i]) out.ou.push(await q(ids[i], outs[i])); }
+  const spMk = ((e2 && e2.markets) || []).filter((m) => /^\s*spread:/i.test(m.question || "") && /\(-1\.5\)/.test(m.question || "")).sort((a, b) => (b.volume || 0) - (a.volume || 0))[0];
+  if (spMk) { const outs = parse(spMk, "outcomes"), ids = parse(spMk, "clobTokenIds"); if (ids[0]) out.spread.push(await q(ids[0], `${outs[0]} -1.5(讓)`)); if (ids[1]) out.spread.push(await q(ids[1], `${outs[1]} +1.5(受讓)`)); }
+  return out;
+}
+
 // ---- 加密版预判: 单个二元市场(Yes/No)的巨鲸方向 ----
 async function cryptoPrediction(mk) {
   if (!mk.conditionId) return null;
@@ -982,6 +1035,6 @@ async function getMarketResolution(gammaId) {
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, cryptoPrediction, getMarketResolution,
+  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, getExecQuote, quoteMatch, cryptoPrediction, getMarketResolution,
   fmtUSD, CONFIG, isDirectional,
 };
