@@ -685,20 +685,37 @@ async function winnerRecentBets(opts = {}) {
       const key = (a.conditionId || "") + a.outcome;
       if (seen.has(key)) continue;
       seen.add(key);
-      out.push({ wallet: w.wallet, name: w.name, profit: w.profit, title: a.title, outcome: a.outcome, price, usd, ts: a.timestamp, eventSlug: a.eventSlug || a.slug, tx: a.transactionHash });
+      out.push({ wallet: w.wallet, name: w.name, profit: w.profit, title: a.title, outcome: a.outcome, price, usd, ts: a.timestamp, eventSlug: a.eventSlug || a.slug, tx: a.transactionHash, cid: a.conditionId });
       taken++;
     }
   });
   // 只保留"市场还开着=还能下注"的注: 剔除已完赛/已结算的场(event.closed=true)。取最近80笔再查, 省 API
   const recent = out.sort((a, b) => b.ts - a.ts).slice(0, 80);
   const slugs = [...new Set(recent.map((b) => b.eventSlug).filter(Boolean))];
-  const closedMap = new Map();
+  const evMap = new Map(); // slug → { closed, startMs } (同一次拉取顺便拿开赛时间)
   await mapLimit(slugs, CONFIG.WALLET_CONCURRENCY, async (slug) => {
     const ev = await getJSON(`${GAMMA}/events?slug=${slug}`).catch(() => null);
     const e = Array.isArray(ev) ? ev[0] : null;
-    closedMap.set(slug, e ? !!e.closed : false);
+    evMap.set(slug, { closed: e ? !!e.closed : false, startMs: e && e.startTime ? Date.parse(e.startTime) : null });
   });
-  return recent.filter((b) => !closedMap.get(b.eventSlug)).slice(0, opts.max || 50);
+  const open = recent.filter((b) => {
+    const m = evMap.get(b.eventSlug);
+    if (m && m.closed) return false; // 剔除已完赛/已结算
+    if (m) b.kickoffMs = m.startMs; // 附上开赛时间(供显示)
+    return true;
+  });
+  // 跨钱包去重: 同一(市场+方向)只留一条(取盈利最高的赢家 + 最新时间), 记有几位赢家在押 → 看到更多不同场次
+  const byKey = new Map();
+  for (const b of open) {
+    const key = (b.cid || b.eventSlug) + "|" + b.outcome;
+    const ex = byKey.get(key);
+    if (!ex) { byKey.set(key, { ...b, count: 1, maxUsd: b.usd }); continue; }
+    ex.count++;
+    ex.maxUsd = Math.max(ex.maxUsd, b.usd);
+    if (b.ts > ex.ts) ex.ts = b.ts;
+    if (b.profit > ex.profit) { ex.profit = b.profit; ex.name = b.name; ex.wallet = b.wallet; ex.price = b.price; }
+  }
+  return [...byKey.values()].sort((a, b) => b.ts - a.ts).slice(0, opts.max || 50);
 }
 
 // ---- 顶级赢家风格画像 ----

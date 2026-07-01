@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V6.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V6.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1048,8 +1048,10 @@ function fmtWinnerBets(bets) {
     cn.push(`━━ <b>${sport}</b>（${all.length > arr.length ? `顯示${arr.length}/${all.length}` : all.length}）━━`);
     for (const b of arr) {
       const url = b.eventSlug ? `https://polymarket.com/event/${b.eventSlug}` : "https://polymarket.com";
-      cn.push(`💎 <a href="${url}">${esc(translateTitle(b.title || ""))}</a>`);
-      cn.push(`   買 <b>${esc(String(b.outcome))}</b> @${Math.round(b.price * 100)}¢ · ${cUSD(b.usd)} · ${ago(b.ts)}（贏家歷史 ${cUSD(b.profit)}）`);
+      const ko = koHKT(b.kickoffMs);
+      cn.push(`💎 <a href="${url}">${esc(translateTitle(b.title || ""))}</a>${ko ? ` · ⏰ ${ko}` : ""}`);
+      const consensus = b.count > 1 ? ` · 💎×${b.count}同押` : "";
+      cn.push(`   買 <b>${esc(String(b.outcome))}</b> @${Math.round(b.price * 100)}¢ · ${cUSD(b.maxUsd || b.usd)} · 下注${ago(b.ts)}（最賺贏家 ${cUSD(b.profit)}）${consensus}`);
     }
     cn.push("");
   }
