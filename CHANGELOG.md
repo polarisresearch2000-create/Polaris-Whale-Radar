@@ -3,6 +3,15 @@
 > 每次迭代升级在此记录并更新版本号。当前版本同步显示在：
 > 启动脚本横幅（`启动世界杯雷达.bat`）+ bot 启动日志（`bot.js` 的 `VERSION`）。
 
+## V6.4 — 2026-07-01
+- **💎 赢家最新出手 feed(wallet-centric, 给"参与更多投注")** —— 之前的信号都是 market-centric(按盘子看谁在押);这条反过来:**盯一批盈利大户钱包, 推他们最近刚下的方向性注**, 按时间倒序, 覆盖全体育全盘口(胜负/大小球/让球/半场/晋级…)。
+  - `buildSportsWinners()`:从各体育 tag 高量对局盘收集活跃钱包 → 按全期盈亏筛 ≥`WINNER_MIN_PNL`(默$10万) → 缓存 `data/winners_sports.json`(12h)。
+  - `winnerRecentBets()`:名单里每个赢家近 `WINNER_HOURS`(默24h) 内、价 0.1~0.9(方向性)、≥`WINNER_MIN_BET`(默$2000) 的体育下注,每钱包最多3笔,按时间倒序。
+  - `bot.fmtWinnerBets` + `--winner-bets [--dry]` + digest(每 `WINNER_MIN`=90分, **tx 去重只推新的**, 不重复)。
+  - 实测即时抓到:$13.2M 赢家刚买 England-DR Congo Over 1.5(4分前)、$259k 赢家 Mexico-Ecuador Over $4万(2h前)等。
+- **本地"更多信号"节奏**:`启动世界杯雷达.bat` 调回更勤(poll 3分、持仓1h、sharps 3h、赢家出手1h)。
+- ⚠️ 诚实:**更多信号 ≠ 更多胜率**;下注越多对(未证明的)edge 暴露越大、点差/费吃越多。feed 仍标"非投注建议·未证明 edge"。
+
 ## V6.3 — 2026-07-01
 - **MLB/网球 前向 ROI 追踪(全体育战绩)** —— 让非世界杯的 胜负/大小球/让球 也能像世界杯一样前向测 ROI,不只是快照。**改用 Polymarket 市场解析结算(非 ESPN)**:更 uniform、免去 ESPN 队名/球员名匹配的脆弱性。
   - `multiSportSentiment` 每场信号补上 gamma 市场 id + backed/winner outcome 索引 + 入场价(`mlId/mlBackedIdx/mlWinnerIdx` 及 `ou/spread` 的 `id/prices/sideIdx/winnerIdx`)。

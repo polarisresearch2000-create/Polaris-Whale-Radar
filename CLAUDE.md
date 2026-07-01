@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V6.3**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V6.4**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -69,6 +69,7 @@ node index.js          # 命令行信号报告
 | 🏁 置顶③今日赛果(自动更新) | 有新结算时 + 每≥30分钟刷新(按最近比赛日HKT分组) | ❌ | ✅(世界杯) |
 | 🎯 近期聪明钱·全体育（世界杯以外 MLB/网球…💎赢家vs🐋最大注 + 大小球/让球） | 每 `SHARP_MIN` 分(默6h) | ❌ | ✅(仅体育) |
 | 🎯 全体育战绩（MLB/网球 前向 ROI，按市场解析结算，胜负/大小球/让球×跟💎/跟大户） | 有新结算时(随 sharps digest) | ❌ | ✅(仅体育) |
+| 💎 赢家最新出手（名单里盈利大户近期方向性注 · 全体育全盘口 · 按时间倒序 · tx去重） | 每 `WINNER_MIN` 分(默90) | ❌ | ✅(仅体育) |
 | 🐋/👑 逐条实时信号 | 每轮 | ✅ | ❌(已关，整合进持仓分析) |
 | 🏆 全站顶级赢家风格榜 | 每天 | ✅ | ❌(跑题，已关) |
 
@@ -90,6 +91,7 @@ node index.js          # 命令行信号报告
 | `PROFILES_ENABLED` | on | 全站赢家风格榜；世界杯=off |
 | `DIGESTS` | on | 持仓/风格摘要总开关 |
 | `SHARP_ENABLED` / `SHARP_SPORTS` / `SHARP_MIN` / `SHARP_WINDOW_H` / `SHARP_TOP` / `SHARP_TRACK_TOP` | on / `mlb,tennis` / 360 / 504 / 8 / 15 | 全体育聪明钱digest：开关 / 扫哪些tag / 间隔(分) / 只看未来N小时开赛 / 显示几场 / 前向追踪锁定几场。`--sharps [--dry]` 手动快照; `--sharps-results` 前向战绩; `--quote <slug> [额]` 成本报价 |
+| `WINNER_BETS_ENABLED` / `WINNER_MIN` / `WINNER_MIN_PNL` / `WINNER_MIN_BET` / `WINNER_HOURS` / `WINNER_SPORTS` | on / 90 / 100000 / 2000 / 24 / (=SHARP_SPORTS+WC) | 💎赢家最新出手feed：开关 / 间隔(分) / 上名单的PnL门槛 / 单注金额门槛 / 只看近N小时 / 扫哪些tag建名单。名单缓存 `data/winners_sports.json`(12h)。`node bot.js --winner-bets [--dry]` 手动 |
 
 机密(在 `.env`)：`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHANNEL`(加密)、`SPORTS_BOT_TOKEN`/`SPORTS_CHANNEL`(世界杯)。
 

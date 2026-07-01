@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, quoteMatch, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, winnerRecentBets, quoteMatch, cryptoPrediction, getMarketResolution, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V6.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V6.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1020,6 +1020,20 @@ function fmtMultiSport(games) {
   return cn.join("\n");
 }
 
+// 赢家最新出手: 名单里盈利大户近期方向性下注(按时间倒序); 给"参与更多投注"
+function fmtWinnerBets(bets) {
+  if (!bets || !bets.length) return null;
+  const ago = (ts) => { const m = Math.round(Date.now() / 1000 / 60 - ts / 60); return m < 60 ? `${m}分前` : `${Math.round(m / 60)}h前`; };
+  const cn = ["💎 <b>贏家最新出手</b>（盈利大戶近期剛下的方向性注 · 全體育）", ""];
+  for (const b of bets) {
+    const url = b.eventSlug ? `https://polymarket.com/event/${b.eventSlug}` : "https://polymarket.com";
+    cn.push(`💎 <a href="${url}">${esc(translateTitle(b.title || ""))}</a>`);
+    cn.push(`   買 <b>${esc(String(b.outcome))}</b> @${Math.round(b.price * 100)}¢ · ${cUSD(b.usd)} · ${ago(b.ts)}（贏家歷史 ${cUSD(b.profit)}）`);
+  }
+  cn.push("", "⚠️ 數據分析 · 非投注建議 · 未證明 edge（更多信號≠更多勝率）");
+  return cn.join("\n");
+}
+
 // 成本感知报价: 每个可下注方向的 能成交价 + 点差 + 滑点 + 流动性闸门(转个人下注/上 Kelly 前看真实成本)
 function fmtQuote(qm) {
   const SPREAD_MAX = Number(process.env.SPREAD_MAX_CENTS || 5) / 100; // 点差上限(默认5¢)
@@ -1257,6 +1271,23 @@ async function pollOnce() {
         console.error("全体育聪明钱出错:", e.message);
       }
     }
+    // 💎 赢家最新出手(名单里盈利大户近期方向性注) —— 仅体育, 频率较高, tx 去重只推新的; 给"参与更多投注"
+    const WB_ON = RESULTS_ON && (process.env.WINNER_BETS_ENABLED || "on") !== "off";
+    if (WB_ON && now - (d.winnerBets || 0) >= Number(process.env.WINNER_MIN || 90) * 60000) {
+      try {
+        const bets = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) });
+        const seen = new Set(d.winnerSeen || []);
+        const fresh = bets.filter((b) => b.tx && !seen.has(b.tx));
+        if (fresh.length) {
+          const text = fmtWinnerBets(fresh);
+          if (text) { await send(text); console.log(`  → 已推赢家最新出手(${fresh.length}新)`); }
+          d.winnerSeen = [...seen, ...fresh.map((b) => b.tx)].slice(-500);
+        }
+        d.winnerBets = now;
+      } catch (e) {
+        console.error("赢家最新出手出错:", e.message);
+      }
+    }
     if (PROFILES_ENABLED && now - (d.profiles || 0) >= PROFILES_MIN * 60000) {
       try {
         const p = await analyzeTopTraders(12);
@@ -1335,6 +1366,15 @@ async function main() {
     const text = fmtQuote(qm);
     if (process.argv.includes("--dry")) console.log(text.replace(/<[^>]+>/g, ""));
     else { await send(text); console.log(`✅ 已推送报价 → ${CHANNEL}`); }
+    return;
+  }
+
+  if (process.argv.includes("--winner-bets")) {
+    const bets = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24) });
+    const text = fmtWinnerBets(bets);
+    if (process.argv.includes("--dry")) console.log(text ? text.replace(/<[^>]+>/g, "") : "(近期无赢家方向性大注; 可调 WINNER_HOURS/WINNER_MIN_BET/WINNER_MIN_PNL)");
+    else if (text) { await send(text); console.log(`✅ 已推送赢家最新出手(${bets.length}笔) → ${CHANNEL}`); }
+    else console.log("(近期无符合条件的赢家出手)");
     return;
   }
 

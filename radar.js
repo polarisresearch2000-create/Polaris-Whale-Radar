@@ -633,6 +633,65 @@ async function multiSportSentiment(tags, opts = {}) {
   return { games: top, threshold: minUsd };
 }
 
+// ==== 赢家钱包名单 + 他们最近出手的场次(wallet-centric, 按时间倒序; 给"参与更多投注") ====
+let _swCache = { t: 0, list: null, minPnl: 0 };
+const SW_FILE = path.join(__dirname, "data", "winners_sports.json");
+// 从各体育 tag 的高量对局盘里收集活跃钱包 → 按全期盈亏筛出赢家 → 缓存12h
+async function buildSportsWinners(opts = {}) {
+  const minPnl = opts.minPnl || Number(process.env.WINNER_MIN_PNL || 100000);
+  const ttl = 12 * 3600 * 1000;
+  if (_swCache.list && _swCache.minPnl === minPnl && Date.now() - _swCache.t < ttl) return _swCache.list;
+  try { const c = JSON.parse(fs.readFileSync(SW_FILE, "utf8")); if (c && c.t && c.minPnl === minPnl && Date.now() - c.t < ttl && Array.isArray(c.list)) { _swCache = c; return c.list; } } catch {}
+  const tags = (process.env.WINNER_SPORTS || process.env.SHARP_SPORTS || "fifa-world-cup,mlb,tennis").split(",").map((s) => s.trim()).filter(Boolean);
+  const nameOf = new Map();
+  for (const tag of tags) {
+    const evs = await getJSON(`${GAMMA}/events?tag_slug=${tag}&closed=false&limit=40&order=volume24hr&ascending=false`).catch(() => null);
+    for (const ev of Array.isArray(evs) ? evs : []) {
+      if (!/ vs\.? /i.test(ev.title || "")) continue;
+      const mk = (ev.markets || []).find((m) => { if (!m.conditionId || /spread|o\/u|handicap|set \d|inning|completed/i.test(m.question || "")) return false; let o; try { o = JSON.parse(m.outcomes || "[]"); } catch { return false; } return o.length === 2; });
+      if (!mk) continue;
+      const tr = await getJSON(`${DATA}/trades?market=${mk.conditionId}&filterType=CASH&filterAmount=${opts.minNotional || 2000}&limit=200`).catch(() => null);
+      for (const t of Array.isArray(tr) ? tr : []) { if (t.side !== "BUY") continue; const w = (t.proxyWallet || "").toLowerCase(); if (w && !nameOf.has(w)) nameOf.set(w, t.name || t.pseudonym || ""); }
+    }
+  }
+  const uniq = [...nameOf.keys()].slice(0, 120);
+  const scored = await mapLimit(uniq, CONFIG.WALLET_CONCURRENCY, async (w) => ({ wallet: w, score: await getWalletScore(w).catch(() => ({ allTimePnl: 0 })) }));
+  const winners = scored.filter((s) => (s.score.allTimePnl || 0) >= minPnl).sort((a, b) => b.score.allTimePnl - a.score.allTimePnl).map((s) => ({ wallet: s.wallet, profit: s.score.allTimePnl, name: nameOf.get(s.wallet) || "" }));
+  _swCache = { t: Date.now(), list: winners, minPnl };
+  try { fs.mkdirSync(path.dirname(SW_FILE), { recursive: true }); fs.writeFileSync(SW_FILE, JSON.stringify(_swCache)); } catch {}
+  return winners;
+}
+// 名单里每个赢家最近 N 小时内、方向性(0.1~0.9)、够大($)的体育下注; 每钱包最多取几笔; 按时间倒序
+async function winnerRecentBets(opts = {}) {
+  const hours = opts.hours || Number(process.env.WINNER_HOURS || 24);
+  const minUsd = opts.minUsd || Number(process.env.WINNER_MIN_BET || 2000);
+  const perWallet = opts.perWallet || 3;
+  const cutoff = Date.now() / 1000 - hours * 3600;
+  const winners = await buildSportsWinners(opts).catch(() => []);
+  const isSport = (x) => /fifwc|world.?cup|\bmlb\b|baseball|tennis|wimbledon|\batp\b|\bwta\b|\bnba\b|\bnhl\b|\bnfl\b|soccer|\bucl\b|\bepl\b|laliga| vs\.? /i.test(x);
+  const out = [];
+  await mapLimit(winners.slice(0, 40), CONFIG.WALLET_CONCURRENCY, async (w) => {
+    const act = await getJSON(`${DATA}/activity?user=${w.wallet}&limit=100`).catch(() => null);
+    if (!Array.isArray(act)) return;
+    const seen = new Set(); let taken = 0;
+    for (const a of act) {
+      if (taken >= perWallet) break;
+      if (a.type !== "TRADE" || a.side !== "BUY" || !a.timestamp || a.timestamp < cutoff) continue;
+      const price = Number(a.price);
+      if (!(price >= 0.1 && price <= 0.9)) continue; // 方向性: 排除近乎确定的废盘/扫单
+      const usd = a.usdcSize || (a.size || 0) * price;
+      if (usd < minUsd) continue;
+      if (!isSport((a.title || "") + " " + (a.slug || ""))) continue;
+      const key = (a.conditionId || "") + a.outcome;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ wallet: w.wallet, name: w.name, profit: w.profit, title: a.title, outcome: a.outcome, price, usd, ts: a.timestamp, eventSlug: a.eventSlug || a.slug, tx: a.transactionHash });
+      taken++;
+    }
+  });
+  return out.sort((a, b) => b.ts - a.ts).slice(0, opts.max || 25);
+}
+
 // ---- 顶级赢家风格画像 ----
 const catOf = (title) => {
   const t = String(title || "").toLowerCase();
@@ -1035,6 +1094,6 @@ async function getMarketResolution(gammaId) {
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, getExecQuote, quoteMatch, cryptoPrediction, getMarketResolution,
+  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, buildSportsWinners, winnerRecentBets, getExecQuote, quoteMatch, cryptoPrediction, getMarketResolution,
   fmtUSD, CONFIG, isDirectional,
 };
