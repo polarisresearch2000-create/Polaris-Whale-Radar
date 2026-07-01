@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V6.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V6.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1020,17 +1020,40 @@ function fmtMultiSport(games) {
   return cn.join("\n");
 }
 
-// 赢家最新出手: 名单里盈利大户近期方向性下注(按时间倒序); 给"参与更多投注"
+// 把一笔下注归到某个体育分类(标题/slug 关键词 + MLB 队名兜底)
+function sportOf(b) {
+  const x = ((b.title || "") + " " + (b.eventSlug || "")).toLowerCase();
+  if (/fifwc|world.?cup/.test(x)) return "⚽ 世界盃";
+  if (/tennis|wimbledon|\batp\b|\bwta\b|\bitf\b/.test(x)) return "🎾 網球";
+  if (/\bmlb\b|baseball|\b(yankees|red sox|dodgers|mets|cubs|braves|astros|rays|phillies|pirates|cardinals|reds|marlins|rockies|brewers|guardians|orioles|padres|giants|mariners|rangers|angels|athletics|twins|royals|tigers|white sox|blue jays|nationals|diamondbacks)\b/.test(x)) return "⚾ 棒球(MLB)";
+  if (/\bnba\b|\bwnba\b|basketball/.test(x)) return "🏀 籃球";
+  if (/\bnhl\b|hockey/.test(x)) return "🏒 冰球";
+  if (/\bnfl\b|super.?bowl/.test(x)) return "🏈 美式足球";
+  if (/soccer|\bucl\b|\bepl\b|laliga|serie|bundesliga|premier| liga|copa/.test(x)) return "⚽ 其他足球";
+  return "🏟 其他";
+}
+// 赢家最新出手: 名单里盈利大户近期方向性下注; 按体育分类分组, 组内按时间倒序; 给"参与更多投注"
 function fmtWinnerBets(bets) {
   if (!bets || !bets.length) return null;
   const ago = (ts) => { const m = Math.round(Date.now() / 1000 / 60 - ts / 60); return m < 60 ? `${m}分前` : `${Math.round(m / 60)}h前`; };
-  const cn = ["💎 <b>贏家最新出手</b>（盈利大戶近期剛下的方向性注 · 全體育）", ""];
-  for (const b of bets) {
-    const url = b.eventSlug ? `https://polymarket.com/event/${b.eventSlug}` : "https://polymarket.com";
-    cn.push(`💎 <a href="${url}">${esc(translateTitle(b.title || ""))}</a>`);
-    cn.push(`   買 <b>${esc(String(b.outcome))}</b> @${Math.round(b.price * 100)}¢ · ${cUSD(b.usd)} · ${ago(b.ts)}（贏家歷史 ${cUSD(b.profit)}）`);
+  const ORDER = ["⚽ 世界盃", "⚾ 棒球(MLB)", "🎾 網球", "🏀 籃球", "🏒 冰球", "🏈 美式足球", "⚽ 其他足球", "🏟 其他"];
+  const groups = new Map();
+  for (const b of bets) { const s = sportOf(b); if (!groups.has(s)) groups.set(s, []); groups.get(s).push(b); }
+  const cn = ["💎 <b>贏家最新出手</b>（盈利大戶近期剛下的方向性注 · 按體育分類）", ""];
+  const perSport = Number(process.env.WINNER_PER_SPORT || 6); // 每个体育最多列几笔(最新), 避免世界杯挤掉其它
+  for (const sport of ORDER) {
+    const all = groups.get(sport);
+    if (!all || !all.length) continue;
+    const arr = all.slice(0, perSport);
+    cn.push(`━━ <b>${sport}</b>（${all.length > arr.length ? `顯示${arr.length}/${all.length}` : all.length}）━━`);
+    for (const b of arr) {
+      const url = b.eventSlug ? `https://polymarket.com/event/${b.eventSlug}` : "https://polymarket.com";
+      cn.push(`💎 <a href="${url}">${esc(translateTitle(b.title || ""))}</a>`);
+      cn.push(`   買 <b>${esc(String(b.outcome))}</b> @${Math.round(b.price * 100)}¢ · ${cUSD(b.usd)} · ${ago(b.ts)}（贏家歷史 ${cUSD(b.profit)}）`);
+    }
+    cn.push("");
   }
-  cn.push("", "⚠️ 數據分析 · 非投注建議 · 未證明 edge（更多信號≠更多勝率）");
+  cn.push("⚠️ 數據分析 · 非投注建議 · 未證明 edge（更多信號≠更多勝率）");
   return cn.join("\n");
 }
 

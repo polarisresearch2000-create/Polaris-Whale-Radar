@@ -689,7 +689,7 @@ async function winnerRecentBets(opts = {}) {
       taken++;
     }
   });
-  return out.sort((a, b) => b.ts - a.ts).slice(0, opts.max || 25);
+  return out.sort((a, b) => b.ts - a.ts).slice(0, opts.max || 50);
 }
 
 // ---- 顶级赢家风格画像 ----
