@@ -790,15 +790,66 @@ async function getWcResults() {
     if (!home || !away) continue;
     const completed = !!(comp.status?.type?.completed || ev.status?.type?.completed);
     const hs = Number(home.score), as = Number(away.score);
+    // DraftKings 赔率(美式): 胜负盘 home/draw/away + 大小球 over/under。收盘价优先, 无则开盘价
+    let dk = null;
+    const o = (comp.odds || []).find((x) => /draftkings/i.test(x.provider?.name || "")) || (comp.odds || [])[0];
+    if (o) {
+      const am = (obj) => { const v = obj?.close?.odds ?? obj?.open?.odds; return v != null ? Number(String(v).replace("+", "")) : null; };
+      dk = {
+        ml: { home: am(o.moneyline?.home), draw: am(o.moneyline?.draw), away: am(o.moneyline?.away) },
+        ou: { line: o.overUnder != null ? Number(o.overUnder) : null, over: am(o.total?.over), under: am(o.total?.under) },
+      };
+    }
     out.push({
       id: ev.id, home: home.team.displayName, away: away.team.displayName,
       homeTokens: matchToks(home.team.displayName), awayTokens: matchToks(away.team.displayName),
       state: ev.status?.type?.state, completed, homeScore: hs, awayScore: as,
       kickoffMs: ev.date ? Date.parse(ev.date) : null, // 开赛时间, 算大户下注领先量
       actual: completed ? (hs > as ? "home" : hs < as ? "away" : "draw") : null,
+      dk,
     });
   }
   return out;
+}
+
+// ==== DraftKings 差价信号: Polymarket 价 vs 博彩公司"无水位公平价" —— 买在便宜的一侧=理论 +EV ====
+const _amImpl = (ml) => (ml == null ? null : ml > 0 ? 100 / (ml + 100) : -ml / (-ml + 100)); // 美式赔率→隐含概率
+// 轻量取 Polymarket 三方胜负盘 Yes 价(不拉成交, 只读 outcomePrices)
+function _pmMlPrices(pmEvent, m) {
+  const out = { home: null, draw: null, away: null };
+  for (const mk of pmEvent.markets || []) {
+    const q = (mk.question || "").toLowerCase();
+    let side = null;
+    if (/draw/.test(q)) side = "draw";
+    else if (m.homeTokens.some((t) => q.includes(t))) side = "home";
+    else if (m.awayTokens.some((t) => q.includes(t))) side = "away";
+    if (!side || out[side] != null) continue;
+    try { const outs = JSON.parse(mk.outcomes || "[]"), px = JSON.parse(mk.outcomePrices || "[]"); const yi = outs.findIndex((o) => /yes/i.test(o)); if (yi >= 0) out[side] = Number(px[yi]); } catch {}
+  }
+  return out;
+}
+// 找每场 Polymarket 比 DK 无水位公平价便宜最多的一侧(fair − pmPrice ≥ minGap = 低估 = 买入 +EV)
+async function dkEdges(wc, pmEvents, opts = {}) {
+  const minGap = opts.minGap != null ? opts.minGap : 0.04; // 便宜多少概率点才算信号(默4pt)
+  const edges = [];
+  for (const m of wc) {
+    if (m.completed || m.state !== "pre" || !m.dk) continue;
+    const pH = _amImpl(m.dk.ml.home), pD = _amImpl(m.dk.ml.draw), pA = _amImpl(m.dk.ml.away);
+    if (pH == null || pD == null || pA == null) continue;
+    const s = pH + pD + pA; // 去水位
+    const fair = { home: pH / s, draw: pD / s, away: pA / s };
+    const pmEvent = pmEvents.find((e) => { const t = e.title.toLowerCase(); return m.homeTokens.some((x) => t.includes(x)) && m.awayTokens.some((x) => t.includes(x)); });
+    if (!pmEvent) continue;
+    const pm = _pmMlPrices(pmEvent, m);
+    let best = null;
+    for (const side of ["home", "draw", "away"]) {
+      if (pm[side] == null || !(pm[side] > 0 && pm[side] < 1)) continue;
+      const gap = fair[side] - pm[side];
+      if (gap > 0 && (!best || gap > best.gap)) best = { side, gap, pmPrice: pm[side], fair: fair[side] };
+    }
+    if (best && best.gap >= minGap) edges.push({ id: m.id, home: m.home, away: m.away, kickoffMs: m.kickoffMs, eventSlug: pmEvent.slug, overround: s - 1, fair, pm, dk: m.dk.ml, best });
+  }
+  return edges.sort((a, b) => b.best.gap - a.best.gap);
 }
 
 // 某场比赛当前的"巨鲸多数方"和"最大单大户"押注方向(用持仓低门槛统计买入)
@@ -1162,6 +1213,6 @@ async function getMarketNow(gammaId) {
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, buildSportsWinners, winnerRecentBets, getExecQuote, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket,
+  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, buildSportsWinners, winnerRecentBets, getExecQuote, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, dkEdges,
   fmtUSD, CONFIG, isDirectional,
 };

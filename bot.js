@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, winnerRecentBets, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, winnerRecentBets, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, dkEdges, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V7.1"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V7.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -366,6 +366,16 @@ async function trackResults() {
   }
   // 置顶③今日赛果定期刷新
   if (Date.now() - (res.resultsUpdatedAt || 0) >= 30 * 60000) await postOrUpdateResultsPin(res);
+  // DraftKings 差价信号: 前向捕捉/结算(测差价到底赚不赚) + 有可下注信号时节流推送(默6h一次)
+  if ((process.env.DK_ENABLED || "on") !== "off") {
+    try {
+      const edges = await dkEdges(wc, pmEvents, { minGap: Number(process.env.DK_MIN_GAP || 0.04) });
+      trackDkEdges(wc, edges);
+      if (edges.length && Date.now() - (res.dkPushedAt || 0) >= Number(process.env.DK_MIN || 360) * 60000) {
+        const t = fmtDkEdges(edges); if (t) { await send(t); res.dkPushedAt = Date.now(); console.log(`  → 已推差价信号(${edges.length}条)`); }
+      }
+    } catch (e) { console.error("差价信号出错:", e.message); }
+  }
   saveResults(res);
 }
 
@@ -1252,6 +1262,39 @@ async function postOrUpdateScorecardPin(sc, state) {
   if (id) { state.scorecardPinId = id; await pinMsg(id); }
 }
 
+// ==== DraftKings 差价信号: Polymarket 价 vs 博彩无水位公平价, 买在便宜的一侧=理论+EV + 前向追踪 ====
+const DKEDGE_FILE = path.join(__dirname, "data", "dk_edges.json");
+function fmtDkEdges(edges) {
+  if (!edges || !edges.length) return null;
+  const zh = (s, e) => (s === "draw" ? "平局" : s === "home" ? tTeam(e.home) : tTeam(e.away));
+  const cn = ["⚖️ <b>差價信號 · Polymarket vs DraftKings 公平價</b>", "（買在 Polymarket 比博彩無水位公平價便宜的一側 = 理論 +EV）", ""];
+  for (const e of edges) {
+    const ko = koHKT(e.kickoffMs);
+    cn.push(`🆚 ${esc(tTeam(e.home))} vs ${esc(tTeam(e.away))}${ko ? ` · ⏰ ${ko}` : ""}`);
+    cn.push(`   💰 買 <b>${esc(zh(e.best.side, e))}</b> @${Math.round(e.best.pmPrice * 100)}¢ · DK公平 ${Math.round(e.best.fair * 100)}¢ · 便宜 <b>+${(e.best.gap * 100).toFixed(1)}pt</b>`);
+  }
+  cn.push("", "⚠️ 頂級盤口通常很有效(差價≈0);差價多出現在冷門/薄盤。未證明 edge");
+  cn.push(`🔭 持續更新 · ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
+  return cn.join("\n");
+}
+// 前向追踪: 赛前锁定 value 侧 + PM入场价 → ESPN 结果结算 → ROI(测差价信号到底赚不赚)
+function trackDkEdges(wc, edges) {
+  let d; try { d = JSON.parse(fs.readFileSync(DKEDGE_FILE, "utf8")); } catch { d = { picks: {}, stat: { bets: 0, wins: 0, profit: 0 } }; }
+  d.picks = d.picks || {}; d.stat = d.stat || { bets: 0, wins: 0, profit: 0 };
+  const now = Date.now();
+  for (const e of edges || []) { if (d.picks[e.id] || !(e.kickoffMs && now < e.kickoffMs)) continue; d.picks[e.id] = { home: e.home, away: e.away, side: e.best.side, entry: e.best.pmPrice, fair: e.best.fair, gap: e.best.gap, kickoffMs: e.kickoffMs, settled: false }; }
+  let n = 0;
+  for (const id in d.picks) {
+    const p = d.picks[id]; if (p.settled) continue;
+    const m = (wc || []).find((x) => x.id === id);
+    if (!m || !m.completed || !m.actual) continue;
+    p.win = m.actual === p.side; p.profit = p.win ? (1 - p.entry) / p.entry : -1; p.settled = true;
+    d.stat.bets++; if (p.win) d.stat.wins++; d.stat.profit += p.profit; n++;
+  }
+  try { fs.mkdirSync(path.dirname(DKEDGE_FILE), { recursive: true }); fs.writeFileSync(DKEDGE_FILE, JSON.stringify(d, null, 2)); } catch {}
+  return { d, n };
+}
+
 // ==== 个人下注台账: 记录你真实下的每一注 → 赛后自动结算 → 已实现 ROI(上 Kelly 前的第3步) ====
 const LEDGER_FILE = path.join(__dirname, "data", "my_ledger.json");
 function loadLedger() { try { return JSON.parse(fs.readFileSync(LEDGER_FILE, "utf8")); } catch { return { bets: [] }; } }
@@ -1584,6 +1627,23 @@ async function main() {
     const n = await settleLedger(l);
     if (n) console.log(`(本次新结算 ${n} 注)`);
     console.log(fmtLedgerText(l));
+    return;
+  }
+
+  if (process.argv.includes("--dk")) {
+    const [wc, pm] = await Promise.all([getWcResults(), getMatchEvents(20)]);
+    const minGap = Number(process.env.DK_MIN_GAP || 0.04);
+    const all = await dkEdges(wc, pm, { minGap: 0 }); // 全部对比(看市场有多有效)
+    console.log("Polymarket vs DraftKings 无水位公平价(未开赛场 · pm/公平 %):");
+    const pct = (x) => (x == null ? "-" : Math.round(x * 100));
+    for (const e of all) console.log(`  ${e.home} vs ${e.away}: 主 ${pct(e.pm.home)}/${pct(e.fair.home)} 平 ${pct(e.pm.draw)}/${pct(e.fair.draw)} 客 ${pct(e.pm.away)}/${pct(e.fair.away)} → 最便宜 ${e.best.side} +${(e.best.gap * 100).toFixed(1)}pt`);
+    const sig = all.filter((e) => e.best.gap >= minGap);
+    const { d } = trackDkEdges(wc, sig);
+    console.log(`\n>=${Math.round(minGap * 100)}pt 的可下注信号: ${sig.length} 个`);
+    const st = d.stat;
+    if (st.bets) console.log(`前向战绩: ${st.bets}场 命中${Math.round(st.wins / st.bets * 100)}% ROI ${Math.round(st.profit / st.bets * 100) >= 0 ? "+" : ""}${Math.round(st.profit / st.bets * 100)}%`);
+    else console.log("(还没有已结算的差价信号样本)");
+    if (sig.length && !process.argv.includes("--dry")) { await send(fmtDkEdges(sig)); console.log(`✅ 已推 ${sig.length} 条差价信号 → ${CHANNEL}`); }
     return;
   }
 

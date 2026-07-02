@@ -3,6 +3,12 @@
 > 每次迭代升级在此记录并更新版本号。当前版本同步显示在：
 > 启动脚本横幅（`启动世界杯雷达.bat`）+ bot 启动日志（`bot.js` 的 `VERSION`）。
 
+## V7.2 — 2026-07-01（DraftKings 差价信号）
+- **DK 差价信号(最高 EV 的下注角度)** —— 把 Polymarket 隐含概率 vs **DraftKings 无水位公平价**对比,买在 Polymarket 比博彩公平价便宜 ≥`DK_MIN_GAP`(默4pt) 的一侧 = 理论 +EV。数据现成:`getWcResults` 从 ESPN 解析 DK 赔率(`o.moneyline.{home,draw,away}.close.odds` + `o.total`,美式→隐含→去水位)。
+  - `radar.dkEdges(wc, pmEvents)`:每场算三方无水位公平价 vs Polymarket Yes 价(轻量,不拉成交),取便宜最多的一侧。
+  - `bot.fmtDkEdges` + `trackDkEdges`(赛前锁定 value 侧+PM入场价 → ESPN 结果结算 → ROI)。`node bot.js --dk [--dry]` 看全部对比+信号+前向战绩;`trackResults` 每轮捕捉/结算,有信号节流推(`DK_MIN` 默6h)。存 `data/dk_edges.json`。
+  - **⚠️ 诚实首测结果:世界杯顶级盘口 Polymarket ≈ DraftKings(差价≤1.5pt,0 个≥4pt 信号)= 市场很有效,这个角度在热门盘上没 edge。** 印证立项结论。价值在于**持续监控冷门/薄盘的偶发错价** + 前向验证那些错价到底赚不赚(大概率也≈0)。可扩到 O/U/让球、其它运动(各有 ESPN DK 赔率)。
+
 ## V7.1 — 2026-07-01（置顶优化）
 - **🐛 修重复置顶 bug** —— `editMsg` 把 Telegram "message is not modified"(内容没变)当成失败 → 调用方会重发一条新置顶。现识别该错误当**成功**(return true),不再重发。所有置顶受益。
 - **🗑️ 退休置顶③"今日赛果"** —— 领头是纯"命中 X/Y"(与"命中率≠盈利"理念冲突)+ 与①②重复。`postOrUpdateResultsPin` 改为一次性 `unpinChatMessage` 旧置顶并清 id,之后 no-op。赛果 ROI 仍在①策略战绩看。
