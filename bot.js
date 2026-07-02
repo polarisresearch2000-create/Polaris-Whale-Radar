@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V7.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V7.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1042,30 +1042,43 @@ function sportOf(b) {
   if (/soccer|\bucl\b|\bepl\b|laliga|serie|bundesliga|premier| liga|copa/.test(x)) return "⚽ 其他足球";
   return "🏟 其他";
 }
-// 赢家最新出手: 名单里盈利大户近期方向性下注; 按体育分类分组, 组内按时间倒序; 给"参与更多投注"
+// 给每笔标质量: 核心方向性(胜负/大小球/让球)=值得看; 散户衍生盘 / 近乎必然收息(高胜率≠盈利)=标警告并排后
+function betClass(b) {
+  const t = (b.title || "").toLowerCase();
+  const nearCertain = b.price != null && b.price >= 0.85; // 买近乎必然的一侧=收息, 高胜率但 edge≈0(输一次抹掉九次赢)
+  const retail = /exact|both teams|\bbtts\b|to score|to advance|corner|halftime|1st half|2nd half|first half|player|to retire|completed match|set \d|games o\/u/i.test(t);
+  const tags = [];
+  if (retail) tags.push("散戶盤");
+  if (nearCertain) tags.push("收息·高勝率≠盈利");
+  return { tag: tags.length ? ` · ⚠️${tags.join(" · ")}` : "", rank: tags.length ? 1 : 0 };
+}
+// 赢家最新出手: 名单里盈利大户近期下注; 按体育分类; 核心方向性排前, 散户/收息盘标警告并排后
 function fmtWinnerBets(bets) {
   if (!bets || !bets.length) return null;
   const ago = (ts) => { const m = Math.round(Date.now() / 1000 / 60 - ts / 60); return m < 60 ? `${m}分前` : `${Math.round(m / 60)}h前`; };
   const ORDER = ["⚽ 世界盃", "⚾ 棒球(MLB)", "🎾 網球", "🏀 籃球", "🏒 冰球", "🏈 美式足球", "⚽ 其他足球", "🏟 其他"];
   const groups = new Map();
   for (const b of bets) { const s = sportOf(b); if (!groups.has(s)) groups.set(s, []); groups.get(s).push(b); }
-  const cn = ["💎 <b>贏家最新出手</b>（盈利大戶近期剛下的方向性注 · 按體育分類）", ""];
-  const perSport = Number(process.env.WINNER_PER_SPORT || 6); // 每个体育最多列几笔(最新), 避免世界杯挤掉其它
+  const cn = ["💎 <b>贏家最新出手</b>（盈利大戶近期下注 · 按體育分類）", "（核心=勝負/大小球/讓球排前；⚠️散戶盤·收息=高勝率但≠盈利,別被騙）", ""];
+  const perSport = Number(process.env.WINNER_PER_SPORT || 6);
   for (const sport of ORDER) {
-    const all = groups.get(sport);
-    if (!all || !all.length) continue;
-    const arr = all.slice(0, perSport);
-    cn.push(`━━ <b>${sport}</b>（${all.length > arr.length ? `顯示${arr.length}/${all.length}` : all.length}）━━`);
-    for (const b of arr) {
+    const all0 = groups.get(sport);
+    if (!all0 || !all0.length) continue;
+    const scored = all0.map((b) => ({ b, c: betClass(b) }));
+    const core = scored.filter((x) => x.c.rank === 0).sort((a, z) => z.b.ts - a.b.ts); // 核心方向性
+    const flagged = scored.filter((x) => x.c.rank === 1).sort((a, z) => z.b.ts - a.b.ts); // 散户/收息
+    const arr = [...core.slice(0, perSport), ...flagged.slice(0, Number(process.env.WINNER_FLAG_SHOW || 2))]; // 核心排前 + 少量带⚠️的仍可见
+    cn.push(`━━ <b>${sport}</b>（${all0.length > arr.length ? `顯示${arr.length}/${all0.length}` : all0.length}）━━`);
+    for (const { b, c } of arr) {
       const url = b.eventSlug ? `https://polymarket.com/event/${b.eventSlug}` : "https://polymarket.com";
       const ko = koHKT(b.kickoffMs);
       cn.push(`💎 <a href="${url}">${esc(translateTitle(b.title || ""))}</a>${ko ? ` · ⏰ ${ko}` : ""}`);
       const consensus = b.count > 1 ? ` · 💎×${b.count}同押` : "";
-      cn.push(`   買 <b>${esc(String(b.outcome))}</b> @${Math.round(b.price * 100)}¢ · ${cUSD(b.maxUsd || b.usd)} · 下注${ago(b.ts)}（最賺贏家 ${cUSD(b.profit)}）${consensus}`);
+      cn.push(`   買 <b>${esc(String(b.outcome))}</b> @${Math.round(b.price * 100)}¢ · ${cUSD(b.maxUsd || b.usd)} · 下注${ago(b.ts)}（最賺贏家 ${cUSD(b.profit)}）${consensus}${c.tag}`);
     }
     cn.push("");
   }
-  cn.push("⚠️ 數據分析 · 非投注建議 · 未證明 edge（更多信號≠更多勝率）");
+  cn.push("⚠️ 數據分析 · 非投注建議 · 真賺看 ROI/CLV(記分卡),不是勝率");
   cn.push(`🔭 持續更新 · ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
   return cn.join("\n");
 }

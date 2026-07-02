@@ -3,6 +3,12 @@
 > 每次迭代升级在此记录并更新版本号。当前版本同步显示在：
 > 启动脚本横幅（`启动世界杯雷达.bat`）+ bot 启动日志（`bot.js` 的 `VERSION`）。
 
+## V7.3 — 2026-07-03（赢家出手:标出收息/散户盘,突出真方向性）
+- **给「赢家最新出手」加质量分级**(用户想跟"近乎必然"的高胜率盘,纠正:高胜率≠盈利,胜率已写进价里,输一次抹掉九次赢):
+  - `betClass(b)`:近乎必然(价≥85¢)标 `⚠️收息·高勝率≠盈利`;衍生/散户盘(exact score/BTTS/team to score/advance/corner/halftime/player/set…)标 `⚠️散戶盤`;胜负/大小球/让球=核心方向性,不标。
+  - 每个体育组:**核心方向性排前**(占 `WINNER_PER_SPORT` 名额)+ 少量带⚠️的散户/收息盘仍显示(`WINNER_FLAG_SHOW` 默2)→ 你想看还能看,但一眼知道是陷阱不是信号。
+  - 落款改成「真賺看 ROI/CLV(記分卡),不是勝率」。
+
 ## V7.2 — 2026-07-01（DraftKings 差价信号）
 - **DK 差价信号(最高 EV 的下注角度)** —— 把 Polymarket 隐含概率 vs **DraftKings 无水位公平价**对比,买在 Polymarket 比博彩公平价便宜 ≥`DK_MIN_GAP`(默4pt) 的一侧 = 理论 +EV。数据现成:`getWcResults` 从 ESPN 解析 DK 赔率(`o.moneyline.{home,draw,away}.close.odds` + `o.total`,美式→隐含→去水位)。
   - `radar.dkEdges(wc, pmEvents)`:每场算三方无水位公平价 vs Polymarket Yes 价(轻量,不拉成交),取便宜最多的一侧。
