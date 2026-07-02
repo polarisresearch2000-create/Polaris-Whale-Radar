@@ -3,6 +3,12 @@
 > 每次迭代升级在此记录并更新版本号。当前版本同步显示在：
 > 启动脚本横幅（`启动世界杯雷达.bat`）+ bot 启动日志（`bot.js` 的 `VERSION`）。
 
+## V7.1 — 2026-07-01（置顶优化）
+- **🐛 修重复置顶 bug** —— `editMsg` 把 Telegram "message is not modified"(内容没变)当成失败 → 调用方会重发一条新置顶。现识别该错误当**成功**(return true),不再重发。所有置顶受益。
+- **🗑️ 退休置顶③"今日赛果"** —— 领头是纯"命中 X/Y"(与"命中率≠盈利"理念冲突)+ 与①②重复。`postOrUpdateResultsPin` 改为一次性 `unpinChatMessage` 旧置顶并清 id,之后 no-op。赛果 ROI 仍在①策略战绩看。
+- **📒 新增"我的下注台账"置顶** —— `fmtLedger`/`postOrUpdateLedgerPin`,把你真实下注的已实现盈亏/ROI/胜率放进 DM 置顶(空台账不置顶),随赢家出手 digest 刷新。`ledgerPinId` 存 digest。
+- **🔀 置顶顺序 `--repin`** —— `node bot.js --repin`:`unpinAllChatMessages` 后按 底→顶 顺序重排(①战绩→②预判→📒台账→④赢家→⑤记分卡**在最上**)。重启后手动跑一次即可,顺带清掉退休的③与任何孤儿置顶。
+
 ## V7.0 — 2026-07-01
 - **② 稳定 watchlist(修"名单漂移")** —— `winnerRecentBets` 现接受 `trackedWallets`,把**记分卡里已跟踪过的地址**并进扫描集(优先且必扫),再补当周活跃赢家。→ 一个地址一旦进了记分卡就**持续跟踪、不因掉出活跃榜而断更**,每钱包样本才能收敛。扫描上限 40→60。
 - **③ CLV/结算更准** —— 新增 `getMarketNow(gammaId)`(一次拉取给 closed + 各 outcome 现价 + 赢家)。记分卡对**开赛前3小时内**的未结算注,每轮用**真实盘口价刷新 last**(→ CLV 用的收盘价更接近真收盘),同一次拉取顺便结算。不再依赖"赢家出手还在24h窗口内"。

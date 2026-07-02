@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V7.0"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V7.1"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1283,6 +1283,29 @@ function fmtLedgerText(l) {
   for (const b of done.slice(-12)) lines.push(`  ${b.win ? "✅" : "❌"} ${b.eventSlug} · ${b.outcome} @${Math.round(b.price * 100)}¢ · $${b.stake} → ${b.pnl >= 0 ? "+" : ""}$${Math.round(b.pnl)}`);
   return lines.join("\n");
 }
+// 置顶: 我的下注台账(HTML版, 就地刷新)。空台账返回 null(不置顶)
+function fmtLedger(l) {
+  const bets = l.bets || [];
+  if (!bets.length) return null;
+  const done = bets.filter((b) => b.settled), open = bets.filter((b) => !b.settled);
+  const staked = done.reduce((s, b) => s + b.stake, 0);
+  const pnl = done.reduce((s, b) => s + (b.pnl || 0), 0);
+  const wins = done.filter((b) => b.win).length;
+  const cn = ["📒 <b>我的下注台账</b>（你真實下的注 · 已實現盈虧）", ""];
+  if (done.length) cn.push(`<b>已結算 ${done.length} 注</b>：投入 $${Math.round(staked)} · 盈虧 <b>${pnl >= 0 ? "+" : ""}$${Math.round(pnl)}</b> · ROI ${staked ? (pnl / staked >= 0 ? "+" : "") + Math.round((pnl / staked) * 100) + "%" : "-"} · 勝率 ${Math.round((wins / done.length) * 100)}%`);
+  else cn.push("（暫無已結算 · 用 <code>--log-bet</code> 記你下的注）");
+  if (open.length) { cn.push("", `<b>未結算 ${open.length}</b>`); for (const b of open.slice(-8)) cn.push(`  ⏳ ${esc(String(b.outcome))} @${Math.round(b.price * 100)}¢ · $${b.stake}`); }
+  if (done.length) { cn.push("", "<b>最近結算</b>"); for (const b of done.slice(-8)) cn.push(`  ${b.win ? "✅" : "❌"} ${esc(String(b.outcome))} @${Math.round(b.price * 100)}¢ $${b.stake} → ${b.pnl >= 0 ? "+" : ""}$${Math.round(b.pnl)}`); }
+  cn.push("", `🔭 持續更新 · ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
+  return cn.join("\n");
+}
+async function postOrUpdateLedgerPin(l, state) {
+  const text = fmtLedger(l);
+  if (!text) return;
+  if (state.ledgerPinId && (await editMsg(state.ledgerPinId, text))) return;
+  const id = await sendReturn(text);
+  if (id) { state.ledgerPinId = id; await pinMsg(id); }
+}
 
 // 顶级赢家风格榜
 function fmtProfiles(profiles) {
@@ -1324,7 +1347,8 @@ async function editMsg(id, text) {
   try {
     await tg("editMessageText", { chat_id: CHANNEL, message_id: id, text, parse_mode: "HTML", disable_web_page_preview: true });
     return true;
-  } catch {
+  } catch (e) {
+    if (/not modified/i.test(e.message || "")) return true; // 内容没变=视为成功, 不重发(否则会多一条重复置顶)
     return false;
   }
 }
@@ -1352,16 +1376,12 @@ async function postOrUpdatePreviewPin(res, matches) {
   }
 }
 
-// 置顶③: 最近比赛日赛果(就地编辑; 无赛果时不发)。resultsMsgId 持久化, 云端始终编辑同一条。
+// 置顶③已退休(V7.1): "今日赛果"领头是纯命中率(命中X/Y),与"命中率≠盈利"理念冲突, 且与①②重复。
+// 这里改为一次性取消旧置顶并清掉 id; 之后 no-op。赛果 ROI 仍在①策略战绩里看。
 async function postOrUpdateResultsPin(res) {
-  const text = fmtResultsPin(res);
-  if (!text) return; // 还没有可显示的赛果
-  res.resultsUpdatedAt = Date.now();
-  if (res.resultsMsgId && (await editMsg(res.resultsMsgId, text))) return;
-  const id = await sendReturn(text);
-  if (id) {
-    res.resultsMsgId = id;
-    await pinMsg(id);
+  if (res.resultsMsgId) {
+    try { await tg("unpinChatMessage", { chat_id: CHANNEL, message_id: res.resultsMsgId }); } catch {}
+    delete res.resultsMsgId;
   }
 }
 
@@ -1431,7 +1451,7 @@ async function pollOnce() {
         const { list, raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24), trackedWallets: trackedWalletsFromScorecard() });
         if (list.length) { await postOrUpdateWinnerPin(list, d); console.log(`  → 已更新赢家最新出手置顶(${list.length}笔)`); }
         try { const n = await trackScorecard(raw); if (n) console.log(`  → 记分卡: 新捕捉/结算 ${n}`); await postOrUpdateScorecardPin(loadScorecard(), d); } catch (e) { console.error("记分卡出错:", e.message); }
-        try { const l = loadLedger(); if ((l.bets || []).some((b) => !b.settled)) { const sn = await settleLedger(l); if (sn) console.log(`  → 台账新结算 ${sn} 注`); } } catch {}
+        try { const l = loadLedger(); if ((l.bets || []).some((b) => !b.settled)) { const sn = await settleLedger(l); if (sn) console.log(`  → 台账新结算 ${sn} 注`); } await postOrUpdateLedgerPin(l, d); } catch (e) { console.error("台账置顶出错:", e.message); }
         d.winnerBets = now;
       } catch (e) {
         console.error("赢家最新出手出错:", e.message);
@@ -1564,6 +1584,17 @@ async function main() {
     const n = await settleLedger(l);
     if (n) console.log(`(本次新结算 ${n} 注)`);
     console.log(fmtLedgerText(l));
+    return;
+  }
+
+  if (process.argv.includes("--repin")) {
+    // 取消全部置顶 → 按 底→顶 顺序重排(最后pin的在最上): ①战绩 ②预判 📒台账 ④赢家 ⑤记分卡(顶)
+    const res = loadResults(), d = loadDigest();
+    const order = [res.pinnedMsgId, res.previewMsgId, d.ledgerPinId, d.winnerPinId, d.scorecardPinId].filter(Boolean);
+    if (!order.length) { console.log("暂无已知置顶消息id(先让雷达跑一轮生成置顶, 或先 --winner-bets/--scorecard)"); return; }
+    try { await tg("unpinAllChatMessages", { chat_id: CHANNEL }); } catch (e) { console.log("unpinAll:", e.message); }
+    for (const id of order) { try { await tg("pinChatMessage", { chat_id: CHANNEL, message_id: id, disable_notification: true }); } catch (e) { console.log("pin", id, e.message); } }
+    console.log(`✅ 已重排置顶(⑤记分卡在最上): ${order.join(" → ")}`);
     return;
   }
 
