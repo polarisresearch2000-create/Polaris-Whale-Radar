@@ -778,11 +778,22 @@ const normName = (s) => String(s || "").toLowerCase().replace(/[^a-z\s]/g, " ").
 const matchToks = (s) => [...teamToks(s), ...(TEAM_ALIAS_TOKENS[normName(s)] || [])];
 
 // ESPN 世界杯赛果(含完赛结果 home/draw/away)
+// ⚠️默认接口是滚动窗口(只给未来场), 已完赛的会滚出去 → 结算不到。故额外按最近几天 UTC 日期各拉一遍, 合并去重(已完赛版本优先)
 async function getWcResults() {
-  const sb = await getJSON(ESPN_SB_URL).catch(() => null);
-  if (!sb) return [];
+  const urls = [ESPN_SB_URL];
+  const now = Date.now();
+  for (let i = 0; i <= 3; i++) urls.push(`${ESPN_SB_URL}?dates=${new Date(now - i * 86400000).toISOString().slice(0, 10).replace(/-/g, "")}`);
+  const rank = { post: 3, in: 2, pre: 1 };
+  const byId = new Map();
+  for (const url of urls) {
+    const sb = await getJSON(url).catch(() => null);
+    for (const ev of (sb && sb.events) || []) {
+      const cur = byId.get(ev.id);
+      if (!cur || (rank[ev.status?.type?.state] || 0) > (rank[cur.status?.type?.state] || 0)) byId.set(ev.id, ev); // 保留最"靠后"的状态(已完赛优先)
+    }
+  }
   const out = [];
-  for (const ev of sb.events || []) {
+  for (const ev of byId.values()) {
     const comp = ev.competitions?.[0];
     if (!comp) continue;
     const home = comp.competitors?.find((c) => c.homeAway === "home");
@@ -792,7 +803,8 @@ async function getWcResults() {
     const hs = Number(home.score), as = Number(away.score);
     // DraftKings 赔率(美式): 胜负盘 home/draw/away + 大小球 over/under。收盘价优先, 无则开盘价
     let dk = null;
-    const o = (comp.odds || []).find((x) => /draftkings/i.test(x.provider?.name || "")) || (comp.odds || [])[0];
+    const odds = (comp.odds || []).filter(Boolean);
+    const o = odds.find((x) => /draftkings/i.test(x.provider?.name || "")) || odds[0];
     if (o) {
       const am = (obj) => { const v = obj?.close?.odds ?? obj?.open?.odds; return v != null ? Number(String(v).replace("+", "")) : null; };
       dk = {
