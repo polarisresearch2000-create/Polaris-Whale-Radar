@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V7.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V7.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -755,7 +755,9 @@ function fmtResultSummary(res, newCount) {
     const fw = s.strat?.followWhale, fb = s.strat?.followBig;
     const score = s.score ? ` <b>${s.score}</b>` : "";
     lines.push(`${fw?.win ? "✅" : "❌"} ${esc(s.match)}${score} → ${esc(resultLabel(s))}`);
-    lines.push(`   巨鯨押 ${esc(sideLabel(s.whaleSide, s.home, s.away))} ${fw?.win ? "✅" : "❌"}`);
+    lines.push(`   胜负盘: 巨鯨押 ${esc(sideLabel(s.whaleSide, s.home, s.away))} ${fw?.win ? "✅" : "❌"}`);
+    if (s.ou) lines.push(`   ⚽ 大小球: 進${s.ou.goals}球→${s.ou.actualOU === "Over" ? "大" : "小"}球 · 大戶偏${s.ou.side === "Over" ? "大" : "小"} ${s.ou.win == null ? "" : s.ou.win ? "✅" : "❌"}${s.ou.winnerSide ? ` · 💎偏${s.ou.winnerSide === "Over" ? "大" : "小"}` : ""}`);
+    if (s.spread) lines.push(`   ⚖️ 讓球(-1.5): 大戶偏${s.spread.side === "cover" ? "讓球方" : "受讓方"}(${s.spread.actualSide === "cover" ? "實際讓過" : "沒讓過"}) ${s.spread.win == null ? "" : s.spread.win ? "✅" : "❌"}`);
     lines.push(`   🐋 ${esc(bigLine(s.bigBettor, s.home, s.away, fb?.win))}`);
   }
   // 不再重复列全部策略(含已隐藏的 fade、旧格式) —— 置顶才是详细正本; 这里只给一行头条 + 指向置顶
