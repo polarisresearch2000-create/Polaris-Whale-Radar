@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V7.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V7.6"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1238,6 +1238,7 @@ async function trackScorecard(raw) {
 }
 // 每钱包汇总: n结算/命中/ROI/均CLV/未结算, 按 ROI 排序
 function scorecardRows(sc) {
+  const MIN_N = Number(process.env.SCORECARD_MIN_N || 15); // 样本量闸门: 低于此=噪声
   const rows = [];
   for (const wallet in (sc.wallets || {})) {
     const W = sc.wallets[wallet];
@@ -1249,23 +1250,55 @@ function scorecardRows(sc) {
     const roi = n ? Math.round((done.reduce((s, b) => s + (b.profit || 0), 0) / n) * 100) : null;
     const cA = done.filter((b) => b.clv != null);
     const clv = cA.length ? +((cA.reduce((s, b) => s + b.clv, 0) / cA.length) * 100).toFixed(1) : null;
-    rows.push({ wallet, name: W.name, pnl: W.pnl || 0, n, wins, wr: n ? Math.round((wins / n) * 100) : null, roi, clv, open });
+    const enough = n >= MIN_N;
+    const candidate = enough && roi > 0 && clv != null && clv > 0; // 只有样本够 + ROI+CLV 双正才算候选
+    rows.push({ wallet, name: W.name, pnl: W.pnl || 0, n, wins, wr: n ? Math.round((wins / n) * 100) : null, roi, clv, open, enough, candidate });
   }
-  return rows.sort((a, b) => (b.roi ?? -999) - (a.roi ?? -999) || b.n - a.n);
+  const tier = (r) => (r.candidate ? 0 : r.enough ? 1 : 2); // 候选 → 足够样本 → 小样本
+  return rows.sort((a, b) => tier(a) - tier(b) || (b.roi ?? -999) - (a.roi ?? -999) || b.n - a.n);
 }
-function fmtScorecard(sc) {
-  const all = scorecardRows(sc);
-  const settled = all.filter((r) => r.n >= 1);
-  const cn = ["📇 <b>每錢包前向記分卡</b>（跟隨者視角 · 按你能成交的價算）", "（找出真正值得跟的地址：ROI+CLV 持續為正才是真赢家）", ""];
-  if (!settled.length) {
-    cn.push(`⏳ 還沒有已結算的跟隨樣本（已鎖定 ${all.reduce((s, r) => s + r.open, 0)} 筆未結算，賽後逐步結算）`);
-  } else {
-    for (const r of settled.slice(0, 15)) {
-      cn.push(`${r.roi >= 0 ? "🟢" : "🔴"} <code>${esc(r.wallet.slice(0, 6))}…</code>${r.name ? " " + esc(String(r.name).slice(0, 10)) : ""}（歷史$${Math.round(r.pnl / 1e5) / 10}M）`);
-      cn.push(`   ${r.n}場 命中${r.wr}% · ROI ${r.roi >= 0 ? "+" : ""}${r.roi}% · 均CLV ${r.clv != null ? (r.clv >= 0 ? "+" : "") + r.clv + "pt" : "-"}${r.open ? ` · 未結算${r.open}` : ""}`);
+// 总览: 跟所有💎信号的合计(所有钱包的已结算注)
+function scorecardOverall(sc) {
+  let n = 0, wins = 0, profit = 0, cN = 0, cSum = 0;
+  for (const wallet in (sc.wallets || {})) {
+    for (const b of Object.values(sc.wallets[wallet].bets || {})) {
+      if (!b.settled) continue;
+      n++; if (b.win) wins++; profit += b.profit || 0;
+      if (b.clv != null) { cN++; cSum += b.clv; }
     }
   }
-  cn.push("", "⚠️ 樣本少別信 · 只有 ROI 與 CLV 都持續為正的地址才值得專門跟 · 未證明 edge");
+  return { n, wins, roi: n ? Math.round((profit / n) * 100) : null, wr: n ? Math.round((wins / n) * 100) : null, clv: cN ? +((cSum / cN) * 100).toFixed(1) : null };
+}
+function fmtScorecard(sc) {
+  const MIN_N = Number(process.env.SCORECARD_MIN_N || 15);
+  const all = scorecardRows(sc);
+  const settled = all.filter((r) => r.n >= 1);
+  const cn = ["📇 <b>每錢包前向記分卡</b>（跟隨者視角 · 按你能成交的價算）", "（✅候選=樣本夠且 ROI+CLV 雙正才值得跟；小樣本=噪聲別信）", ""];
+  if (!settled.length) {
+    cn.push(`⏳ 還沒有已結算的跟隨樣本（已鎖定 ${all.reduce((s, r) => s + r.open, 0)} 筆未結算）`);
+    cn.push(`🔭 持續更新 · ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
+    return cn.join("\n");
+  }
+  const ov = scorecardOverall(sc);
+  cn.push(`📊 <b>總覽（跟所有💎信號）</b>：${ov.n}注 命中${ov.wr}% · ROI ${ov.roi >= 0 ? "+" : ""}${ov.roi}% · 均CLV ${ov.clv != null ? (ov.clv >= 0 ? "+" : "") + ov.clv + "pt" : "-"}`);
+  cn.push("（⚠️多為同一批世界盃賽事、樣本未跨不同行情,別當定論）", "");
+  const cands = settled.filter((r) => r.candidate);
+  if (cands.length) {
+    cn.push(`✅ <b>候選可跟</b>（樣本≥${MIN_N} 且 ROI+CLV 雙正）`);
+    for (const r of cands.slice(0, 8)) cn.push(`🟢 <code>${esc(r.wallet.slice(0, 6))}…</code>${r.name ? " " + esc(String(r.name).slice(0, 10)) : ""} — ${r.n}場 命中${r.wr}% · ROI +${r.roi}% · CLV +${r.clv}pt${r.open ? ` · 未結算${r.open}` : ""}`);
+    cn.push("");
+  } else {
+    cn.push(`✅ 候選可跟：<b>暫無</b>（還沒地址達到 樣本≥${MIN_N} 且 ROI+CLV 雙正）`, "");
+  }
+  const others = settled.filter((r) => r.enough && !r.candidate);
+  if (others.length) {
+    cn.push(`<b>其餘足夠樣本（≥${MIN_N}·未雙正·僅參考）</b>`);
+    for (const r of others.slice(0, 6)) cn.push(`${r.roi >= 0 ? "🟡" : "🔴"} <code>${esc(r.wallet.slice(0, 6))}…</code>${r.name ? " " + esc(String(r.name).slice(0, 8)) : ""} — ${r.n}場 ROI ${r.roi >= 0 ? "+" : ""}${r.roi}% CLV ${r.clv != null ? (r.clv >= 0 ? "+" : "") + r.clv + "pt" : "-"}`);
+    cn.push("");
+  }
+  const smallN = settled.filter((r) => !r.enough).length;
+  if (smallN) cn.push(`… 另有 ${smallN} 個地址樣本<${MIN_N}（噪聲,已隱藏,別信其 ROI）`);
+  cn.push("", "⚠️ 只有 ROI 與 CLV 雙正、且跨不同行情仍成立的地址才值得跟 · 未證明 edge");
   cn.push(`🔭 持續更新 · ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
   return cn.join("\n");
 }
@@ -1610,13 +1643,19 @@ async function main() {
     // 先跑一轮捕捉/结算(用当前赢家出手), 再打印每钱包前向记分卡
     try { const { raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24), trackedWallets: trackedWalletsFromScorecard() }); await trackScorecard(raw); } catch (e) { console.error("记分卡刷新出错:", e.message); }
     const sc = loadScorecard();
+    const MIN_N = Number(process.env.SCORECARD_MIN_N || 15);
     const rows = scorecardRows(sc);
-    console.log(`每钱包前向记分卡（跟随者视角 · 按能成交价算 · 已锁定 ${rows.reduce((s, r) => s + r.open, 0)} 未结算 / ${rows.reduce((s, r) => s + r.n, 0)} 已结算）`);
+    const ov = scorecardOverall(sc);
+    console.log(`每钱包前向记分卡（跟随者视角·按能成交价算·地址${rows.length}·已锁定${rows.reduce((s, r) => s + r.open, 0)}·已结算${rows.reduce((s, r) => s + r.n, 0)}）`);
     if (!rows.length) { console.log("(还没有任何跟随样本; 让它跑几天)"); return; }
-    for (const r of rows) {
-      const perf = r.n ? `${r.n}结算 命中${r.wr}% ROI ${r.roi >= 0 ? "+" : ""}${r.roi}% 均CLV ${r.clv != null ? (r.clv >= 0 ? "+" : "") + r.clv + "pt" : "-"}` : "尚无结算";
-      console.log(`  ${r.wallet.slice(0, 8)}… ${(r.name || "").slice(0, 12).padEnd(12)} 历史$${Math.round(r.pnl / 1e6 * 10) / 10}M | ${perf} | 未结算${r.open}`);
-    }
+    console.log(`📊 总览(跟所有信号): ${ov.n}注 命中${ov.wr}% ROI ${ov.roi >= 0 ? "+" : ""}${ov.roi}% 均CLV ${ov.clv != null ? (ov.clv >= 0 ? "+" : "") + ov.clv + "pt" : "-"}  ⚠️多为同批世界杯、未跨行情`);
+    const cands = rows.filter((r) => r.candidate);
+    console.log(`\n✅ 候选可跟(样本≥${MIN_N} 且 ROI+CLV 双正): ${cands.length ? "" : "暂无"}`);
+    for (const r of cands) console.log(`  🟢 ${r.wallet.slice(0, 8)}… ${(r.name || "").slice(0, 12).padEnd(12)} ${r.n}场 命中${r.wr}% ROI +${r.roi}% CLV +${r.clv}pt 未结算${r.open}`);
+    const others = rows.filter((r) => r.enough && !r.candidate);
+    if (others.length) { console.log(`\n其余足够样本(≥${MIN_N}·未双正·参考):`); for (const r of others) console.log(`  ${r.roi >= 0 ? "🟡" : "🔴"} ${r.wallet.slice(0, 8)}… ${(r.name || "").slice(0, 12).padEnd(12)} ${r.n}场 ROI ${r.roi >= 0 ? "+" : ""}${r.roi}% CLV ${r.clv != null ? (r.clv >= 0 ? "+" : "") + r.clv + "pt" : "-"}`); }
+    const small = rows.filter((r) => r.n >= 1 && !r.enough).length;
+    console.log(`\n… 另有 ${small} 个地址样本<${MIN_N}(噪声,别信其ROI)`);
     return;
   }
 
