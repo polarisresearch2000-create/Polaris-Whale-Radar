@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V7.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V7.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1355,6 +1355,172 @@ async function postOrUpdateScorecardPin(sc, state) {
   if (id) { state.scorecardPinId = id; await pinMsg(id); }
 }
 
+// ==== 钱包深度画像: 按入场价拆"押热门/五五盘/押冷门"分桶 ROI+CLV → 分辨顺风车 vs 真本事 ====
+// 一组注的汇总(只算已结算): n/命中/ROI(按入场价)/均CLV
+function statsOf(bets) {
+  const done = (bets || []).filter((b) => b.settled);
+  const n = done.length, wins = done.filter((b) => b.win).length;
+  const profit = done.reduce((s, b) => s + (b.profit || 0), 0);
+  const cA = done.filter((b) => b.clv != null);
+  const clv = cA.length ? +((cA.reduce((s, b) => s + b.clv, 0) / cA.length) * 100).toFixed(1) : null;
+  return { n, wins, wr: n ? Math.round((wins / n) * 100) : null, roi: n ? Math.round((profit / n) * 100) : null, clv };
+}
+// 盘口画像分类(从 outcome + eventSlug 轻量推断)
+function betKind(b) {
+  const o = String(b.outcome || "").toLowerCase(), s = String(b.eventSlug || "").toLowerCase();
+  if (o === "over" || o === "under") return "大小球";
+  if (/halftime|exact|btts|both-teams|advance|to-score|clean-sheet|corner|card|player|winning-margin|first-|anytime|set-|handicap-game/.test(s)) return "衍生/散戶";
+  if (o === "yes" || o === "no") return "是非盤";
+  return "勝負/讓球";
+}
+// 按 地址前缀 / 名字 找钱包
+function findWallet(sc, q) {
+  q = String(q || "").toLowerCase().trim();
+  if (!q) return null;
+  const ws = sc.wallets || {};
+  for (const w in ws) if (w.toLowerCase() === q) return w;
+  for (const w in ws) if (w.toLowerCase().startsWith(q)) return w;
+  for (const w in ws) if (String(ws[w].name || "").toLowerCase().includes(q)) return w;
+  return null;
+}
+// 单钱包画像: 分桶 + 盘口 + 近期 + 判定(顺风车 vs 真本事)
+function walletProfile(sc, query) {
+  const wallet = findWallet(sc, query);
+  if (!wallet) return null;
+  const W = sc.wallets[wallet];
+  const bets = Object.values(W.bets || {});
+  const settled = bets.filter((b) => b.settled);
+  const open = bets.length - settled.length;
+  const MIN = Number(process.env.SHARP_MIN_N || 15);
+  // 按"押的那一侧的入场价"分桶: 热门≥55¢ / 五五盘 / 冷门≤45¢
+  const fav = settled.filter((b) => b.entry >= 0.55);
+  const even = settled.filter((b) => b.entry > 0.45 && b.entry < 0.55);
+  const dog = settled.filter((b) => b.entry <= 0.45);
+  const nonFav = [...even, ...dog];
+  // 盘口画像
+  const types = {};
+  for (const b of settled) { const k = betKind(b); (types[k] = types[k] || []).push(b); }
+  const byType = Object.entries(types).map(([k, arr]) => ({ k, ...statsOf(arr) })).sort((a, b) => b.n - a.n);
+  // 近期滑坡: 最近8场(按下注时间)
+  const recentBets = [...settled].sort((a, b) => (b.entryTs || 0) - (a.entryTs || 0)).slice(0, 8);
+  const all = statsOf(settled), sFav = statsOf(fav), sEven = statsOf(even), sDog = statsOf(dog), sNon = statsOf(nonFav), recent = statsOf(recentBets);
+  // 判定: 赚从哪来? 只在押热门时赚=顺风车; 非热门也赚且CLV正=真本事
+  let vemo, verdict;
+  if (all.n < MIN) { vemo = "⏳"; verdict = `樣本不足（僅 ${all.n} 場，< ${MIN}），先別下結論`; }
+  else if (all.roi == null || all.roi <= 0) { vemo = "❌"; verdict = "整體 ROI 為負 → 別跟"; }
+  else if (sNon.n >= 5 && sNon.roi > 0 && sNon.clv != null && sNon.clv > 0) { vemo = "✅"; verdict = "冷門/五五盤也賺、CLV 正 → 更像真本事（抗爆冷）"; }
+  else if (sFav.roi > 0 && (sNon.n < 5 || sNon.roi == null || sNon.roi <= 0)) { vemo = "🟡"; verdict = "賺幾乎只來自押熱門 → 順風車嫌疑，爆冷恐跳水"; }
+  else { vemo = "🟡"; verdict = "混合、CLV 未穩定正 → 繼續觀察"; }
+  return { wallet, name: W.name || "", pnl: W.pnl || 0, open, all, fav: sFav, even: sEven, dog: sDog, nonFav: sNon, recent, byType, vemo, verdict, MIN };
+}
+function fmtProfileText(p) {
+  const R = (s) => (s.n ? `${String(s.n).padStart(2)}場 命中${String(s.wr).padStart(3)}% ROI ${(s.roi >= 0 ? "+" : "") + s.roi}% CLV ${s.clv != null ? (s.clv >= 0 ? "+" : "") + s.clv + "pt" : "-"}` : "無");
+  const L = [];
+  L.push(`📇 深度畫像  ${p.wallet.slice(0, 10)}…  ${p.name}   (全期盈虧 $${Math.round(p.pnl).toLocaleString()})`);
+  L.push(`總計: ${R(p.all)}   ·   未結算 ${p.open}`);
+  L.push(`\n— 賺從哪來?(按入場價分桶,分辨順風車 vs 真本事) —`);
+  L.push(`  押熱門 ≥55¢ : ${R(p.fav)}`);
+  L.push(`  五五盤 45–55: ${R(p.even)}`);
+  L.push(`  押冷門 ≤45¢ : ${R(p.dog)}`);
+  L.push(`  ↳ 非熱門合計: ${R(p.nonFav)}   ← 這塊也 +ROI 且 CLV 正 才是真本事`);
+  L.push(`\n— 盤口畫像 —`);
+  for (const t of p.byType) L.push(`  ${t.k.padEnd(6)}: ${R(t)}`);
+  L.push(`\n— 近期滑坡(最近${p.recent.n}場) —`);
+  L.push(`  ${R(p.recent)}`);
+  L.push(`\n${p.vemo} 判定: ${p.verdict}`);
+  return L.join("\n");
+}
+
+// ==== 仪表盘: 生成本地 dashboard.html(浏览器双击打开, 把记分卡/画像/板块战绩/台账可视化) ====
+const DASH_FILE = path.join(__dirname, "dashboard.html");
+const roiCls = (v) => (v == null ? "muted" : v > 0 ? "pos" : v < 0 ? "neg" : "muted");
+const roiTxt = (v, suf) => (v == null ? "-" : (v >= 0 ? "+" : "") + v + (suf || ""));
+function profileCardHtml(p) {
+  if (!p) return "";
+  const cells = (s) => `<td>${s.n || 0}</td><td>${s.wr != null ? s.wr + "%" : "-"}</td><td class="${roiCls(s.roi)}">${roiTxt(s.roi, "%")}</td><td class="${roiCls(s.clv)}">${s.clv != null ? roiTxt(s.clv, "pt") : "-"}</td>`;
+  const cls = p.vemo === "✅" ? "ok" : p.vemo === "🟡" ? "warn" : p.vemo === "❌" ? "bad" : "wait";
+  const typeRows = p.byType.map((t) => `<tr><td>${esc(t.k)}</td>${cells(t)}</tr>`).join("");
+  return `<div class="card">
+    <div class="pc-head"><span class="badge ${cls}">${p.vemo}</span>
+      <b><code>${esc(p.wallet.slice(0, 8))}…</code> ${esc(p.name)}</b>
+      <span class="muted">全期盈虧 $${Math.round(p.pnl).toLocaleString()} · 未結算 ${p.open}</span></div>
+    <div class="verdict">${esc(p.verdict)}</div>
+    <table class="grid"><thead><tr><th>賺從哪來?（按入場價）</th><th>場</th><th>命中</th><th>ROI</th><th>CLV</th></tr></thead><tbody>
+      <tr><td>總計</td>${cells(p.all)}</tr>
+      <tr class="hi"><td>押熱門 ≥55¢</td>${cells(p.fav)}</tr>
+      <tr><td>五五盤 45–55</td>${cells(p.even)}</tr>
+      <tr class="hi"><td>押冷門 ≤45¢</td>${cells(p.dog)}</tr>
+      <tr><td>↳ 非熱門合計</td>${cells(p.nonFav)}</tr>
+      <tr><td>近期 ${p.recent.n} 場</td>${cells(p.recent)}</tr>
+    </tbody></table>
+    <table class="grid mini"><thead><tr><th>盤口畫像</th><th>場</th><th>命中</th><th>ROI</th><th>CLV</th></tr></thead><tbody>${typeRows}</tbody></table>
+  </div>`;
+}
+function buildDashboard() {
+  const sc = loadScorecard();
+  const rows = scorecardRows(sc);
+  const ov = scorecardOverall(sc);
+  const MIN_N = Number(process.env.SCORECARD_MIN_N || 15);
+  const cands = rows.filter((r) => r.candidate);
+  const others = rows.filter((r) => r.enough && !r.candidate);
+  const smallN = rows.filter((r) => r.n >= 1 && !r.enough).length;
+  let ms = {}; try { ms = JSON.parse(fs.readFileSync(MS_FILE, "utf8")).strategies || {}; } catch {}
+  let led = { bets: [] }; try { led = loadLedger(); } catch {}
+  const now = hkNow().toISOString().slice(0, 16).replace("T", " ");
+  const ovHtml = `<section class="card overview">📊 總覽（跟所有💎信號） · <b class="${roiCls(ov.roi)}">${roiTxt(ov.roi, "%")}</b> ROI
+    <div class="muted">${ov.n || 0} 注 · 命中 ${ov.wr != null ? ov.wr + "%" : "-"} · 均CLV ${ov.clv != null ? roiTxt(ov.clv, "pt") : "-"} · ⚠️ 多為同批世界盃、未跨行情</div></section>`;
+  const candHtml = cands.length
+    ? cands.map((r) => profileCardHtml(walletProfile(sc, r.wallet))).filter(Boolean).join("")
+    : `<div class="card muted">暫無地址達到「樣本 ≥ ${MIN_N} 且 ROI+CLV 雙正」。繼續讓雷達跑、攢樣本。</div>`;
+  const othRows = others.slice(0, 15).map((r) => `<tr><td><code>${esc(r.wallet.slice(0, 8))}…</code> ${esc((r.name || "").slice(0, 12))}</td><td>${r.n}</td><td>${r.wr}%</td><td class="${roiCls(r.roi)}">${roiTxt(r.roi, "%")}</td><td class="${roiCls(r.clv)}">${r.clv != null ? roiTxt(r.clv, "pt") : "-"}</td></tr>`).join("");
+  const othHtml = others.length ? `<table class="grid"><thead><tr><th>地址（≥${MIN_N}·未雙正·僅參考）</th><th>場</th><th>命中</th><th>ROI</th><th>CLV</th></tr></thead><tbody>${othRows}</tbody></table>` : `<div class="muted">（暫無足夠樣本的地址）</div>`;
+  const kinds = [["ml", "勝負盤"], ["ou", "大小球"], ["spread", "讓球"]], keys = [["followBig", "跟大戶"], ["followWinner", "跟💎"]];
+  let msRows = "";
+  for (const [kk, kl] of kinds) for (const [pk, pl] of keys) {
+    const v = msVerdict(ms[kk] && ms[kk][pk]); if (!v) continue;
+    msRows += `<tr><td>${kl} ${pl}</td><td>${v.n}</td><td class="${roiCls(v.roi)}">${roiTxt(v.roi, "%")}</td><td class="${roiCls(v.clv)}">${v.clv != null ? roiTxt(v.clv, "pt") : "-"}</td><td>${v.label}</td></tr>`;
+  }
+  const boardHtml = msRows ? `<table class="grid"><thead><tr><th>板塊信號</th><th>場</th><th>ROI</th><th>CLV</th><th>判定</th></tr></thead><tbody>${msRows}</tbody></table>` : `<div class="muted">（還沒有已結算的板塊樣本）</div>`;
+  const lb = (led.bets || []).filter((b) => b.settled);
+  const staked = lb.reduce((s, b) => s + (b.stake || 0), 0), lpnl = lb.reduce((s, b) => s + (b.pnl || 0), 0);
+  const lroi = staked ? Math.round((lpnl / staked) * 100) : null;
+  const ledHtml = (led.bets || []).length
+    ? `<div class="card">已結算 ${lb.length} 注 · 未結算 ${led.bets.length - lb.length} · 投入 $${Math.round(staked)} · 盈虧 <b class="${roiCls(lpnl)}">${lpnl >= 0 ? "+" : ""}$${Math.round(lpnl)}</b> · ROI <span class="${roiCls(lroi)}">${lroi != null ? roiTxt(lroi, "%") : "-"}</span></div>`
+    : `<div class="muted">（台賬空 · 用 <code>node bot.js --log-bet</code> 記你真實下的注）</div>`;
+  const css = ":root{--bg:#0f1420;--card:#161d2e;--line:#26304a;--tx:#e6ebf5;--mut:#8492ad;--pos:#3fd07f;--neg:#ff6b6b;--accent:#5b8def}"
+    + "*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.55 -apple-system,'Segoe UI',Roboto,'PingFang HK','Microsoft YaHei',sans-serif}"
+    + ".wrap{max-width:920px;margin:0 auto;padding:22px 16px 70px}h1{font-size:22px;margin:0 0 4px}"
+    + "h2{font-size:17px;margin:28px 0 10px;border-left:3px solid var(--accent);padding-left:8px}"
+    + ".meta{color:var(--mut);font-size:13px;margin-bottom:12px}"
+    + ".banner{background:#2a1f12;border:1px solid #5a4520;color:#ffce54;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px}"
+    + ".card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}"
+    + ".overview{font-size:16px}.overview b{font-size:20px}"
+    + "table.grid{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}"
+    + "table.grid th,table.grid td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--line)}"
+    + "table.grid th:first-child,table.grid td:first-child{text-align:left}"
+    + "table.grid th{color:var(--mut);font-weight:600;font-size:12px}table.grid tr.hi td{background:#1b2540}table.mini{margin-top:4px;opacity:.92}"
+    + ".pos{color:var(--pos)}.neg{color:var(--neg)}.muted{color:var(--mut)}"
+    + ".pc-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:4px}.pc-head .muted{font-size:12px;margin-left:auto}"
+    + ".badge{display:inline-block;min-width:26px;text-align:center;border-radius:6px;padding:1px 6px;font-size:15px}"
+    + ".badge.ok{background:#123524}.badge.warn{background:#3a2f10}.badge.bad{background:#3a1616}.badge.wait{background:#222b3f}"
+    + ".verdict{font-size:14px;color:#cdd6ea;margin:2px 0 6px}code{background:#0c1120;padding:1px 5px;border-radius:4px;font-size:13px}"
+    + ".foot{color:var(--mut);font-size:12px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}";
+  const html = `<!doctype html><html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Polaris 記分卡儀表盤</title><style>${css}</style></head><body><div class="wrap">
+    <h1>📇 聰明錢記分卡 · 儀表盤</h1>
+    <div class="meta">生成於 ${now} HKT · 資料隨雷達運行更新（重跑「打开仪表盘.bat」刷新）</div>
+    <div class="banner">⚠️ 判據：只有 ROI 與 CLV 雙正、<b>非熱門也賺</b>、且跨行情仍成立的地址才值得跟。目前多為世界盃順風窗口，未證明 edge。</div>
+    ${ovHtml}
+    <h2>✅ 候選可跟（附「賺從哪來」拆解）</h2>${candHtml}
+    <h2>📋 其餘足夠樣本（參考）</h2>${othHtml}
+    <div class="meta">另有 ${smallN} 個地址樣本 < ${MIN_N}（噪聲，已隱藏）</div>
+    <h2>🎯 全體育板塊戰績</h2>${boardHtml}
+    <h2>📒 我的下注台賬</h2>${ledHtml}
+    <div class="foot">Polaris Whale Radar · 跟隨者視角（按你能成交的價算 ROI）· CLV = 近開賽價 − 入場價<br>看穿一個地址：押熱門才賺=順風車；冷門/五五盤也賺且 CLV 穩定正=真本事。</div>
+  </div></body></html>`;
+  fs.writeFileSync(DASH_FILE, html);
+  return { file: DASH_FILE, cands: cands.length, others: others.length, smallN };
+}
+
 // ==== DraftKings 差价信号: Polymarket 价 vs 博彩无水位公平价, 买在便宜的一侧=理论+EV + 前向追踪 ====
 const DKEDGE_FILE = path.join(__dirname, "data", "dk_edges.json");
 function fmtDkEdges(edges) {
@@ -1587,6 +1753,7 @@ async function pollOnce() {
         const { list, raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24), trackedWallets: trackedWalletsFromScorecard() });
         if (list.length) { await postOrUpdateWinnerPin(list, d); console.log(`  → 已更新赢家最新出手置顶(${list.length}笔)`); }
         try { const n = await trackScorecard(raw); if (n) console.log(`  → 记分卡: 新捕捉/结算 ${n}`); await postOrUpdateScorecardPin(loadScorecard(), d); } catch (e) { console.error("记分卡出错:", e.message); }
+        try { buildDashboard(); } catch (e) { console.error("仪表盘生成出错:", e.message); } // 顺带刷新本地 dashboard.html
         try { const l = loadLedger(); if ((l.bets || []).some((b) => !b.settled)) { const sn = await settleLedger(l); if (sn) console.log(`  → 台账新结算 ${sn} 注`); } await postOrUpdateLedgerPin(l, d); } catch (e) { console.error("台账置顶出错:", e.message); }
         d.winnerBets = now;
       } catch (e) {
@@ -1701,6 +1868,26 @@ async function main() {
     if (others.length) { console.log(`\n其余足够样本(≥${MIN_N}·未双正·参考):`); for (const r of others) console.log(`  ${r.roi >= 0 ? "🟡" : "🔴"} ${r.wallet.slice(0, 8)}… ${(r.name || "").slice(0, 12).padEnd(12)} ${r.n}场 ROI ${r.roi >= 0 ? "+" : ""}${r.roi}% CLV ${r.clv != null ? (r.clv >= 0 ? "+" : "") + r.clv + "pt" : "-"}`); }
     const small = rows.filter((r) => r.n >= 1 && !r.enough).length;
     console.log(`\n… 另有 ${small} 个地址样本<${MIN_N}(噪声,别信其ROI)`);
+    return;
+  }
+
+  if (process.argv.includes("--profile")) {
+    // 用法: node bot.js --profile <地址或名字>   (拆"押热门/押冷门"分桶 ROI+CLV → 顺风车 vs 真本事)
+    const i = process.argv.indexOf("--profile");
+    const q = process.argv.slice(i + 1).filter((x) => !x.startsWith("--")).join(" ");
+    if (!q) { console.log("用法: node bot.js --profile <地址或名字>\n例:  node bot.js --profile riverskew   /   node bot.js --profile 0x076daa"); return; }
+    try { const { raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24), trackedWallets: trackedWalletsFromScorecard() }); await trackScorecard(raw); } catch (e) { console.error("刷新出错(用现有数据继续):", e.message); }
+    const p = walletProfile(loadScorecard(), q);
+    if (!p) { console.log(`找不到匹配 "${q}" 的地址。试试地址前缀(如 0x076daa)或名字(如 riverskew)。先跑 node bot.js --scorecard 看已知地址`); return; }
+    console.log(fmtProfileText(p));
+    return;
+  }
+
+  if (process.argv.includes("--dashboard")) {
+    // 生成本地 dashboard.html(浏览器双击打开)。--refresh 先跑一轮捕捉/结算再生成
+    if (process.argv.includes("--refresh")) { try { const { raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24), trackedWallets: trackedWalletsFromScorecard() }); await trackScorecard(raw); await trackMultiSport(); } catch (e) { console.error("刷新出错(用现有数据生成):", e.message); } }
+    const r = buildDashboard();
+    console.log(`✅ 仪表盘已生成: ${r.file}\n   候选 ${r.cands} · 其余足够样本 ${r.others} · 小样本 ${r.smallN}(隐藏)\n   双击「打开仪表盘.bat」或直接用浏览器打开该文件即可查看`);
     return;
   }
 

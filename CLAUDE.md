@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V6.9**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V7.8**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -49,6 +49,8 @@ node bot.js --once     # 扫描一次(测试用)
 node bot.js --test     # 发一条连通性测试到频道
 node bot.js --results  # 打印赛果追踪/策略 ROI
 node index.js          # 命令行信号报告
+node bot.js --profile <地址/名字>  # 钱包深度画像:按入场价分桶 ROI+CLV → 顺风车 vs 真本事
+node bot.js --dashboard            # 生成本地 dashboard.html(浏览器打开;雷达运行时每轮自动刷新)
 ```
 > bot 走哪个频道由环境变量 `PROFILE` 决定：`PROFILE=SPORTS` → 世界杯；空 → 加密(默认)。启动脚本里已设好。
 
