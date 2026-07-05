@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V8.0**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V8.1**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -52,6 +52,7 @@ node index.js          # 命令行信号报告
 node bot.js --profile <地址/名字>  # 钱包深度画像:按入场价分桶 ROI+CLV → 顺风车 vs 真本事
 node bot.js --dashboard            # 生成本地 dashboard.html(浏览器打开;雷达运行时每轮自动刷新)
 node bot.js --simulate             # $1000 Kelly 模拟账户(回放候选信号·固定假设edge·出ROI/胜率/最大回撤)
+node bot.js --strength [--dry]      # 擅长盘前向验证器:候选在其擅长盘出新赛前注→亮灯+纸面记账+样本外ROI/CLV(--dry不推)
 #   ↳ --profile 末尾/仪表盘候选卡 都会显示该地址「近期出手明细」(项目/成本¢$/现价/状态, walletActivity 实时拉 /activity)
 ```
 > bot 走哪个频道由环境变量 `PROFILE` 决定：`PROFILE=SPORTS` → 世界杯；空 → 加密(默认)。启动脚本里已设好。
@@ -112,6 +113,7 @@ node bot.js --simulate             # $1000 Kelly 模拟账户(回放候选信号
 
 - `wallet_scorecard.json` — **每钱包前向记分卡**(V6.9)：`wallets[addr]`= {name, pnl, bets:{[cid+outcome]:{eventSlug,gammaId,outcome,entry(跟随者当前能成交价),entryTs,kickoffMs,last(最后观测价,CLV用),settled,win,profit,clv}}}。捕捉赢家赛前出手→赛后 `getMarketResolution` 结算→每地址 ROI/命中/均CLV。**只锁真赛前(kickoffMs>now)杜绝 look-ahead**。`node bot.js --scorecard` 查看。
 - `winners_sports.json` — 体育赢家名单缓存(12h,`buildSportsWinners`)。⚠️记分卡地址会**并回扫描集**(`trackedWallets`)持续跟踪,不受此12h名单漂移影响(V7.0 修)。
+- `strength_track.json`(gitignore) — **擅长盘·前向验证器**(V8.1)：`frozen[wallet][kind]={since,...}`(擅长盘标签冻结时间) + `signals[cid|outcome|wallet]={kind,title,eventSlug,gammaId,outcome,entry(能成交价),entryTs,kickoffMs,frozenSince,afterFreeze,last,settled,win,profit,clv}`。只捕候选在其【已冻结】擅长盘的赛前新注,只统计冻结后(afterFreeze)信号=样本外。`--strength` 查看。
 - `my_ledger.json` — **个人下注台账**(V7.0)：你真实下的注 {eventSlug,gammaId,outcome,price,stake,settled,win,pnl}。`node bot.js --log-bet <eventSlug> <outcome> <price> <stake>` 记录;`--ledger` 结算+看已实现ROI;digest 每轮自动结算。
 
 **重置追踪记录**：删对应 `results_<tag>.json` / `results_multisport.json` / `wallet_scorecard.json`（干净起跑；现无已结算数据时无损失）。

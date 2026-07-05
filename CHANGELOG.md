@@ -3,6 +3,16 @@
 > 每次迭代升级在此记录并更新版本号。当前版本同步显示在：
 > 启动脚本横幅（`启动世界杯雷达.bat`）+ bot 启动日志（`bot.js` 的 `VERSION`）。
 
+## V8.1 — 2026-07-05（擅长盘·前向验证器 + 实时匹配"亮灯"信号）
+- 把"聚焦擅长盘"从【回放结论】变成【前向信号 + 样本外验证】。一件事三作用：
+  - **① 实时匹配亮灯**：`trackStrengthSignals` 盯候选,只有当他们的**新赛前出手落在自己【已冻结】的擅长盘**时才捕捉(swisstony 押大小球→亮;押胜负→忽略)。非擅长盘噪声全过滤。新亮灯每轮 digest 推 Telegram(`fmtStrengthAlert`)。
+  - **② 纸面记账 + 前向 ROI/CLV**：捕捉时按**你能成交的价**(mktPrice)锁定 → 临近开赛刷新 last 算 CLV → `getMarketNow` 结算。存 `data/strength_track.json`。
+  - **③ 样本外验证**：擅长盘标签**首次达标即冻结**(记 `since`),战绩**只统计冻结后捕捉的信号**(`afterFreeze`)。`sgVerdict`:样本外 ROI+CLV 双正=✅edge站得住 / 转负=❌之前是选择偏差别再跟。
+  - 出口：`node bot.js --strength [--dry]`、仪表盘顶部「🏅只跟擅长盘·样本外前向验证器」板块(战绩+进行中亮灯表+已结算表)、Telegram 置顶(`postOrUpdateStrengthPin`,`strengthPinId` 入 `--repin` 顺序)、digest 每轮自动捕捉/结算/推送。
+  - 首跑即捕捉 11 条在擅长盘的赛前信号(riverskew→胜负、swisstony→大小球、GoalLineGhost→是非盘),等结算攒样本外战绩。
+  - `betKind` 再收紧:半场/单节/单节 O/U(1st Half O/U 等)归衍生,不算核心大小球。`data/strength_track.json` gitignore。
+- ⏭️ 验证够样本(≥10 已结算样本外)后要提醒用户的下一步：①盘口专家名册(按类型汇池) ②专家共识(2+同类同向🔥) ③成交闸门(--quote) ④擅长盘专属Kelly。
+
 ## V8.0 — 2026-07-05（擅长盘识别 + 高信心组合 + $1000 Kelly 模拟账户）
 - 用户要「分析候选地址各自擅长什么盘、在仪表盘强化这些高胜率信号、加个 $1000 Kelly 模拟账户算胜率」。三块：
   - **① 擅长盘识别**：`walletProfile` 新增 `strengths` —— 从盘口画像里挑出该地址 n≥`STRENGTH_MIN_N`(默6)、ROI+CLV 双正、且非「衍生/散户」的盘口类型(得分=ROI+CLV 排序，n<15 标 tentative)。`--profile` 末尾加「🏅擅长盘口」行；仪表盘候选卡加绿色 pill；近期出手明细里属擅长盘的行**高亮+🏅**。

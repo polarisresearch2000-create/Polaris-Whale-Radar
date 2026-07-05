@@ -3,3 +3,4 @@ node_modules/
 *.log
 dashboard.html
 data/wallet_detail.json
+data/strength_track.json
