@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V8.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V8.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1710,6 +1710,26 @@ function fmtPaperText(track) {
   L.push(`  ✅ 前向·樣本外·¼Kelly —— 這才是"跟不跟得賺"的誠實答案(需攢幾週)。`);
   return L.join("\n");
 }
+// Telegram 版(HTML): $1000 前向纸面账户 + 目前在押, 供定时推送
+function fmtPaperTG(track) {
+  const p = strengthPaper(track);
+  const cn = ["🎲 <b>$1000 前向紙面賬戶</b>（只跟擅長盤亮燈 · 樣本外 · ¼Kelly · 按你能成交價）", ""];
+  cn.push(`本金 $1000 → 現值 <b>$${p.bankroll.toLocaleString()}</b> · ROI <b>${p.roi >= 0 ? "+" : ""}${p.roi}%</b>`);
+  if (p.n) cn.push(`已結算 ${p.n} 注 · 勝率 ${p.winrate}% · 最大回撤 ${p.maxDD}%`);
+  else cn.push(`⏳ 尚無已結算（等亮燈信號的賽事結算）`);
+  cn.push(`進行中 <b>${p.openN}</b> 注 · 在押 ~<b>$${p.openExposure.toLocaleString()}</b> · 浮盈 <b>${p.unrealTotal >= 0 ? "+" : ""}$${p.unrealTotal.toLocaleString()}</b>`);
+  if (p.positions.length) {
+    cn.push("", "<b>📌 目前在押（紙面注 · 浮盈）</b>");
+    for (const s of p.positions.slice(0, 12)) {
+      const u = s.unreal != null ? `${s.unreal >= 0 ? "+" : ""}$${Math.abs(s.unreal) < 1 ? s.unreal.toFixed(1) : Math.round(s.unreal)}` : "-";
+      const ex = s.exit ? ` ⚠️贏家${s.reduced ? "減倉" : "已賣"}` : "";
+      const low = Math.round((s.entry || 0) * 100) >= 80 ? " ⚠️低賠" : "";
+      cn.push(`💵$${s.stake} · ${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))} <b>${esc(s.kind)}</b> 押${esc(s.outcome)}@${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""} 浮${u}${ex}${low} · <i>${esc((s.title || "").slice(0, 22))}</i>`);
+    }
+  }
+  cn.push("", `🔭 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · 每4h更新 · 非投注建議,未證明 edge`);
+  return cn.join("\n");
+}
 function runSimSet(sc) {
   const all = candidateBets(sc);
   const strong = all.filter((b) => b.inStrength);
@@ -2161,6 +2181,15 @@ async function pollOnce() {
         console.error("赢家最新出手出错:", e.message);
       }
     }
+    // $1000 前向纸面账户: 每 PAPER_PUSH_MIN(默4h) 推一次(只读, 用运行中雷达已刷新的 strength_track)
+    if ((process.env.PAPER_PUSH_ENABLED || "on") !== "off" && now - (d.paperPush || 0) >= Number(process.env.PAPER_PUSH_MIN || 240) * 60000) {
+      try {
+        const track = loadStrengthTrack();
+        const p = strengthPaper(track);
+        if (p.openN > 0 || p.n > 0) { await send(fmtPaperTG(track)); console.log("  → 已推 $1000 前向纸面账户"); }
+        d.paperPush = now; // 空也记时间, 免每轮重试
+      } catch (e) { console.error("纸面账户推送出错:", e.message); }
+    }
     if (PROFILES_ENABLED && now - (d.profiles || 0) >= PROFILES_MIN * 60000) {
       try {
         const p = await analyzeTopTraders(12);
@@ -2288,9 +2317,11 @@ async function main() {
 
   if (process.argv.includes("--paper")) {
     // $1000 前向纸面账户(样本外·真赛果结算)。#4 修: 默认【只读】(不写文件, 免和运行中的雷达抢写)
-    // 想强制先捕捉/结算再看, 加 --refresh(仅在雷达没开时用)
+    // --refresh 强制先捕捉/结算(仅雷达没开时用); --push 推一条到 Telegram
     if (process.argv.includes("--refresh")) { try { await trackStrengthSignals(); } catch (e) { console.error("刷新出错(用现有数据):", e.message); } }
-    console.log(fmtPaperText(loadStrengthTrack()));
+    const track = loadStrengthTrack();
+    console.log(fmtPaperText(track));
+    if (process.argv.includes("--push")) { await send(fmtPaperTG(track)); console.log(`\n✅ 已推 $1000 前向纸面账户 → ${CHANNEL}`); }
     return;
   }
 
