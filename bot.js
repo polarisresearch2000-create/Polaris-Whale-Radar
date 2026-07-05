@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V8.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V8.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1815,7 +1815,26 @@ function buildDashboard() {
     <div class="foot">Polaris Whale Radar · 跟隨者視角（按你能成交的價算 ROI）· CLV = 近開賽價 − 入場價<br>看穿一個地址：押熱門才賺=順風車；冷門/五五盤也賺且 CLV 穩定正=真本事。</div>
   </div></body></html>`;
   fs.writeFileSync(DASH_FILE, html);
-  return { file: DASH_FILE, cands: cands.length, others: others.length, smallN };
+  return { file: DASH_FILE, cands: cands.length, others: others.length, smallN, html };
+}
+// 本地服务模式: 每次请求(F5)现算最新数据重新渲染 → 浏览器 F5 即刷新, 无需重启/重跑 .bat
+function serveDashboard(port) {
+  const http = require("http");
+  const srv = http.createServer((req, res) => {
+    const u = (req.url || "/").split("?")[0];
+    if (u === "/favicon.ico") { res.writeHead(204); return res.end(); }
+    try {
+      const { html } = buildDashboard(); // 从当前数据文件现算(不联网, 秒回)
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+      res.end(html);
+    } catch (e) { res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" }); res.end("仪表盘生成出错: " + e.message); }
+  });
+  srv.on("error", (e) => console.error(`端口 ${port} 起服务失败: ${e.message}（可能已被占用; 换端口: node bot.js --serve 8900）`));
+  srv.listen(port, () => {
+    const url = `http://localhost:${port}`;
+    console.log(`✅ 仪表盘服务已启动: ${url}\n   浏览器里按 F5 即可刷新最新数据（无需重启、无需重跑 .bat）。关掉此窗口=停服务。`);
+    try { require("child_process").exec(`cmd /c start "" ${url}`); } catch {} // 自动打开浏览器
+  });
 }
 
 // ==== DraftKings 差价信号: Polymarket 价 vs 博彩无水位公平价, 买在便宜的一侧=理论+EV + 前向追踪 ====
@@ -2205,6 +2224,14 @@ async function main() {
     else console.log(`\n(本轮无新亮灯信号; 候选未在其擅长盘出新赛前注)`);
     if (fresh.length && !process.argv.includes("--dry")) { const a = fmtStrengthAlert(fresh); if (a) { await send(a); console.log(`\n✅ 已推 ${fresh.length} 条亮灯 → ${CHANNEL}`); } }
     return;
+  }
+
+  if (process.argv.includes("--serve")) {
+    // 本地仪表盘服务: 浏览器 F5 即刷新最新数据(每次请求现算, 不联网)。用法: node bot.js --serve [端口]
+    const i = process.argv.indexOf("--serve");
+    const port = Number(process.argv[i + 1]) || Number(process.env.DASH_PORT || 8899);
+    serveDashboard(port);
+    return new Promise(() => {}); // 常驻(直到关窗口)
   }
 
   if (process.argv.includes("--dashboard")) {
