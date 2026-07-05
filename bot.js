@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V7.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V8.0"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1402,6 +1402,13 @@ function walletProfile(sc, query) {
   const types = {};
   for (const b of settled) { const k = betKind(b); (types[k] = types[k] || []).push(b); }
   const byType = Object.entries(types).map(([k, arr]) => ({ k, ...statsOf(arr) })).sort((a, b) => b.n - a.n);
+  // 强项: 该地址真正擅长的盘口类型(样本够 + ROI+CLV 双正; 排除衍生/散户)。得分=ROI+CLV, 按得分排
+  const S_MIN = Number(process.env.STRENGTH_MIN_N || 6);
+  const strengths = byType
+    .filter((t) => t.k !== "衍生/散戶" && t.n >= S_MIN && t.roi > 0 && t.clv != null && t.clv > 0)
+    .map((t) => ({ ...t, score: t.roi + t.clv, tentative: t.n < MIN }))
+    .sort((a, b) => b.score - a.score);
+  const strengthKinds = new Set(strengths.map((s) => s.k));
   // 近期滑坡: 最近8场(按下注时间)
   const recentBets = [...settled].sort((a, b) => (b.entryTs || 0) - (a.entryTs || 0)).slice(0, 8);
   const all = statsOf(settled), sFav = statsOf(fav), sEven = statsOf(even), sDog = statsOf(dog), sNon = statsOf(nonFav), recent = statsOf(recentBets);
@@ -1412,7 +1419,7 @@ function walletProfile(sc, query) {
   else if (sNon.n >= 5 && sNon.roi > 0 && sNon.clv != null && sNon.clv > 0) { vemo = "✅"; verdict = "冷門/五五盤也賺、CLV 正 → 更像真本事（抗爆冷）"; }
   else if (sFav.roi > 0 && (sNon.n < 5 || sNon.roi == null || sNon.roi <= 0)) { vemo = "🟡"; verdict = "賺幾乎只來自押熱門 → 順風車嫌疑，爆冷恐跳水"; }
   else { vemo = "🟡"; verdict = "混合、CLV 未穩定正 → 繼續觀察"; }
-  return { wallet, name: W.name || "", pnl: W.pnl || 0, open, all, fav: sFav, even: sEven, dog: sDog, nonFav: sNon, recent, byType, vemo, verdict, MIN };
+  return { wallet, name: W.name || "", pnl: W.pnl || 0, open, all, fav: sFav, even: sEven, dog: sDog, nonFav: sNon, recent, byType, strengths, strengthKinds, vemo, verdict, MIN };
 }
 function fmtProfileText(p) {
   const R = (s) => (s.n ? `${String(s.n).padStart(2)}場 命中${String(s.wr).padStart(3)}% ROI ${(s.roi >= 0 ? "+" : "") + s.roi}% CLV ${s.clv != null ? (s.clv >= 0 ? "+" : "") + s.clv + "pt" : "-"}` : "無");
@@ -1428,7 +1435,8 @@ function fmtProfileText(p) {
   for (const t of p.byType) L.push(`  ${t.k.padEnd(6)}: ${R(t)}`);
   L.push(`\n— 近期滑坡(最近${p.recent.n}場) —`);
   L.push(`  ${R(p.recent)}`);
-  L.push(`\n${p.vemo} 判定: ${p.verdict}`);
+  L.push(`\n🏅 擅長盤口: ${p.strengths.length ? p.strengths.map((s) => `${s.k} ${s.roi >= 0 ? "+" : ""}${s.roi}%/CLV${s.clv >= 0 ? "+" : ""}${s.clv}(${s.n}場${s.tentative ? "·樣本偏少" : ""})`).join(" · ") : "暫無達標的擅長盤(樣本不足或未雙正)"}`);
+  L.push(`${p.vemo} 判定: ${p.verdict}`);
   return L.join("\n");
 }
 
@@ -1456,15 +1464,82 @@ function fmtDetailText(bets) {
   }
   return L.join("\n");
 }
-function detailRowsHtml(bets) {
+function detailRowsHtml(bets, strongKinds) {
   if (!bets || !bets.length) return `<div class="muted" style="margin-top:6px">近期無達門檻的方向性出手</div>`;
-  const rows = bets.slice(0, 10).map((b) => {
+  const rows = bets.slice(0, 12).map((b) => {
     const st = betStatusZh(b), stc = b.status === "settled" ? "muted" : b.status === "live" ? "warn2" : "pos";
+    const strong = strongKinds && strongKinds.has(betKind(b)); // 属该地址擅长盘 → 高亮
     const title = esc((b.title || "").slice(0, 44));
     const link = b.eventSlug ? `<a href="https://polymarket.com/event/${esc(b.eventSlug)}" target="_blank">${title}</a>` : title;
-    return `<tr><td>${dHK(b.ts)}</td><td>${link}</td><td>${esc(b.outcome)}</td><td>${Math.round(b.price * 100)}¢</td><td>$${Math.round(b.usd).toLocaleString()}</td><td>${b.mktPrice != null ? Math.round(b.mktPrice * 100) + "¢" : "-"}</td><td class="${stc}">${st}</td></tr>`;
+    return `<tr class="${strong ? "strong" : ""}"><td>${dHK(b.ts)}</td><td>${strong ? "🏅 " : ""}${link}</td><td>${esc(b.outcome)}</td><td>${Math.round(b.price * 100)}¢</td><td>$${Math.round(b.usd).toLocaleString()}</td><td>${b.mktPrice != null ? Math.round(b.mktPrice * 100) + "¢" : "-"}</td><td class="${stc}">${st}</td></tr>`;
   }).join("");
   return `<table class="grid det"><thead><tr><th>時間</th><th>項目</th><th>方向</th><th>成本</th><th>金額</th><th>現價</th><th>狀態</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ==== $1000 Kelly 模拟账户: 回放候选地址已追踪的赛前信号, 分数Kelly仓位, 出胜率/ROI/回撤 ====
+// 候选地址的全部已结算注(标注盘口类型 + 是否属该地址擅长盘), 按下注时间排序供复利回放
+function candidateBets(sc) {
+  const cands = scorecardRows(sc).filter((r) => r.candidate);
+  const out = [];
+  for (const r of cands) {
+    const p = walletProfile(sc, r.wallet);
+    const strong = p ? p.strengthKinds : new Set();
+    for (const b of Object.values((sc.wallets[r.wallet] || {}).bets || {})) {
+      if (!b.settled || !(b.entry > 0 && b.entry < 1)) continue;
+      const kind = betKind(b);
+      out.push({ wallet: r.wallet, name: r.name, entry: b.entry, last: b.last, win: !!b.win, ts: b.entryTs || 0, kind, inStrength: strong.has(kind) });
+    }
+  }
+  return out.sort((a, b) => a.ts - b.ts);
+}
+// 一次回放: 起始$1000, 每注按分数Kelly下注, 复利, 记最大回撤
+// ⚠️ edge 用【固定保守假设】(假设跟随每注净赚 SIM_EDGE 分), 绝不用该注收盘价/赛果估仓位 → 杜绝 look-ahead
+function simulateKelly(bets, opts = {}) {
+  const start = opts.bankroll || 1000;
+  const kf = opts.kf != null ? opts.kf : 0.25;   // 分数Kelly(¼/½)
+  const maxFrac = opts.maxFrac || 0.10;          // 单注上限(占当前本金)
+  const flat = opts.flat;                        // 设了=固定比例下注(对照组)
+  const edge = opts.edge != null ? opts.edge : Number(process.env.SIM_EDGE || 0.03); // 假设的每注 edge, 保守固定值
+  const qCap = opts.qCap || 0.95;
+  let B = start, peak = start, maxDD = 0, n = 0, wins = 0;
+  for (const b of bets) {
+    const p = b.entry;
+    if (!(p > 0 && p < 1)) continue;
+    let frac;
+    if (flat != null) frac = flat;
+    else { const q = Math.min(p + edge, qCap); const fStar = (q - p) / (1 - p); frac = Math.max(0, Math.min(maxFrac, kf * fStar)); } // 仓位只用固定假设edge, 与赛果无关
+    if (!(frac > 0)) continue;
+    n++;
+    const stake = frac * B;
+    if (b.win) { B += stake * (1 - p) / p; wins++; } else { B -= stake; } // 输赢用真实赛果, 但仓位大小与赛果无关
+    peak = Math.max(peak, B);
+    maxDD = Math.max(maxDD, peak > 0 ? (peak - B) / peak : 0);
+  }
+  return { start, final: +B.toFixed(2), roi: Math.round((B / start - 1) * 100), n, wins, winrate: n ? Math.round((wins / n) * 100) : null, maxDD: Math.round(maxDD * 100) };
+}
+function runSimSet(sc) {
+  const all = candidateBets(sc);
+  const strong = all.filter((b) => b.inStrength);
+  return {
+    nAll: all.length, nStrong: strong.length,
+    flat: simulateKelly(all, { flat: 0.02 }),
+    q4: simulateKelly(all, { kf: 0.25 }),
+    q2: simulateKelly(all, { kf: 0.5 }),
+    strong4: simulateKelly(strong, { kf: 0.25 }),
+  };
+}
+function fmtSimText(sc) {
+  const s = runSimSet(sc);
+  const row = (lbl, r) => `  ${lbl.padEnd(22)} $1000→$${String(r.final).padStart(7)}  ROI ${(r.roi >= 0 ? "+" : "") + r.roi}%  下注${r.n}注 胜率${r.winrate}%  最大回撤${r.maxDD}%`;
+  return [
+    `🎲 $1000 模拟账户（回放候选地址已追踪信号 · 分数Kelly · 复利）`,
+    `  候选信号池: ${s.nAll} 注（其中"擅长盘" ${s.nStrong} 注）`,
+    row("固定2%(不挑·全下)", s.flat),
+    row("¼ Kelly(封顶10%)", s.q4),
+    row("½ Kelly(封顶10%)", s.q2),
+    row("¼ Kelly·只跟擅长盘", s.strong4),
+    `  ⚠️ 这是【样本内回放】——候选地址是"因为赚过才被选中"的,必然偏乐观;叠加世界杯顺风窗口+小样本+复利放大,真实上线会差很多。它的用途是看仓位纪律与回撤,不是收益承诺。`,
+  ].join("\n");
 }
 
 // ==== 仪表盘: 生成本地 dashboard.html(浏览器双击打开, 把记分卡/画像/板块战绩/台账可视化) ====
@@ -1478,11 +1553,15 @@ function profileCardHtml(p, detEntry) {
   const typeRows = p.byType.map((t) => `<tr><td>${esc(t.k)}</td>${cells(t)}</tr>`).join("");
   const detBets = detEntry && detEntry.bets;
   const detFresh = detEntry && detEntry.ts ? `（明細更新於 ${dHK(detEntry.ts)} HKT）` : "";
+  const strHtml = p.strengths.length
+    ? p.strengths.map((s) => `<span class="str-pill${s.tentative ? " tent" : ""}">${esc(s.k)} <b>${s.roi >= 0 ? "+" : ""}${s.roi}%</b>/CLV${s.clv >= 0 ? "+" : ""}${s.clv} <span class="muted">${s.n}場${s.tentative ? "·樣本少" : ""}</span></span>`).join("")
+    : `<span class="muted">暫無達標的擅長盤</span>`;
   return `<div class="card">
     <div class="pc-head"><span class="badge ${cls}">${p.vemo}</span>
       <b><code>${esc(p.wallet.slice(0, 8))}…</code> ${esc(p.name)}</b>
       <span class="muted">全期盈虧 $${Math.round(p.pnl).toLocaleString()} · 未結算 ${p.open}</span></div>
     <div class="verdict">${esc(p.verdict)}</div>
+    <div class="str-row">🏅 擅長盤口：${strHtml}</div>
     <table class="grid"><thead><tr><th>賺從哪來?（按入場價）</th><th>場</th><th>命中</th><th>ROI</th><th>CLV</th></tr></thead><tbody>
       <tr><td>總計</td>${cells(p.all)}</tr>
       <tr class="hi"><td>押熱門 ≥55¢</td>${cells(p.fav)}</tr>
@@ -1492,7 +1571,7 @@ function profileCardHtml(p, detEntry) {
       <tr><td>近期 ${p.recent.n} 場</td>${cells(p.recent)}</tr>
     </tbody></table>
     <table class="grid mini"><thead><tr><th>盤口畫像</th><th>場</th><th>命中</th><th>ROI</th><th>CLV</th></tr></thead><tbody>${typeRows}</tbody></table>
-    <div class="det-h">🔎 近期出手明細 ${detFresh}</div>${detailRowsHtml(detBets)}
+    <div class="det-h">🔎 近期出手明細（🏅=他的擅長盤）${detFresh}</div>${detailRowsHtml(detBets, p.strengthKinds)}
   </div>`;
 }
 function buildDashboard() {
@@ -1521,6 +1600,21 @@ function buildDashboard() {
     msRows += `<tr><td>${kl} ${pl}</td><td>${v.n}</td><td class="${roiCls(v.roi)}">${roiTxt(v.roi, "%")}</td><td class="${roiCls(v.clv)}">${v.clv != null ? roiTxt(v.clv, "pt") : "-"}</td><td>${v.label}</td></tr>`;
   }
   const boardHtml = msRows ? `<table class="grid"><thead><tr><th>板塊信號</th><th>場</th><th>ROI</th><th>CLV</th><th>判定</th></tr></thead><tbody>${msRows}</tbody></table>` : `<div class="muted">（還沒有已結算的板塊樣本）</div>`;
+  // 🏅 高信心组合: 候选地址×他们擅长盘, 按得分排 → 你真正只该盯的那几条
+  const combos = [];
+  for (const r of cands) { const pp = walletProfile(sc, r.wallet); for (const st of (pp.strengths || [])) combos.push({ wallet: r.wallet, name: r.name, ...st }); }
+  combos.sort((a, b) => b.score - a.score);
+  const comboRows = combos.slice(0, 12).map((c) => `<tr class="${c.tentative ? "" : "strong"}"><td><code>${esc(c.wallet.slice(0, 8))}…</code> ${esc((c.name || "").slice(0, 10))}</td><td><b>${esc(c.k)}</b></td><td>${c.n}${c.tentative ? "⚠" : ""}</td><td>${c.wr}%</td><td class="pos">+${c.roi}%</td><td class="pos">+${c.clv}pt</td></tr>`).join("");
+  const comboHtml = combos.length ? `<table class="grid"><thead><tr><th>地址</th><th>擅長盤口</th><th>場</th><th>命中</th><th>ROI</th><th>CLV</th></tr></thead><tbody>${comboRows}</tbody></table><div class="meta">⚠=樣本&lt;${Number(process.env.SHARP_MIN_N || 15)}偏少 · 只跟「地址×他擅長的那類盤」,不要笼统跟人</div>` : `<div class="muted">（暫無達標的擅長組合）</div>`;
+  // 🎲 $1000 Kelly 模拟
+  const sim = runSimSet(sc);
+  const simRow = (lbl, r, hi) => `<tr class="${hi ? "strong" : ""}"><td>${lbl}</td><td>$${r.final.toLocaleString()}</td><td class="${roiCls(r.roi)}">${roiTxt(r.roi, "%")}</td><td>${r.n}</td><td>${r.winrate != null ? r.winrate + "%" : "-"}</td><td class="neg">-${r.maxDD}%</td></tr>`;
+  const simHtml = sim.nAll ? `<div class="card"><table class="grid"><thead><tr><th>策略（起始 $1000）</th><th>終值</th><th>ROI</th><th>下注</th><th>勝率</th><th>最大回撤</th></tr></thead><tbody>
+    ${simRow("固定2%(不挑·全下)", sim.flat)}
+    ${simRow("¼ Kelly(封頂10%)", sim.q4)}
+    ${simRow("½ Kelly(封頂10%)", sim.q2)}
+    ${simRow("¼ Kelly · 只跟擅長盤", sim.strong4, true)}
+  </tbody></table><div class="banner" style="margin-top:12px">⚠️ 這是<b>樣本內回放</b>：候選地址是「因為賺過才被選中」的，必然偏樂觀；疊加世界盃順風窗口＋小樣本＋複利放大，真實上線會差很多。用途是看<b>倉位紀律與回撤</b>，不是收益承諾。信號池 ${sim.nAll} 注（擅長盤 ${sim.nStrong} 注）。</div></div>` : `<div class="muted">（候選信號不足，無法模擬）</div>`;
   const lb = (led.bets || []).filter((b) => b.settled);
   const staked = lb.reduce((s, b) => s + (b.stake || 0), 0), lpnl = lb.reduce((s, b) => s + (b.pnl || 0), 0);
   const lroi = staked ? Math.round((lpnl / staked) * 100) : null;
@@ -1547,13 +1641,17 @@ function buildDashboard() {
     + "a{color:#8fb8ff;text-decoration:none}a:hover{text-decoration:underline}.warn2{color:#ffce54}"
     + ".det-h{font-size:13px;color:var(--mut);margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}"
     + "table.det{font-size:12.5px}table.det td:nth-child(2){max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
+    + "table.grid tr.strong td{background:#12261b}"
+    + ".str-row{font-size:13px;margin:4px 0 2px}.str-pill{display:inline-block;background:#12261b;border:1px solid #1f4a30;border-radius:6px;padding:1px 7px;margin:2px 4px 2px 0;font-size:12.5px}.str-pill.tent{background:#2a2410;border-color:#5a4520}.str-pill b{color:var(--pos)}"
     + ".foot{color:var(--mut);font-size:12px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}";
   const html = `<!doctype html><html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Polaris 記分卡儀表盤</title><style>${css}</style></head><body><div class="wrap">
     <h1>📇 聰明錢記分卡 · 儀表盤</h1>
     <div class="meta">生成於 ${now} HKT · 資料隨雷達運行更新（重跑「打开仪表盘.bat」刷新）</div>
     <div class="banner">⚠️ 判據：只有 ROI 與 CLV 雙正、<b>非熱門也賺</b>、且跨行情仍成立的地址才值得跟。目前多為世界盃順風窗口，未證明 edge。</div>
     ${ovHtml}
-    <h2>✅ 候選可跟（附「賺從哪來」拆解）</h2>${candHtml}
+    <h2>🏅 高信心跟單組合（地址 × 他擅長的盤）</h2><div class="card">${comboHtml}</div>
+    <h2>🎲 $1000 模擬賬戶（分數 Kelly · 回放候選信號）</h2>${simHtml}
+    <h2>✅ 候選可跟（附「賺從哪來」拆解＋近期出手明細）</h2>${candHtml}
     <h2>📋 其餘足夠樣本（參考）</h2>${othHtml}
     <div class="meta">另有 ${smallN} 個地址樣本 < ${MIN_N}（噪聲，已隱藏）</div>
     <h2>🎯 全體育板塊戰績</h2>${boardHtml}
@@ -1925,6 +2023,12 @@ async function main() {
     console.log(fmtProfileText(p));
     const dh = Number(process.env.DETAIL_HOURS || 336);
     try { const { bets } = await walletActivity(p.wallet, { hours: dh }); console.log(`\n— 近期出手明細（近${Math.round(dh / 24)}天 · 什麼項目 / 方向 / 成本¢($) / 現價 / 狀態）—\n${fmtDetailText(bets)}`); } catch (e) { console.error("拉取明细出错:", e.message); }
+    return;
+  }
+
+  if (process.argv.includes("--simulate")) {
+    // $1000 Kelly 模拟(回放候选地址已追踪信号)
+    console.log(fmtSimText(loadScorecard()));
     return;
   }
 
