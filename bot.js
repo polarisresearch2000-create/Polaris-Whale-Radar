@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, winnerRecentBets, walletActivity, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, dkEdges, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, winnerRecentBets, walletActivity, marketExecQuote, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, dkEdges, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V8.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V9.0"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1392,7 +1392,19 @@ async function trackStrengthSignals() {
         const key = (b.cid || b.eventSlug) + "|" + b.outcome + "|" + w;
         if (t.signals[key]) continue;                        // 已捕捉
         const since = (t.frozen[w][kind] || {}).since || nowS;
-        t.signals[key] = { wallet: w, name, kind, title: b.title, eventSlug: b.eventSlug, gammaId: b.gammaId, cid: b.cid, outcome: b.outcome, entry: b.mktPrice, entryTs: nowS, kickoffMs: b.kickoffMs, winUsd: Math.round(b.usd || 0), frozenSince: since, afterFreeze: nowS >= since, last: b.mktPrice, settled: false };
+        // 成交闸门: 亮灯即查订单簿(点差/深度/能成交价)。跟不进的标死并剔出账户; 能跟的按真实成交价入场(成本感知)
+        const SPREAD_MAX = Number(process.env.SPREAD_MAX_CENTS || 5);
+        const testUsd = Number(process.env.GATE_TEST_USD || 50);
+        const g = await marketExecQuote(b.gammaId, b.outcome, testUsd).catch(() => null);
+        let gate, entry = b.mktPrice;
+        if (g && g.bestAsk != null) {
+          const spreadC = +((g.spread || 0) * 100).toFixed(1);
+          const fill = g.fillPrice != null ? +g.fillPrice.toFixed(4) : null;
+          const fillable = !!(g.depthOk && spreadC <= SPREAD_MAX && fill != null && fill < 0.98);
+          gate = { ask: +g.bestAsk.toFixed(4), fill, spreadC, slipC: g.slippage != null ? +(g.slippage * 100).toFixed(1) : null, depthOk: !!g.depthOk, testUsd, fillable };
+          if (fillable) entry = fill; // 成本感知: 用你真能成交的价当入场价(通常比盘口中价贵一点)
+        } else gate = { fillable: null }; // 查不到盘口 → 不判死, 用中价
+        t.signals[key] = { wallet: w, name, kind, title: b.title, eventSlug: b.eventSlug, gammaId: b.gammaId, cid: b.cid, outcome: b.outcome, entry, mid: b.mktPrice, entryTs: nowS, kickoffMs: b.kickoffMs, winUsd: Math.round(b.usd || 0), gate, frozenSince: since, afterFreeze: nowS >= since, last: entry, settled: false };
         fresh.push(t.signals[key]);
       }
     }
@@ -1433,7 +1445,9 @@ async function trackStrengthSignals() {
 }
 // 前向战绩(只统计冻结后捕捉的信号 = 样本外)
 function strengthStats(track) {
-  const sigs = Object.values((track || {}).signals || {}).filter((s) => s.afterFreeze !== false);
+  const all = Object.values((track || {}).signals || {}).filter((s) => s.afterFreeze !== false);
+  const blocked = all.filter((s) => s.gate && s.gate.fillable === false).length; // 跟不进(点差/深度), 已剔除
+  const sigs = all.filter((s) => !(s.gate && s.gate.fillable === false));
   const done = sigs.filter((s) => s.settled), open = sigs.length - done.length;
   const n = done.length, wins = done.filter((s) => s.win).length;
   const roi = n ? Math.round((done.reduce((a, s) => a + (s.profit || 0), 0) / n) * 100) : null;
@@ -1443,7 +1457,7 @@ function strengthStats(track) {
   for (const w in (track.frozen || {})) for (const k in track.frozen[w]) { const s = track.frozen[w][k].since; if (s && (frozenAt == null || s < frozenAt)) frozenAt = s; }
   const exitN = done.filter((s) => s.settledBy === "exit").length; // 因赢家离场而跟卖平仓
   const reducedN = sigs.filter((s) => !s.settled && s.exit).length; // 进行中但赢家已减仓
-  return { n, wins, winrate: n ? Math.round((wins / n) * 100) : null, roi, clv, open, total: sigs.length, frozenAt, exitN, reducedN };
+  return { n, wins, winrate: n ? Math.round((wins / n) * 100) : null, roi, clv, open, total: sigs.length, frozenAt, exitN, reducedN, blocked };
 }
 function sgVerdict(st) {
   const MIN = Number(process.env.STRENGTH_VERDICT_N || 10);
@@ -1676,7 +1690,9 @@ function simulateKelly(bets, opts = {}) {
 // 🎲 前向纸面账户: 只跟"擅长盘亮灯"信号(样本外·按能成交价·真赛果结算), $1000 分数Kelly 复利
 function strengthPaper(track, opts = {}) {
   const kf = opts.kf != null ? opts.kf : Number(process.env.PAPER_KF || 0.25);
-  const sigs = Object.values((track || {}).signals || {}).filter((s) => s.afterFreeze !== false);
+  const all = Object.values((track || {}).signals || {}).filter((s) => s.afterFreeze !== false);
+  const blocked = all.filter((s) => s.gate && s.gate.fillable === false).length; // 跟不进, 剔出账户
+  const sigs = all.filter((s) => !(s.gate && s.gate.fillable === false));
   // #1 修: 按【实现时间】排序复利(赛果=开赛时间; 跟卖平仓=离场时间), 更贴近资金真实到账顺序
   const realTime = (s) => (s.settledBy === "exit" && s.exit ? (s.exit.ts || 0) * 1000 : (s.kickoffMs || 0));
   const settled = sigs.filter((s) => s.settled).sort((a, b) => realTime(a) - realTime(b));
@@ -1690,7 +1706,7 @@ function strengthPaper(track, opts = {}) {
   }).sort((a, b) => b.stake - a.stake);
   const openExposure = positions.reduce((sum, s) => sum + s.stake, 0);
   const unrealTotal = positions.reduce((sum, s) => sum + (s.unreal || 0), 0);
-  return { start: 1000, bankroll: r.final, roi: r.roi, n: r.n, wins: r.wins, winrate: r.winrate, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(openExposure), unrealTotal: Math.round(unrealTotal), positions, kf };
+  return { start: 1000, bankroll: r.final, roi: r.roi, n: r.n, wins: r.wins, winrate: r.winrate, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(openExposure), unrealTotal: Math.round(unrealTotal), positions, blocked, kf };
 }
 function fmtPaperText(track) {
   const p = strengthPaper(track);
@@ -1698,7 +1714,7 @@ function fmtPaperText(track) {
   L.push(`  本金 $1000 → 現值 $${p.bankroll.toLocaleString()}  ROI ${p.roi >= 0 ? "+" : ""}${p.roi}%`);
   if (p.n) L.push(`  已結算 ${p.n} 注 · 勝率 ${p.winrate}% · 最大回撤 ${p.maxDD}%`);
   else L.push(`  ⏳ 尚無已結算(等亮燈信號的賽事結算)`);
-  L.push(`  進行中 ${p.openN} 注 · 在押 ~$${p.openExposure} · 浮盈 ${p.unrealTotal >= 0 ? "+" : ""}$${p.unrealTotal}`);
+  L.push(`  進行中 ${p.openN} 注 · 在押 ~$${p.openExposure} · 浮盈 ${p.unrealTotal >= 0 ? "+" : ""}$${p.unrealTotal}${p.blocked ? ` · ⛔ ${p.blocked} 注跟不進(已剔除)` : ""}`);
   if (p.positions.length) {
     L.push(`  — 目前在押明細(纸面注 · 浮盈) —`);
     for (const s of p.positions.slice(0, 20)) {
@@ -1718,6 +1734,7 @@ function fmtPaperTG(track) {
   if (p.n) cn.push(`已結算 ${p.n} 注 · 勝率 ${p.winrate}% · 最大回撤 ${p.maxDD}%`);
   else cn.push(`⏳ 尚無已結算（等亮燈信號的賽事結算）`);
   cn.push(`進行中 <b>${p.openN}</b> 注 · 在押 ~<b>$${p.openExposure.toLocaleString()}</b> · 浮盈 <b>${p.unrealTotal >= 0 ? "+" : ""}$${p.unrealTotal.toLocaleString()}</b>`);
+  if (p.blocked) cn.push(`⛔ ${p.blocked} 注跟不進（點差/深度不夠, 已剔出賬戶）`);
   if (p.positions.length) {
     cn.push("", "<b>📌 目前在押（紙面注 · 浮盈）</b>");
     for (const s of p.positions.slice(0, 12)) {
@@ -1809,6 +1826,7 @@ function buildDashboard() {
   // 小标签: 子盘(连结落到赛事默认盘,需往下找) + 低赔(价高=收息型,上档小)
   const sgTags = (s) => {
     let x = "";
+    if (s.gate && s.gate.fillable === false) x += ` <span class="neg" title="點差${s.gate.spreadC}¢/深度不夠${s.gate.depthOk === false ? "(吃不滿$" + s.gate.testUsd + ")" : ""} → 跟不進, 已剔出賬戶">⛔跟不進</span>`;
     if (s.marketSlug && s.eventSlug && s.marketSlug !== s.eventSlug) x += ` <span class="muted" title="賽事子盤：點開落在賽事頁(默認勝負盤)，往下找此盤才是此價">子盤</span>`;
     if (Math.round((s.entry || 0) * 100) >= 80) x += ` <span class="warn2" title="價高=低賠率(收息型)，贏了上檔小、輸一次抹多次">⚠️低賠</span>`;
     return x;
@@ -1871,7 +1889,7 @@ function buildDashboard() {
   const posTable = paper.positions.length ? `<div class="det-h">📌 目前在押明細（$1000 賬戶正在跟進的盤 · 紙面注按當前本金 ¼Kelly 定）</div><table class="grid det"><thead><tr><th>紙面注</th><th>地址</th><th>擅長盤</th><th>項目</th><th>方向</th><th>成本→現價</th><th>浮盈</th><th>狀態</th></tr></thead><tbody>${paper.positions.slice(0, 20).map(posRow).join("")}</tbody></table>` : "";
   const paperHtml = `<div class="card">
     <div class="pc-head"><span class="badge ${paperCls}">🎲</span><b>本金 $1000 → 現值 $${paper.bankroll.toLocaleString()}</b><span class="${roiCls(paper.roi)}" style="font-size:18px">${roiTxt(paper.roi, "%")}</span><span class="muted">¼ Kelly · 按你能成交價</span></div>
-    <div style="margin:6px 0">${paper.n ? `已結算 <b>${paper.n}</b> 注 · 勝率 <b>${paper.winrate}%</b> · 最大回撤 <b class="neg">-${paper.maxDD}%</b>` : "⏳ 尚無已結算（等亮燈信號的賽事結算）"} · 進行中 <b>${paper.openN}</b> 注 · 在押 ~<b>$${paper.openExposure.toLocaleString()}</b> · 浮盈 <b class="${roiCls(paper.unrealTotal)}">${paper.unrealTotal >= 0 ? "+" : ""}$${paper.unrealTotal.toLocaleString()}</b></div>
+    <div style="margin:6px 0">${paper.n ? `已結算 <b>${paper.n}</b> 注 · 勝率 <b>${paper.winrate}%</b> · 最大回撤 <b class="neg">-${paper.maxDD}%</b>` : "⏳ 尚無已結算（等亮燈信號的賽事結算）"} · 進行中 <b>${paper.openN}</b> 注 · 在押 ~<b>$${paper.openExposure.toLocaleString()}</b> · 浮盈 <b class="${roiCls(paper.unrealTotal)}">${paper.unrealTotal >= 0 ? "+" : ""}$${paper.unrealTotal.toLocaleString()}</b>${paper.blocked ? ` · <span class="neg">⛔ ${paper.blocked} 注跟不進(點差/深度, 已剔除)</span>` : ""}</div>
     ${posTable}
     <div class="banner">✅ <b>前向 · 樣本外</b>：只跟凍結擅長盤之後、真·未來出現的亮燈信號，按你能成交的價下注、真賽果結算 —— 這是「跟不跟得賺」的誠實答案（不是回放，需攢幾週）。仍：非投注建議，未證明 edge。</div></div>`;
   const lb = (led.bets || []).filter((b) => b.settled);

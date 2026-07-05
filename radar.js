@@ -1171,6 +1171,16 @@ function execQuote(book, notionalUsd) {
   return { bestBid, bestAsk, mid, spread, spreadPct: mid > 0 ? spread / mid : null, fillPrice, slippage: fillPrice != null ? fillPrice - bestAsk : null, filledUsd: spent, depthOk };
 }
 async function getExecQuote(tokenId, notionalUsd) { const b = await getBook(tokenId); return b ? execQuote(b, notionalUsd) : null; }
+// 给某市场(gammaId)某方向(outcome)按目标额报价: 能成交价(VWAP)+点差+深度是否够 —— 成交闸门用
+async function marketExecQuote(gammaId, outcome, notionalUsd) {
+  const m = await getJSON(`${GAMMA}/markets/${gammaId}`).catch(() => null);
+  if (!m) return null;
+  let outs = [], ids = [];
+  try { outs = JSON.parse(m.outcomes || "[]"); ids = JSON.parse(m.clobTokenIds || "[]"); } catch {}
+  const i = outs.indexOf(outcome);
+  if (i < 0 || !ids[i]) return null;
+  return getExecQuote(ids[i], notionalUsd);
+}
 
 // 一场比赛的成本感知报价: 胜负盘/大小球2.5/让球-1.5 每个可下注方向的 能成交价+点差+深度闸门
 async function quoteMatch(eventSlug, notionalUsd = 500) {
@@ -1287,6 +1297,6 @@ async function getMarketNow(gammaId) {
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, buildSportsWinners, winnerRecentBets, walletActivity, getExecQuote, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, dkEdges,
+  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, buildSportsWinners, winnerRecentBets, walletActivity, getExecQuote, marketExecQuote, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, dkEdges,
   fmtUSD, CONFIG, isDirectional,
 };
