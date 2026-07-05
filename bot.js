@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V8.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V8.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1398,8 +1398,8 @@ async function trackStrengthSignals() {
     }
     // 2b) 离场检测: 该钱包对未结算信号的 cid+outcome 在 entryTs 之后有没有 SELL
     for (const sg of (openByWallet[w] || [])) {
-      const cid = sg.cid || (sg.gammaId != null ? null : null);
-      const matched = (sells || []).filter((x) => x.outcome === sg.outcome && (sg.cid ? x.cid === sg.cid : true) && x.ts >= (sg.entryTs || 0) - 3600);
+      if (!sg.cid) continue; // #2 修: 无 cid 不做离场检测(别只按方向松匹配→误判成离场)
+      const matched = (sells || []).filter((x) => x.cid === sg.cid && x.outcome === sg.outcome && x.ts >= (sg.entryTs || 0) - 3600);
       if (!matched.length) continue;
       const soldUsd = Math.round(matched.reduce((a, x) => a + (x.usd || 0), 0));
       const lastSell = matched.sort((a, b) => b.ts - a.ts)[0];
@@ -1437,7 +1437,7 @@ function strengthStats(track) {
   const done = sigs.filter((s) => s.settled), open = sigs.length - done.length;
   const n = done.length, wins = done.filter((s) => s.win).length;
   const roi = n ? Math.round((done.reduce((a, s) => a + (s.profit || 0), 0) / n) * 100) : null;
-  const cA = done.filter((s) => s.clv != null);
+  const cA = done.filter((s) => s.clv != null && s.settledBy !== "exit"); // #3 修: 跟卖平仓没持有到收盘, 不计入均CLV
   const clv = cA.length ? +((cA.reduce((a, s) => a + s.clv, 0) / cA.length) * 100).toFixed(1) : null;
   let frozenAt = null;
   for (const w in (track.frozen || {})) for (const k in track.frozen[w]) { const s = track.frozen[w][k].since; if (s && (frozenAt == null || s < frozenAt)) frozenAt = s; }
@@ -1677,7 +1677,9 @@ function simulateKelly(bets, opts = {}) {
 function strengthPaper(track, opts = {}) {
   const kf = opts.kf != null ? opts.kf : Number(process.env.PAPER_KF || 0.25);
   const sigs = Object.values((track || {}).signals || {}).filter((s) => s.afterFreeze !== false);
-  const settled = sigs.filter((s) => s.settled).sort((a, b) => (a.entryTs || 0) - (b.entryTs || 0));
+  // #1 修: 按【实现时间】排序复利(赛果=开赛时间; 跟卖平仓=离场时间), 更贴近资金真实到账顺序
+  const realTime = (s) => (s.settledBy === "exit" && s.exit ? (s.exit.ts || 0) * 1000 : (s.kickoffMs || 0));
+  const settled = sigs.filter((s) => s.settled).sort((a, b) => realTime(a) - realTime(b));
   const r = simulateKelly(settled, { kf }); // 复用同一 Kelly 引擎, 喂前向样本外信号
   const open = sigs.filter((s) => !s.settled);
   // 当前持仓明细: 每个进行中信号 → 纸面注(按当前本金 Kelly 定) + 浮盈(现价 vs 成本)
@@ -2285,8 +2287,9 @@ async function main() {
   }
 
   if (process.argv.includes("--paper")) {
-    // $1000 前向纸面账户: 只跟擅长盘亮灯信号(样本外·真赛果结算) —— 先跑一轮捕捉/结算再看
-    try { await trackStrengthSignals(); } catch (e) { console.error("刷新出错(用现有数据):", e.message); }
+    // $1000 前向纸面账户(样本外·真赛果结算)。#4 修: 默认【只读】(不写文件, 免和运行中的雷达抢写)
+    // 想强制先捕捉/结算再看, 加 --refresh(仅在雷达没开时用)
+    if (process.argv.includes("--refresh")) { try { await trackStrengthSignals(); } catch (e) { console.error("刷新出错(用现有数据):", e.message); } }
     console.log(fmtPaperText(loadStrengthTrack()));
     return;
   }
