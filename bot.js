@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V8.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V8.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1374,35 +1374,61 @@ async function trackStrengthSignals() {
     for (const s of p.strengths) { if (!fz[s.k]) fz[s.k] = { since: nowS, roi: s.roi, clv: s.clv, n: s.n }; }
     byWallet[w] = { name: p.name, kinds: new Set(Object.keys(fz)) };
   }
-  // 2) 实时匹配: 候选近期出手落在其(已冻结)擅长盘 + 赛前 + 有市场 → 捕捉(按能成交价 mktPrice)
-  const fresh = [];
-  for (const w in byWallet) {
-    const { name, kinds } = byWallet[w];
-    const { bets } = await walletActivity(w, { hours: Number(process.env.STRENGTH_HOURS || 72) }).catch(() => ({ bets: [] }));
-    for (const b of bets || []) {
-      const kind = betKind(b);
-      if (!kinds.has(kind)) continue;                      // 非擅长盘 → 忽略(噪声过滤)
-      if (!(b.kickoffMs && now < b.kickoffMs)) continue;   // 只捕赛前(杜绝 look-ahead)
-      if (b.gammaId == null || !(b.mktPrice > 0.02 && b.mktPrice < 0.98)) continue;
-      const key = (b.cid || b.eventSlug) + "|" + b.outcome + "|" + w;
-      if (t.signals[key]) continue;                        // 已捕捉
-      const since = (t.frozen[w][kind] || {}).since || nowS;
-      t.signals[key] = { wallet: w, name, kind, title: b.title, eventSlug: b.eventSlug, gammaId: b.gammaId, outcome: b.outcome, entry: b.mktPrice, entryTs: nowS, kickoffMs: b.kickoffMs, frozenSince: since, afterFreeze: nowS >= since, last: b.mktPrice, settled: false };
-      fresh.push(t.signals[key]);
+  // 2) 每钱包拉一次活动: 既用来捕捉新亮灯(BUY落在擅长盘), 也用来检测赢家离场(SELL同一cid+outcome)
+  const fresh = [], exits = [];
+  const openByWallet = {}; // 有未结算信号的钱包(即使已掉出候选也要查离场)
+  for (const key in t.signals) { const s = t.signals[key]; if (!s.settled) (openByWallet[s.wallet] = openByWallet[s.wallet] || []).push(s); }
+  const scanW = new Set([...Object.keys(byWallet), ...Object.keys(openByWallet)]);
+  for (const w of scanW) {
+    const { bets, sells } = await walletActivity(w, { hours: Number(process.env.STRENGTH_HOURS || 72) }).catch(() => ({ bets: [], sells: [] }));
+    // 2a) 捕捉(只对当前候选)
+    if (byWallet[w]) {
+      const { name, kinds } = byWallet[w];
+      for (const b of bets || []) {
+        const kind = betKind(b);
+        if (!kinds.has(kind)) continue;                      // 非擅长盘 → 忽略(噪声过滤)
+        if (!(b.kickoffMs && now < b.kickoffMs)) continue;   // 只捕赛前(杜绝 look-ahead)
+        if (b.gammaId == null || !(b.mktPrice > 0.02 && b.mktPrice < 0.98)) continue;
+        const key = (b.cid || b.eventSlug) + "|" + b.outcome + "|" + w;
+        if (t.signals[key]) continue;                        // 已捕捉
+        const since = (t.frozen[w][kind] || {}).since || nowS;
+        t.signals[key] = { wallet: w, name, kind, title: b.title, eventSlug: b.eventSlug, gammaId: b.gammaId, cid: b.cid, outcome: b.outcome, entry: b.mktPrice, entryTs: nowS, kickoffMs: b.kickoffMs, winUsd: Math.round(b.usd || 0), frozenSince: since, afterFreeze: nowS >= since, last: b.mktPrice, settled: false };
+        fresh.push(t.signals[key]);
+      }
+    }
+    // 2b) 离场检测: 该钱包对未结算信号的 cid+outcome 在 entryTs 之后有没有 SELL
+    for (const sg of (openByWallet[w] || [])) {
+      const cid = sg.cid || (sg.gammaId != null ? null : null);
+      const matched = (sells || []).filter((x) => x.outcome === sg.outcome && (sg.cid ? x.cid === sg.cid : true) && x.ts >= (sg.entryTs || 0) - 3600);
+      if (!matched.length) continue;
+      const soldUsd = Math.round(matched.reduce((a, x) => a + (x.usd || 0), 0));
+      const lastSell = matched.sort((a, b) => b.ts - a.ts)[0];
+      const pct = sg.winUsd ? Math.min(100, Math.round((soldUsd / sg.winUsd) * 100)) : null;
+      const wasExited = !!sg.exit;
+      sg.exit = { ts: lastSell.ts, price: lastSell.price, usd: soldUsd, pct };
+      sg.reduced = pct != null ? pct < 60 : soldUsd < 500; // <60%(或额小)=减仓仍持有; 否则=基本离场
+      if (!wasExited) exits.push(sg); // 本轮新检测到的离场 → 亮红灯
     }
   }
-  // 3) 每轮刷新未结算信号的现价(供仪表盘"現價") + 临近开赛顺带刷 last(算 CLV) + 结算
+  // 3) 每轮刷新未结算信号现价 + 临近开赛刷 last(CLV) + 结算(赛果) 或 跟卖平仓(赢家离场)
   const REFRESH_MS = 3 * 3600 * 1000;
   for (const key in t.signals) {
     const sg = t.signals[key];
     if (sg.settled || sg.gammaId == null) continue;
     const mk = await getMarketNow(sg.gammaId).catch(() => null); if (!mk) continue;
     const pr = mk.price[sg.outcome];
-    if (pr > 0 && pr < 1) { sg.nowPrice = pr; sg.nowTs = nowS; if (sg.kickoffMs && now >= sg.kickoffMs - REFRESH_MS) sg.last = pr; } // 现价每轮刷; last(CLV基准)只临近开赛刷
-    if (mk.closed && mk.winner) { sg.win = sg.outcome === mk.winner; sg.profit = sg.win ? (1 - sg.entry) / sg.entry : -1; sg.clv = sg.last != null ? +(sg.last - sg.entry).toFixed(4) : null; sg.settled = true; }
+    if (pr > 0 && pr < 1) { sg.nowPrice = pr; sg.nowTs = nowS; if (sg.kickoffMs && now >= sg.kickoffMs - REFRESH_MS) sg.last = pr; }
+    if (mk.closed && mk.winner) { // 赛果结算优先
+      sg.win = sg.outcome === mk.winner; sg.profit = sg.win ? (1 - sg.entry) / sg.entry : -1;
+      sg.clv = sg.last != null ? +(sg.last - sg.entry).toFixed(4) : null; sg.settled = true; sg.settledBy = "result";
+    } else if (sg.exit && !sg.reduced) { // 赢家基本离场且比赛未结算 → 跟着卖出平仓(按现价, 你能拿到的)
+      const exitP = sg.nowPrice != null ? sg.nowPrice : (sg.exit.price != null ? sg.exit.price : sg.entry);
+      sg.profit = +((exitP - sg.entry) / sg.entry).toFixed(4); sg.win = exitP > sg.entry;
+      sg.exitClose = exitP; sg.clv = sg.last != null ? +(sg.last - sg.entry).toFixed(4) : null; sg.settled = true; sg.settledBy = "exit";
+    }
   }
   saveStrengthTrack(t);
-  return { fresh, track: t };
+  return { fresh, exits, track: t };
 }
 // 前向战绩(只统计冻结后捕捉的信号 = 样本外)
 function strengthStats(track) {
@@ -1414,7 +1440,9 @@ function strengthStats(track) {
   const clv = cA.length ? +((cA.reduce((a, s) => a + s.clv, 0) / cA.length) * 100).toFixed(1) : null;
   let frozenAt = null;
   for (const w in (track.frozen || {})) for (const k in track.frozen[w]) { const s = track.frozen[w][k].since; if (s && (frozenAt == null || s < frozenAt)) frozenAt = s; }
-  return { n, wins, winrate: n ? Math.round((wins / n) * 100) : null, roi, clv, open, total: sigs.length, frozenAt };
+  const exitN = done.filter((s) => s.settledBy === "exit").length; // 因赢家离场而跟卖平仓
+  const reducedN = sigs.filter((s) => !s.settled && s.exit).length; // 进行中但赢家已减仓
+  return { n, wins, winrate: n ? Math.round((wins / n) * 100) : null, roi, clv, open, total: sigs.length, frozenAt, exitN, reducedN };
 }
 function sgVerdict(st) {
   const MIN = Number(process.env.STRENGTH_VERDICT_N || 10);
@@ -1429,7 +1457,22 @@ function fmtStrengthStatsText(track) {
   L.push(`  已捕捉 ${st.total} 注（已結算 ${st.n} · 未結算 ${st.open}）· 起算 ${st.frozenAt ? new Date(st.frozenAt * 1000 + 8 * 3600 * 1000).toISOString().slice(5, 16).replace("T", " ") + " HKT" : "-"}`);
   if (st.n) L.push(`  命中 ${st.winrate}% · ROI ${st.roi >= 0 ? "+" : ""}${st.roi}% · 均CLV ${st.clv != null ? (st.clv >= 0 ? "+" : "") + st.clv + "pt" : "-"}  ${v.emo} ${v.label}`);
   else L.push(`  ⏳ 還沒有已結算的樣本外信號（等候選在其擅長盤出手、且賽事結算）`);
+  L.push(`  ⚠️ 贏家離場: 已跟賣平倉 ${st.exitN} 注 · 進行中被減倉 ${st.reducedN} 注（贏家中途賣出=信號失效, 跟策略一起退出）`);
   return L.join("\n");
+}
+// ⚠️ 赢家离场亮红灯: 检测到候选卖出了他已亮灯的仓位(信号失效, 跟策略应一起退)
+function fmtStrengthExitAlert(exits) {
+  if (!exits || !exits.length) return null;
+  const cn = ["⚠️ <b>贏家離場警報</b>（你在跟的候選, 把已亮燈的倉位賣了）", "（贏家中途賣出=他不信了/獲利了結 → 跟單策略應一起退出, 別死抱）", ""];
+  for (const s of exits.slice(0, 8)) {
+    const pctTxt = s.exit.pct != null ? `賣約${s.exit.pct}%` : `賣$${(s.exit.usd || 0).toLocaleString()}`;
+    const sellP = s.exit.price != null ? ` @${Math.round(s.exit.price * 100)}¢` : "";
+    cn.push(`🔴 <code>${esc(s.wallet.slice(0, 8))}…</code>${s.name ? " " + esc(String(s.name).slice(0, 10)) : ""} · <b>${esc(s.kind)}</b> · ${s.reduced ? "減倉" : "基本離場"}`);
+    cn.push(`   ${esc((s.title || "").slice(0, 46))}`);
+    cn.push(`   原押 ${esc(s.outcome)}@${Math.round(s.entry * 100)}¢ → ${pctTxt}${sellP} · 現價 ${s.nowPrice != null ? Math.round(s.nowPrice * 100) + "¢" : "-"}${s.reduced ? "（仍持部分, 觀察）" : "（紙面賬戶已跟賣平倉）"}`);
+  }
+  cn.push("", "⚠️ 非投注建議 · 這是「跟不跟得住」的關鍵風險");
+  return cn.join("\n");
 }
 // 亮灯: 新捕捉的擅长盘匹配信号(推 Telegram)
 function fmtStrengthAlert(fresh) {
@@ -1450,9 +1493,10 @@ async function postOrUpdateStrengthPin(track, state) {
   const cn = ["🏅 <b>只跟擅長盤 · 樣本外前向戰績</b>（凍結標籤後才算 · 真·出樣本）", ""];
   if (st.n) cn.push(`📊 已結算 ${st.n} 注：命中 <b>${st.winrate}%</b> · ROI <b>${st.roi >= 0 ? "+" : ""}${st.roi}%</b> · 均CLV ${st.clv != null ? (st.clv >= 0 ? "+" : "") + st.clv + "pt" : "-"}  ${v.emo} ${v.label}`);
   else cn.push(`⏳ 已捕捉 ${st.total} 注（未結算 ${st.open}）· 還沒有已結算的樣本外信號,等結算`);
+  cn.push(`⚠️ 贏家離場：跟賣 ${st.exitN} · 進行中減倉 ${st.reducedN}（賣出=信號失效, 跟策略一起退）`);
   if (open.length) {
     cn.push("", `<b>🔦 進行中的亮燈信號（${open.length}）</b>`);
-    for (const s of open.slice(0, 8)) cn.push(`  💎 ${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))} · <b>${esc(s.kind)}</b> · 押${esc(s.outcome)}@${Math.round(s.entry * 100)}¢ · ${esc((s.title || "").slice(0, 30))}`);
+    for (const s of open.slice(0, 8)) cn.push(`  ${s.exit ? "🔴" : "💎"} ${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))} · <b>${esc(s.kind)}</b> · 押${esc(s.outcome)}@${Math.round(s.entry * 100)}¢${s.exit ? ` <b>⚠️贏家${s.reduced ? "減倉" : "已賣"}${s.exit.pct != null ? s.exit.pct + "%" : ""}</b>` : ""} · ${esc((s.title || "").slice(0, 28))}`);
   }
   cn.push("", `🔭 持續更新 · ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
   const text = cn.join("\n");
@@ -1621,7 +1665,8 @@ function simulateKelly(bets, opts = {}) {
     if (!(frac > 0)) continue;
     n++;
     const stake = frac * B;
-    if (b.win) { B += stake * (1 - p) / p; wins++; } else { B -= stake; } // 输赢用真实赛果, 但仓位大小与赛果无关
+    const ret = b.profit != null ? b.profit : (b.win ? (1 - p) / p : -1); // 每$1回报: 赛果结算或跟卖平仓的已实现
+    B += stake * ret; if (ret > 0) wins++; // 仓位大小与结果无关(杜绝look-ahead)
     peak = Math.max(peak, B);
     maxDD = Math.max(maxDD, peak > 0 ? (peak - B) / peak : 0);
   }
@@ -1725,21 +1770,27 @@ function buildDashboard() {
   const sgDone = sgAll.filter((s) => s.settled).sort((a, b) => (b.entryTs || 0) - (a.entryTs || 0));
   const sgRow = (s, settled) => {
     const link = s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc((s.title || "").slice(0, 34))}</a>` : esc((s.title || "").slice(0, 34));
-    const res = settled ? (s.win ? `<span class="pos">✅贏 +${Math.round((s.profit || 0) * 100)}%</span>` : `<span class="neg">❌輸</span>`) : `<span class="warn2">進行中</span>`;
+    // 状态列: 已结算(赛果 ✅/❌ 或 跟卖 ⚠️) / 进行中(可能带减仓警告)
+    let res;
+    if (settled) res = s.settledBy === "exit"
+      ? `<span class="warn2">⚠️跟賣 ${(s.profit || 0) >= 0 ? "+" : ""}${Math.round((s.profit || 0) * 100)}%</span>`
+      : (s.win ? `<span class="pos">✅贏 +${Math.round((s.profit || 0) * 100)}%</span>` : `<span class="neg">❌輸</span>`);
+    else res = s.exit ? `<span class="neg">⚠️贏家${s.reduced ? "減倉" : "已賣"}${s.exit.pct != null ? s.exit.pct + "%" : ""}</span>` : `<span class="warn2">進行中</span>`;
     // 現價(未结算才有意义): 相对成本涨=红(跟更贵)/跌=绿(更便宜); 结算后无現價
     let nowCell = "-";
     if (!settled && s.nowPrice != null) {
       const d = s.nowPrice - s.entry, dc = d > 0.02 ? "neg" : d < -0.02 ? "pos" : "muted";
       nowCell = `${Math.round(s.nowPrice * 100)}¢${Math.abs(d) >= 0.02 ? ` <span class="${dc}">${d >= 0 ? "+" : ""}${Math.round(d * 100)}</span>` : ""}`;
     }
-    return `<tr><td>${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))}</td><td><b>${esc(s.kind)}</b></td><td>${link}</td><td>${esc(s.outcome)}</td><td>${Math.round(s.entry * 100)}¢</td><td>${nowCell}</td><td>${s.clv != null ? (s.clv >= 0 ? "+" : "") + Math.round(s.clv * 100) + "pt" : "-"}</td><td>${res}</td></tr>`;
+    return `<tr class="${!settled && s.exit ? "exitrow" : ""}"><td>${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))}</td><td><b>${esc(s.kind)}</b></td><td>${link}</td><td>${esc(s.outcome)}</td><td>${Math.round(s.entry * 100)}¢</td><td>${nowCell}</td><td>${s.clv != null ? (s.clv >= 0 ? "+" : "") + Math.round(s.clv * 100) + "pt" : "-"}</td><td>${res}</td></tr>`;
   };
   const sgTable = (arr, settled) => arr.length ? `<table class="grid det"><thead><tr><th>地址</th><th>擅長盤</th><th>項目</th><th>方向</th><th>成本</th><th>現價</th><th>CLV</th><th>${settled ? "結果" : "狀態"}</th></tr></thead><tbody>${arr.slice(0, 12).map((s) => sgRow(s, settled)).join("")}</tbody></table>` : "";
   const strHtmlBody = sst.n
     ? `<div class="card"><div class="pc-head"><span class="badge ${svCls}">${sv.emo}</span><b>樣本外前向戰績</b><span class="muted">凍結標籤後才算 · 起算 ${sst.frozenAt ? dHK(sst.frozenAt) : "-"} HKT</span></div>
         <div style="font-size:16px;margin:6px 0">已結算 <b>${sst.n}</b> 注 · 命中 <b>${sst.winrate}%</b> · ROI <b class="${roiCls(sst.roi)}">${roiTxt(sst.roi, "%")}</b> · 均CLV <b class="${roiCls(sst.clv)}">${sst.clv != null ? roiTxt(sst.clv, "pt") : "-"}</b> · 未結算 ${sst.open}</div>
-        <div class="verdict">${sv.label}</div></div>`
-    : `<div class="card"><span class="badge wait">⏳</span> 已捕捉 <b>${sst.total}</b> 個亮燈信號（未結算 ${sst.open}）· 還沒有已結算的樣本外樣本，等賽事結算。<div class="muted" style="margin-top:4px">起算 ${sst.frozenAt ? dHK(sst.frozenAt) + " HKT" : "尚未凍結（等雷達跑一輪）"}</div></div>`;
+        <div class="verdict">${sv.label}</div>
+        <div class="str-row"><span class="neg">⚠️ 贏家離場：跟賣平倉 ${sst.exitN} 注 · 進行中被減倉 ${sst.reducedN} 注</span> <span class="muted">（贏家中途賣出=信號失效，紙面賬戶已跟策略一起退出）</span></div></div>`
+    : `<div class="card"><span class="badge wait">⏳</span> 已捕捉 <b>${sst.total}</b> 個亮燈信號（未結算 ${sst.open}）· 還沒有已結算的樣本外樣本，等賽事結算。<div class="str-row"><span class="neg">⚠️ 贏家離場：跟賣 ${sst.exitN} · 減倉 ${sst.reducedN}</span> <span class="muted">起算 ${sst.frozenAt ? dHK(sst.frozenAt) + " HKT" : "尚未凍結（等雷達跑一輪）"}</span></div></div>`;
   const strHtml = strHtmlBody
     + (sgOpen.length ? `<div class="det-h">🔦 進行中的亮燈信號（${sgOpen.length}）</div>${sgTable(sgOpen, false)}` : "")
     + (sgDone.length ? `<div class="det-h">📗 已結算的樣本外信號（${sgDone.length}）</div>${sgTable(sgDone, true)}` : "");
@@ -1796,7 +1847,7 @@ function buildDashboard() {
     + "a{color:#8fb8ff;text-decoration:none}a:hover{text-decoration:underline}.warn2{color:#ffce54}"
     + ".det-h{font-size:13px;color:var(--mut);margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}"
     + "table.det{font-size:12.5px}table.det td:nth-child(2){max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
-    + "table.grid tr.strong td{background:#12261b}"
+    + "table.grid tr.strong td{background:#12261b}table.grid tr.exitrow td{background:#3a1616}"
     + ".str-row{font-size:13px;margin:4px 0 2px}.str-pill{display:inline-block;background:#12261b;border:1px solid #1f4a30;border-radius:6px;padding:1px 7px;margin:2px 4px 2px 0;font-size:12.5px}.str-pill.tent{background:#2a2410;border-color:#5a4520}.str-pill b{color:var(--pos)}"
     + ".foot{color:var(--mut);font-size:12px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}";
   const html = `<!doctype html><html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Polaris 記分卡儀表盤</title><style>${css}</style></head><body><div class="wrap">
@@ -2069,7 +2120,7 @@ async function pollOnce() {
         const { list, raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24), trackedWallets: trackedWalletsFromScorecard() });
         if (list.length) { await postOrUpdateWinnerPin(list, d); console.log(`  → 已更新赢家最新出手置顶(${list.length}笔)`); }
         try { const n = await trackScorecard(raw); if (n) console.log(`  → 记分卡: 新捕捉/结算 ${n}`); await postOrUpdateScorecardPin(loadScorecard(), d); } catch (e) { console.error("记分卡出错:", e.message); }
-        try { const { fresh, track } = await trackStrengthSignals(); if (fresh.length) { const a = fmtStrengthAlert(fresh); if (a) await send(a); console.log(`  → 🏅擅长盘亮灯: 新捕捉 ${fresh.length}`); } await postOrUpdateStrengthPin(track, d); } catch (e) { console.error("擅长盘追踪出错:", e.message); }
+        try { const { fresh, exits, track } = await trackStrengthSignals(); if (fresh.length) { const a = fmtStrengthAlert(fresh); if (a) await send(a); console.log(`  → 🏅擅长盘亮灯: 新捕捉 ${fresh.length}`); } if (exits && exits.length) { const ea = fmtStrengthExitAlert(exits); if (ea) await send(ea); console.log(`  → ⚠️赢家离场: ${exits.length}`); } await postOrUpdateStrengthPin(track, d); } catch (e) { console.error("擅长盘追踪出错:", e.message); }
         try { const cds = scorecardRows(loadScorecard()).filter((r) => r.candidate).map((r) => r.wallet); await refreshWalletDetail(cds.slice(0, 10)); buildDashboard(); } catch (e) { console.error("仪表盘生成出错:", e.message); } // 顺带刷新候选出手明细 + 本地 dashboard.html
         try { const l = loadLedger(); if ((l.bets || []).some((b) => !b.settled)) { const sn = await settleLedger(l); if (sn) console.log(`  → 台账新结算 ${sn} 注`); } await postOrUpdateLedgerPin(l, d); } catch (e) { console.error("台账置顶出错:", e.message); }
         d.winnerBets = now;
@@ -2217,12 +2268,16 @@ async function main() {
   }
 
   if (process.argv.includes("--strength")) {
-    // 擅长盘·前向验证器: 捕捉候选在其擅长盘的新出手 + 结算 + 样本外战绩。--dry 只看不推
-    const { fresh, track } = await trackStrengthSignals();
+    // 擅长盘·前向验证器: 捕捉候选在其擅长盘的新出手 + 检测赢家离场 + 结算 + 样本外战绩。--dry 只看不推
+    const { fresh, exits, track } = await trackStrengthSignals();
     console.log(fmtStrengthStatsText(track).replace(/<[^>]+>/g, ""));
-    if (fresh.length) console.log(`\n本轮新捕捉 ${fresh.length} 个亮灯信号:`), fresh.forEach((s) => console.log(`  💎 ${(s.name || s.wallet.slice(0, 6))} · ${s.kind} · 押${s.outcome}@${Math.round(s.entry * 100)}¢ · ${(s.title || "").slice(0, 40)}`));
-    else console.log(`\n(本轮无新亮灯信号; 候选未在其擅长盘出新赛前注)`);
-    if (fresh.length && !process.argv.includes("--dry")) { const a = fmtStrengthAlert(fresh); if (a) { await send(a); console.log(`\n✅ 已推 ${fresh.length} 条亮灯 → ${CHANNEL}`); } }
+    if (exits && exits.length) { console.log(`\n⚠️ 本轮新检测到赢家离场 ${exits.length} 个:`); exits.forEach((s) => console.log(`  🔴 ${(s.name || s.wallet.slice(0, 6))} · ${s.kind} · ${s.reduced ? "减仓" : "基本离场"}${s.exit.pct != null ? `~${s.exit.pct}%` : ""} · 原押${s.outcome}@${Math.round(s.entry * 100)}¢ · ${(s.title || "").slice(0, 38)}`)); }
+    if (fresh.length) { console.log(`\n本轮新捕捉 ${fresh.length} 个亮灯信号:`); fresh.forEach((s) => console.log(`  💎 ${(s.name || s.wallet.slice(0, 6))} · ${s.kind} · 押${s.outcome}@${Math.round(s.entry * 100)}¢ · ${(s.title || "").slice(0, 40)}`)); }
+    else console.log(`\n(本轮无新亮灯信号)`);
+    if (!process.argv.includes("--dry")) {
+      if (fresh.length) { const a = fmtStrengthAlert(fresh); if (a) { await send(a); console.log(`✅ 已推 ${fresh.length} 条亮灯`); } }
+      if (exits && exits.length) { const ea = fmtStrengthExitAlert(exits); if (ea) { await send(ea); console.log(`✅ 已推 ${exits.length} 条离场警报`); } }
+    }
     return;
   }
 

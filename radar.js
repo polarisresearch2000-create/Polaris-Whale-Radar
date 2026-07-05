@@ -746,12 +746,15 @@ async function walletActivity(addr, opts = {}) {
   const sportsOnly = opts.sportsOnly !== false;
   const isSport = (x) => /fifwc|world.?cup|\bmlb\b|baseball|tennis|wimbledon|\batp\b|\bwta\b|\bnba\b|\bnhl\b|\bnfl\b|soccer|\bucl\b|\bepl\b|laliga| vs\.? /i.test(x);
   const act = await getJSON(`${DATA}/activity?user=${wallet}&limit=200`).catch(() => null);
-  if (!Array.isArray(act)) return { wallet, bets: [] };
+  if (!Array.isArray(act)) return { wallet, bets: [], sells: [] };
   const raw = [];
+  const sells = []; // 卖出记录(检测赢家中途离场/减仓, 不受 sport/minUsd 过滤, 按 cid+outcome 匹配)
   const seen = new Set();
   for (const a of act) {
-    if (a.type !== "TRADE" || a.side !== "BUY" || !a.timestamp || a.timestamp < cutoff) continue;
+    if (a.type !== "TRADE" || !a.timestamp || a.timestamp < cutoff) continue;
     const price = Number(a.price);
+    if (a.side === "SELL" && a.conditionId) { sells.push({ cid: a.conditionId, outcome: a.outcome, ts: a.timestamp, price: price > 0 && price < 1 ? price : null, usd: a.usdcSize || (a.size || 0) * (price || 0) }); continue; }
+    if (a.side !== "BUY") continue;
     if (!(price > 0 && price < 1)) continue;
     const usd = a.usdcSize || (a.size || 0) * price;
     if (usd < minUsd) continue;
@@ -791,7 +794,7 @@ async function walletActivity(addr, opts = {}) {
       if (b.mktPrice > 0 && b.mktPrice < 1) b.moveVsEntry = +(b.mktPrice - b.price).toFixed(3);
     } else b.status = "open";
   }
-  return { wallet, bets: recent };
+  return { wallet, bets: recent, sells };
 }
 
 // ---- 顶级赢家风格画像 ----
