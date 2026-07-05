@@ -1281,7 +1281,7 @@ async function getMarketNow(gammaId) {
   try { outs = JSON.parse(m.outcomes || "[]"); px = JSON.parse(m.outcomePrices || "[]"); } catch {}
   const price = {}; outs.forEach((o, i) => (price[o] = Number(px[i])));
   const wi = px.findIndex((p) => Number(p) >= 0.99);
-  return { closed: !!m.closed, price, winner: m.closed && wi >= 0 ? outs[wi] : null };
+  return { closed: !!m.closed, price, winner: m.closed && wi >= 0 ? outs[wi] : null, slug: m.slug || null };
 }
 
 module.exports = {

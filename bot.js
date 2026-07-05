@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V8.6"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V8.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1416,6 +1416,7 @@ async function trackStrengthSignals() {
     const sg = t.signals[key];
     if (sg.settled || sg.gammaId == null) continue;
     const mk = await getMarketNow(sg.gammaId).catch(() => null); if (!mk) continue;
+    if (mk.slug) sg.marketSlug = mk.slug; // 具体市场 slug(精确深链, 不再跳到赛事默认盘)
     const pr = mk.price[sg.outcome];
     if (pr > 0 && pr < 1) { sg.nowPrice = pr; sg.nowTs = nowS; if (sg.kickoffMs && now >= sg.kickoffMs - REFRESH_MS) sg.last = pr; }
     if (mk.closed && mk.winner) { // 赛果结算优先
@@ -1783,8 +1784,15 @@ function buildDashboard() {
   const sgAll = Object.values(strk.signals || {}).filter((s) => s.afterFreeze !== false);
   const sgOpen = sgAll.filter((s) => !s.settled).sort((a, b) => (a.kickoffMs || 0) - (b.kickoffMs || 0));
   const sgDone = sgAll.filter((s) => s.settled).sort((a, b) => (b.entryTs || 0) - (a.entryTs || 0));
+  // 小标签: 子盘(连结落到赛事默认盘,需往下找) + 低赔(价高=收息型,上档小)
+  const sgTags = (s) => {
+    let x = "";
+    if (s.marketSlug && s.eventSlug && s.marketSlug !== s.eventSlug) x += ` <span class="muted" title="賽事子盤：點開落在賽事頁(默認勝負盤)，往下找此盤才是此價">子盤</span>`;
+    if (Math.round((s.entry || 0) * 100) >= 80) x += ` <span class="warn2" title="價高=低賠率(收息型)，贏了上檔小、輸一次抹多次">⚠️低賠</span>`;
+    return x;
+  };
   const sgRow = (s, settled) => {
-    const link = s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc((s.title || "").slice(0, 34))}</a>` : esc((s.title || "").slice(0, 34));
+    const link = (s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc((s.title || "").slice(0, 34))}</a>` : esc((s.title || "").slice(0, 34))) + sgTags(s);
     // 状态列: 已结算(赛果 ✅/❌ 或 跟卖 ⚠️) / 进行中(可能带减仓警告)
     let res;
     if (settled) res = s.settledBy === "exit"
@@ -1833,7 +1841,7 @@ function buildDashboard() {
   const paper = strengthPaper(strk);
   const paperCls = paper.n ? (paper.roi > 0 ? "ok" : paper.roi < 0 ? "bad" : "wait") : "wait";
   const posRow = (s) => {
-    const link = s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc((s.title || "").slice(0, 32))}</a>` : esc((s.title || "").slice(0, 32));
+    const link = (s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc((s.title || "").slice(0, 32))}</a>` : esc((s.title || "").slice(0, 32))) + sgTags(s);
     const u = s.unreal != null ? `<span class="${s.unreal > 0 ? "pos" : s.unreal < 0 ? "neg" : "muted"}">${s.unreal >= 0 ? "+" : ""}$${Math.abs(s.unreal) < 1 ? s.unreal.toFixed(1) : Math.round(s.unreal)}</span>` : "-";
     const st = s.exit ? `<span class="neg">⚠️贏家${s.reduced ? "減倉" : "已賣"}</span>` : `<span class="warn2">持倉中</span>`;
     return `<tr class="${s.exit ? "exitrow" : ""}"><td><b>$${s.stake}</b></td><td>${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))}</td><td>${esc(s.kind)}</td><td>${link}</td><td>${esc(s.outcome)}</td><td>${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""}</td><td>${u}</td><td>${st}</td></tr>`;
