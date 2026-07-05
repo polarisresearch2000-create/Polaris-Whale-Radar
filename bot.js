@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V8.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V8.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1600,20 +1600,24 @@ function candidateBets(sc) {
 }
 // 一次回放: 起始$1000, 每注按分数Kelly下注, 复利, 记最大回撤
 // ⚠️ edge 用【固定保守假设】(假设跟随每注净赚 SIM_EDGE 分), 绝不用该注收盘价/赛果估仓位 → 杜绝 look-ahead
+// 分数Kelly仓位比例(占本金): 用固定保守假设edge, 与赛果无关 → 杜绝 look-ahead
+function kellyFraction(p, opts = {}) {
+  if (!(p > 0 && p < 1)) return 0;
+  const kf = opts.kf != null ? opts.kf : 0.25;
+  const edge = opts.edge != null ? opts.edge : Number(process.env.SIM_EDGE || 0.03);
+  const maxFrac = opts.maxFrac || 0.10;
+  const qCap = opts.qCap || 0.95;
+  const q = Math.min(p + edge, qCap);
+  return Math.max(0, Math.min(maxFrac, kf * (q - p) / (1 - p)));
+}
 function simulateKelly(bets, opts = {}) {
   const start = opts.bankroll || 1000;
-  const kf = opts.kf != null ? opts.kf : 0.25;   // 分数Kelly(¼/½)
-  const maxFrac = opts.maxFrac || 0.10;          // 单注上限(占当前本金)
   const flat = opts.flat;                        // 设了=固定比例下注(对照组)
-  const edge = opts.edge != null ? opts.edge : Number(process.env.SIM_EDGE || 0.03); // 假设的每注 edge, 保守固定值
-  const qCap = opts.qCap || 0.95;
   let B = start, peak = start, maxDD = 0, n = 0, wins = 0;
   for (const b of bets) {
     const p = b.entry;
     if (!(p > 0 && p < 1)) continue;
-    let frac;
-    if (flat != null) frac = flat;
-    else { const q = Math.min(p + edge, qCap); const fStar = (q - p) / (1 - p); frac = Math.max(0, Math.min(maxFrac, kf * fStar)); } // 仓位只用固定假设edge, 与赛果无关
+    const frac = flat != null ? flat : kellyFraction(p, opts);
     if (!(frac > 0)) continue;
     n++;
     const stake = frac * B;
@@ -1622,6 +1626,26 @@ function simulateKelly(bets, opts = {}) {
     maxDD = Math.max(maxDD, peak > 0 ? (peak - B) / peak : 0);
   }
   return { start, final: +B.toFixed(2), roi: Math.round((B / start - 1) * 100), n, wins, winrate: n ? Math.round((wins / n) * 100) : null, maxDD: Math.round(maxDD * 100) };
+}
+// 🎲 前向纸面账户: 只跟"擅长盘亮灯"信号(样本外·按能成交价·真赛果结算), $1000 分数Kelly 复利
+function strengthPaper(track, opts = {}) {
+  const kf = opts.kf != null ? opts.kf : Number(process.env.PAPER_KF || 0.25);
+  const sigs = Object.values((track || {}).signals || {}).filter((s) => s.afterFreeze !== false);
+  const settled = sigs.filter((s) => s.settled).sort((a, b) => (a.entryTs || 0) - (b.entryTs || 0));
+  const r = simulateKelly(settled, { kf }); // 复用同一 Kelly 引擎, 喂前向样本外信号
+  const open = sigs.filter((s) => !s.settled);
+  const openExposure = open.reduce((sum, s) => sum + kellyFraction(s.entry, { kf }) * r.final, 0);
+  return { start: 1000, bankroll: r.final, roi: r.roi, n: r.n, wins: r.wins, winrate: r.winrate, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(openExposure), kf };
+}
+function fmtPaperText(track) {
+  const p = strengthPaper(track);
+  const L = [`🎲 $1000 前向紙面賬戶（只跟擅長盤亮燈 · 樣本外 · ¼Kelly · 按能成交價）`];
+  L.push(`  本金 $1000 → 現值 $${p.bankroll.toLocaleString()}  ROI ${p.roi >= 0 ? "+" : ""}${p.roi}%`);
+  if (p.n) L.push(`  已結算 ${p.n} 注 · 勝率 ${p.winrate}% · 最大回撤 ${p.maxDD}%`);
+  else L.push(`  ⏳ 尚無已結算(等亮燈信號的賽事結算)`);
+  L.push(`  進行中 ${p.openN} 注 · 目前在押 ~$${p.openExposure}`);
+  L.push(`  ✅ 這是【前向·樣本外】——冻结擅长盘後、真·未來出現的信號才跟,按你能成交的價、真賽果結算。這才是"跟不跟得賺"的誠實答案(需攢幾週)。`);
+  return L.join("\n");
 }
 function runSimSet(sc) {
   const all = candidateBets(sc);
@@ -1739,15 +1763,13 @@ function buildDashboard() {
   combos.sort((a, b) => b.score - a.score);
   const comboRows = combos.slice(0, 12).map((c) => `<tr class="${c.tentative ? "" : "strong"}"><td><code>${esc(c.wallet.slice(0, 8))}…</code> ${esc((c.name || "").slice(0, 10))}</td><td><b>${esc(c.k)}</b></td><td>${c.n}${c.tentative ? "⚠" : ""}</td><td>${c.wr}%</td><td class="pos">+${c.roi}%</td><td class="pos">+${c.clv}pt</td></tr>`).join("");
   const comboHtml = combos.length ? `<table class="grid"><thead><tr><th>地址</th><th>擅長盤口</th><th>場</th><th>命中</th><th>ROI</th><th>CLV</th></tr></thead><tbody>${comboRows}</tbody></table><div class="meta">⚠=樣本&lt;${Number(process.env.SHARP_MIN_N || 15)}偏少 · 只跟「地址×他擅長的那類盤」,不要笼统跟人</div>` : `<div class="muted">（暫無達標的擅長組合）</div>`;
-  // 🎲 $1000 Kelly 模拟
-  const sim = runSimSet(sc);
-  const simRow = (lbl, r, hi) => `<tr class="${hi ? "strong" : ""}"><td>${lbl}</td><td>$${r.final.toLocaleString()}</td><td class="${roiCls(r.roi)}">${roiTxt(r.roi, "%")}</td><td>${r.n}</td><td>${r.winrate != null ? r.winrate + "%" : "-"}</td><td class="neg">-${r.maxDD}%</td></tr>`;
-  const simHtml = sim.nAll ? `<div class="card"><table class="grid"><thead><tr><th>策略（起始 $1000）</th><th>終值</th><th>ROI</th><th>下注</th><th>勝率</th><th>最大回撤</th></tr></thead><tbody>
-    ${simRow("固定2%(不挑·全下)", sim.flat)}
-    ${simRow("¼ Kelly(封頂10%)", sim.q4)}
-    ${simRow("½ Kelly(封頂10%)", sim.q2)}
-    ${simRow("¼ Kelly · 只跟擅長盤", sim.strong4, true)}
-  </tbody></table><div class="banner" style="margin-top:12px">⚠️ 這是<b>樣本內回放</b>：候選地址是「因為賺過才被選中」的，必然偏樂觀；疊加世界盃順風窗口＋小樣本＋複利放大，真實上線會差很多。用途是看<b>倉位紀律與回撤</b>，不是收益承諾。信號池 ${sim.nAll} 注（擅長盤 ${sim.nStrong} 注）。</div></div>` : `<div class="muted">（候選信號不足，無法模擬）</div>`;
+  // 🎲 $1000 前向纸面账户: 只跟擅长盘亮灯信号(样本外·真赛果结算)
+  const paper = strengthPaper(strk);
+  const paperCls = paper.n ? (paper.roi > 0 ? "ok" : paper.roi < 0 ? "bad" : "wait") : "wait";
+  const paperHtml = `<div class="card">
+    <div class="pc-head"><span class="badge ${paperCls}">🎲</span><b>本金 $1000 → 現值 $${paper.bankroll.toLocaleString()}</b><span class="${roiCls(paper.roi)}" style="font-size:18px">${roiTxt(paper.roi, "%")}</span><span class="muted">¼ Kelly · 按你能成交價</span></div>
+    <div style="margin:6px 0">${paper.n ? `已結算 <b>${paper.n}</b> 注 · 勝率 <b>${paper.winrate}%</b> · 最大回撤 <b class="neg">-${paper.maxDD}%</b>` : "⏳ 尚無已結算（等亮燈信號的賽事結算）"} · 進行中 <b>${paper.openN}</b> 注 · 目前在押 ~<b>$${paper.openExposure.toLocaleString()}</b></div>
+    <div class="banner">✅ <b>前向 · 樣本外</b>：只跟凍結擅長盤之後、真·未來出現的亮燈信號，按你能成交的價下注、真賽果結算 —— 這是「跟不跟得賺」的誠實答案（不是回放，需攢幾週）。仍：非投注建議，未證明 edge。</div></div>`;
   const lb = (led.bets || []).filter((b) => b.settled);
   const staked = lb.reduce((s, b) => s + (b.stake || 0), 0), lpnl = lb.reduce((s, b) => s + (b.pnl || 0), 0);
   const lroi = staked ? Math.round((lpnl / staked) * 100) : null;
@@ -1784,7 +1806,7 @@ function buildDashboard() {
     ${ovHtml}
     <h2>🏅 只跟擅長盤 · 樣本外前向驗證器（凍結後才算 · 真·出樣本）</h2>${strHtml}
     <h2>🏅 高信心跟單組合（地址 × 他擅長的盤）</h2><div class="card">${comboHtml}</div>
-    <h2>🎲 $1000 模擬賬戶（分數 Kelly · 回放候選信號）</h2>${simHtml}
+    <h2>🎲 $1000 前向紙面賬戶（只跟擅長盤亮燈 · 真·未來樣本）</h2>${paperHtml}
     <h2>✅ 候選可跟（附「賺從哪來」拆解＋近期出手明細）</h2>${candHtml}
     <h2>📋 其餘足夠樣本（參考）</h2>${othHtml}
     <div class="meta">另有 ${smallN} 個地址樣本 < ${MIN_N}（噪聲，已隱藏）</div>
@@ -2161,9 +2183,17 @@ async function main() {
     return;
   }
 
+  if (process.argv.includes("--paper")) {
+    // $1000 前向纸面账户: 只跟擅长盘亮灯信号(样本外·真赛果结算) —— 先跑一轮捕捉/结算再看
+    try { await trackStrengthSignals(); } catch (e) { console.error("刷新出错(用现有数据):", e.message); }
+    console.log(fmtPaperText(loadStrengthTrack()));
+    return;
+  }
+
   if (process.argv.includes("--simulate")) {
-    // $1000 Kelly 模拟(回放候选地址已追踪信号)
+    // ⚠️参考用: $1000 Kelly【样本内回放】(候选历史注, 偏乐观)。前向真账户看 --paper
     console.log(fmtSimText(loadScorecard()));
+    console.log(`\n（注：这是【样本内回放】仅供参考。真·前向账户 → node bot.js --paper）`);
     return;
   }
 
