@@ -735,6 +735,65 @@ async function winnerRecentBets(opts = {}) {
   return { list, raw: open }; // list=跨钱包去重(显示用); raw=逐钱包原始(记分卡用)
 }
 
+// ---- 单钱包近期出手明细(什么项目/方向/成本$/成本价¢/现价/状态) ----
+// 给"值得跟进的地址"看他们到底在押什么、下了多少、什么价 → 供跟进决策
+async function walletActivity(addr, opts = {}) {
+  const wallet = String(addr || "").toLowerCase();
+  if (!/^0x[0-9a-f]{40}$/.test(wallet)) return { wallet, bets: [] };
+  const hours = opts.hours || Number(process.env.DETAIL_HOURS || 336); // 默认近14天
+  const minUsd = opts.minUsd || Number(process.env.DETAIL_MIN_USD || 500);
+  const cutoff = Date.now() / 1000 - hours * 3600;
+  const sportsOnly = opts.sportsOnly !== false;
+  const isSport = (x) => /fifwc|world.?cup|\bmlb\b|baseball|tennis|wimbledon|\batp\b|\bwta\b|\bnba\b|\bnhl\b|\bnfl\b|soccer|\bucl\b|\bepl\b|laliga| vs\.? /i.test(x);
+  const act = await getJSON(`${DATA}/activity?user=${wallet}&limit=200`).catch(() => null);
+  if (!Array.isArray(act)) return { wallet, bets: [] };
+  const raw = [];
+  const seen = new Set();
+  for (const a of act) {
+    if (a.type !== "TRADE" || a.side !== "BUY" || !a.timestamp || a.timestamp < cutoff) continue;
+    const price = Number(a.price);
+    if (!(price > 0 && price < 1)) continue;
+    const usd = a.usdcSize || (a.size || 0) * price;
+    if (usd < minUsd) continue;
+    const txt = (a.title || "") + " " + (a.slug || "");
+    if (sportsOnly && !isSport(txt)) continue;
+    const key = (a.conditionId || "") + "|" + a.outcome + "|" + (a.timestamp || "");
+    if (seen.has(key)) continue; seen.add(key);
+    raw.push({ title: a.title || a.slug || "", eventSlug: a.eventSlug || a.slug, outcome: a.outcome, price, usd, ts: a.timestamp, cid: a.conditionId, shares: a.size });
+  }
+  // 富化: 当前盘口价 + 是否已完赛/赢家(按 slug 批量拉一次 event)
+  const recent = raw.sort((a, b) => b.ts - a.ts).slice(0, opts.max || 30);
+  const slugs = [...new Set(recent.map((b) => b.eventSlug).filter(Boolean))];
+  const evMap = new Map();
+  await mapLimit(slugs, CONFIG.WALLET_CONCURRENCY, async (slug) => {
+    const ev = await getJSON(`${GAMMA}/events?slug=${slug}`).catch(() => null);
+    const e = Array.isArray(ev) ? ev[0] : null;
+    const mkts = new Map();
+    for (const m of (e && e.markets) || []) {
+      if (!m.conditionId) continue;
+      let outs = [], px = [];
+      try { outs = JSON.parse(m.outcomes || "[]"); px = JSON.parse(m.outcomePrices || "[]"); } catch {}
+      const pm = {}; outs.forEach((o, i) => { pm[o] = Number(px[i]); });
+      mkts.set(m.conditionId, { id: m.id, price: pm, closed: !!m.closed });
+    }
+    evMap.set(slug, { closed: e ? !!e.closed : false, startMs: e && e.startTime ? Date.parse(e.startTime) : null, mkts });
+  });
+  for (const b of recent) {
+    const m = evMap.get(b.eventSlug);
+    if (m) {
+      b.kickoffMs = m.startMs;
+      b.closed = m.closed;
+      const mk = m.mkts.get(b.cid);
+      if (mk) { b.gammaId = mk.id; b.mktPrice = mk.price[b.outcome]; b.mktClosed = mk.closed; }
+      // 状态: 已结算 / 进行中(已开赛未结算) / 可跟(未开赛)
+      b.status = m.closed || b.mktClosed ? "settled" : (m.startMs && Date.now() >= m.startMs ? "live" : "open");
+      // 现价相对成本(正=价涨了=你现在跟要贵; 也可当粗略"赢家买得便宜"参考)
+      if (b.mktPrice > 0 && b.mktPrice < 1) b.moveVsEntry = +(b.mktPrice - b.price).toFixed(3);
+    } else b.status = "open";
+  }
+  return { wallet, bets: recent };
+}
+
 // ---- 顶级赢家风格画像 ----
 const catOf = (title) => {
   const t = String(title || "").toLowerCase();
@@ -1225,6 +1284,6 @@ async function getMarketNow(gammaId) {
 module.exports = {
   scan, scanWatchlist, buildCryptoWatchlist, getTopWallets,
   marketSentiment, analyzeTopTraders, getMatchEvents,
-  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, buildSportsWinners, winnerRecentBets, getExecQuote, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, dkEdges,
+  getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, buildSportsWinners, winnerRecentBets, walletActivity, getExecQuote, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, dkEdges,
   fmtUSD, CONFIG, isDirectional,
 };

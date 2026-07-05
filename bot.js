@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, winnerRecentBets, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, dkEdges, fmtUSD } = require("./radar");
+const { scan, scanWatchlist, marketSentiment, analyzeTopTraders, getMatchEvents, getWcResults, matchPrediction, getTotalsSignal, getSpreadSignal, getClosingPrices, multiSportSentiment, winnerRecentBets, walletActivity, quoteMatch, cryptoPrediction, getMarketResolution, getMarketNow, findBetMarket, dkEdges, fmtUSD } = require("./radar");
 
 // ---------- 读取 .env（自己解析，跨 Node 版本稳定）----------
 function loadEnv(p) {
@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V7.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V7.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1367,9 +1367,10 @@ function statsOf(bets) {
 }
 // 盘口画像分类(从 outcome + eventSlug 轻量推断)
 function betKind(b) {
-  const o = String(b.outcome || "").toLowerCase(), s = String(b.eventSlug || "").toLowerCase();
-  if (o === "over" || o === "under") return "大小球";
+  const o = String(b.outcome || "").toLowerCase(), s = (String(b.eventSlug || "") + " " + String(b.title || "")).toLowerCase();
+  // 衍生/散户盘先判(角球/黄牌/半场/球员等即使是 Over/Under 也算衍生, 不是核心进球大小球)
   if (/halftime|exact|btts|both-teams|advance|to-score|clean-sheet|corner|card|player|winning-margin|first-|anytime|set-|handicap-game/.test(s)) return "衍生/散戶";
+  if (o === "over" || o === "under") return "大小球";
   if (o === "yes" || o === "no") return "是非盤";
   return "勝負/讓球";
 }
@@ -1431,15 +1432,52 @@ function fmtProfileText(p) {
   return L.join("\n");
 }
 
+// ==== 值得跟进地址的"近期出手明细": 什么项目 / 方向 / 成本价¢ / 成本$ / 现价 / 状态 ====
+const DETAIL_FILE = path.join(__dirname, "data", "wallet_detail.json");
+function loadDetail() { try { return JSON.parse(fs.readFileSync(DETAIL_FILE, "utf8")); } catch { return { ts: 0, wallets: {} }; } }
+async function refreshWalletDetail(wallets) {
+  const cache = loadDetail(); cache.wallets = cache.wallets || {};
+  for (const w of wallets || []) {
+    try { const { bets } = await walletActivity(w); cache.wallets[String(w).toLowerCase()] = { ts: Math.round(Date.now() / 1000), bets }; } catch {}
+  }
+  cache.ts = Math.round(Date.now() / 1000);
+  try { fs.mkdirSync(path.dirname(DETAIL_FILE), { recursive: true }); fs.writeFileSync(DETAIL_FILE, JSON.stringify(cache, null, 2)); } catch {}
+  return cache;
+}
+const betStatusZh = (b) => (b.status === "settled" ? "已結算" : b.status === "live" ? "進行中" : "可跟");
+const dHK = (ts) => new Date((ts || 0) * 1000 + 8 * 3600 * 1000).toISOString().slice(5, 16).replace("T", " ");
+function fmtDetailText(bets) {
+  if (!bets || !bets.length) return "  (近期無達門檻的方向性出手)";
+  const L = [];
+  for (const b of bets.slice(0, 15)) {
+    const now = b.mktPrice != null ? ` → 現價 ${Math.round(b.mktPrice * 100)}¢` : "";
+    L.push(`  ${dHK(b.ts)}  ${(b.title || "").slice(0, 46)}`);
+    L.push(`      押 ${b.outcome} · 成本 ${Math.round(b.price * 100)}¢(≈$${Math.round(b.usd).toLocaleString()})${now} · ${betStatusZh(b)}`);
+  }
+  return L.join("\n");
+}
+function detailRowsHtml(bets) {
+  if (!bets || !bets.length) return `<div class="muted" style="margin-top:6px">近期無達門檻的方向性出手</div>`;
+  const rows = bets.slice(0, 10).map((b) => {
+    const st = betStatusZh(b), stc = b.status === "settled" ? "muted" : b.status === "live" ? "warn2" : "pos";
+    const title = esc((b.title || "").slice(0, 44));
+    const link = b.eventSlug ? `<a href="https://polymarket.com/event/${esc(b.eventSlug)}" target="_blank">${title}</a>` : title;
+    return `<tr><td>${dHK(b.ts)}</td><td>${link}</td><td>${esc(b.outcome)}</td><td>${Math.round(b.price * 100)}¢</td><td>$${Math.round(b.usd).toLocaleString()}</td><td>${b.mktPrice != null ? Math.round(b.mktPrice * 100) + "¢" : "-"}</td><td class="${stc}">${st}</td></tr>`;
+  }).join("");
+  return `<table class="grid det"><thead><tr><th>時間</th><th>項目</th><th>方向</th><th>成本</th><th>金額</th><th>現價</th><th>狀態</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
 // ==== 仪表盘: 生成本地 dashboard.html(浏览器双击打开, 把记分卡/画像/板块战绩/台账可视化) ====
 const DASH_FILE = path.join(__dirname, "dashboard.html");
 const roiCls = (v) => (v == null ? "muted" : v > 0 ? "pos" : v < 0 ? "neg" : "muted");
 const roiTxt = (v, suf) => (v == null ? "-" : (v >= 0 ? "+" : "") + v + (suf || ""));
-function profileCardHtml(p) {
+function profileCardHtml(p, detEntry) {
   if (!p) return "";
   const cells = (s) => `<td>${s.n || 0}</td><td>${s.wr != null ? s.wr + "%" : "-"}</td><td class="${roiCls(s.roi)}">${roiTxt(s.roi, "%")}</td><td class="${roiCls(s.clv)}">${s.clv != null ? roiTxt(s.clv, "pt") : "-"}</td>`;
   const cls = p.vemo === "✅" ? "ok" : p.vemo === "🟡" ? "warn" : p.vemo === "❌" ? "bad" : "wait";
   const typeRows = p.byType.map((t) => `<tr><td>${esc(t.k)}</td>${cells(t)}</tr>`).join("");
+  const detBets = detEntry && detEntry.bets;
+  const detFresh = detEntry && detEntry.ts ? `（明細更新於 ${dHK(detEntry.ts)} HKT）` : "";
   return `<div class="card">
     <div class="pc-head"><span class="badge ${cls}">${p.vemo}</span>
       <b><code>${esc(p.wallet.slice(0, 8))}…</code> ${esc(p.name)}</b>
@@ -1454,6 +1492,7 @@ function profileCardHtml(p) {
       <tr><td>近期 ${p.recent.n} 場</td>${cells(p.recent)}</tr>
     </tbody></table>
     <table class="grid mini"><thead><tr><th>盤口畫像</th><th>場</th><th>命中</th><th>ROI</th><th>CLV</th></tr></thead><tbody>${typeRows}</tbody></table>
+    <div class="det-h">🔎 近期出手明細 ${detFresh}</div>${detailRowsHtml(detBets)}
   </div>`;
 }
 function buildDashboard() {
@@ -1466,11 +1505,12 @@ function buildDashboard() {
   const smallN = rows.filter((r) => r.n >= 1 && !r.enough).length;
   let ms = {}; try { ms = JSON.parse(fs.readFileSync(MS_FILE, "utf8")).strategies || {}; } catch {}
   let led = { bets: [] }; try { led = loadLedger(); } catch {}
+  const det = loadDetail();
   const now = hkNow().toISOString().slice(0, 16).replace("T", " ");
   const ovHtml = `<section class="card overview">📊 總覽（跟所有💎信號） · <b class="${roiCls(ov.roi)}">${roiTxt(ov.roi, "%")}</b> ROI
     <div class="muted">${ov.n || 0} 注 · 命中 ${ov.wr != null ? ov.wr + "%" : "-"} · 均CLV ${ov.clv != null ? roiTxt(ov.clv, "pt") : "-"} · ⚠️ 多為同批世界盃、未跨行情</div></section>`;
   const candHtml = cands.length
-    ? cands.map((r) => profileCardHtml(walletProfile(sc, r.wallet))).filter(Boolean).join("")
+    ? cands.map((r) => profileCardHtml(walletProfile(sc, r.wallet), (det.wallets || {})[r.wallet.toLowerCase()])).filter(Boolean).join("")
     : `<div class="card muted">暫無地址達到「樣本 ≥ ${MIN_N} 且 ROI+CLV 雙正」。繼續讓雷達跑、攢樣本。</div>`;
   const othRows = others.slice(0, 15).map((r) => `<tr><td><code>${esc(r.wallet.slice(0, 8))}…</code> ${esc((r.name || "").slice(0, 12))}</td><td>${r.n}</td><td>${r.wr}%</td><td class="${roiCls(r.roi)}">${roiTxt(r.roi, "%")}</td><td class="${roiCls(r.clv)}">${r.clv != null ? roiTxt(r.clv, "pt") : "-"}</td></tr>`).join("");
   const othHtml = others.length ? `<table class="grid"><thead><tr><th>地址（≥${MIN_N}·未雙正·僅參考）</th><th>場</th><th>命中</th><th>ROI</th><th>CLV</th></tr></thead><tbody>${othRows}</tbody></table>` : `<div class="muted">（暫無足夠樣本的地址）</div>`;
@@ -1504,6 +1544,9 @@ function buildDashboard() {
     + ".badge{display:inline-block;min-width:26px;text-align:center;border-radius:6px;padding:1px 6px;font-size:15px}"
     + ".badge.ok{background:#123524}.badge.warn{background:#3a2f10}.badge.bad{background:#3a1616}.badge.wait{background:#222b3f}"
     + ".verdict{font-size:14px;color:#cdd6ea;margin:2px 0 6px}code{background:#0c1120;padding:1px 5px;border-radius:4px;font-size:13px}"
+    + "a{color:#8fb8ff;text-decoration:none}a:hover{text-decoration:underline}.warn2{color:#ffce54}"
+    + ".det-h{font-size:13px;color:var(--mut);margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}"
+    + "table.det{font-size:12.5px}table.det td:nth-child(2){max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
     + ".foot{color:var(--mut);font-size:12px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}";
   const html = `<!doctype html><html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Polaris 記分卡儀表盤</title><style>${css}</style></head><body><div class="wrap">
     <h1>📇 聰明錢記分卡 · 儀表盤</h1>
@@ -1753,7 +1796,7 @@ async function pollOnce() {
         const { list, raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24), trackedWallets: trackedWalletsFromScorecard() });
         if (list.length) { await postOrUpdateWinnerPin(list, d); console.log(`  → 已更新赢家最新出手置顶(${list.length}笔)`); }
         try { const n = await trackScorecard(raw); if (n) console.log(`  → 记分卡: 新捕捉/结算 ${n}`); await postOrUpdateScorecardPin(loadScorecard(), d); } catch (e) { console.error("记分卡出错:", e.message); }
-        try { buildDashboard(); } catch (e) { console.error("仪表盘生成出错:", e.message); } // 顺带刷新本地 dashboard.html
+        try { const cds = scorecardRows(loadScorecard()).filter((r) => r.candidate).map((r) => r.wallet); await refreshWalletDetail(cds.slice(0, 10)); buildDashboard(); } catch (e) { console.error("仪表盘生成出错:", e.message); } // 顺带刷新候选出手明细 + 本地 dashboard.html
         try { const l = loadLedger(); if ((l.bets || []).some((b) => !b.settled)) { const sn = await settleLedger(l); if (sn) console.log(`  → 台账新结算 ${sn} 注`); } await postOrUpdateLedgerPin(l, d); } catch (e) { console.error("台账置顶出错:", e.message); }
         d.winnerBets = now;
       } catch (e) {
@@ -1880,12 +1923,20 @@ async function main() {
     const p = walletProfile(loadScorecard(), q);
     if (!p) { console.log(`找不到匹配 "${q}" 的地址。试试地址前缀(如 0x076daa)或名字(如 riverskew)。先跑 node bot.js --scorecard 看已知地址`); return; }
     console.log(fmtProfileText(p));
+    const dh = Number(process.env.DETAIL_HOURS || 336);
+    try { const { bets } = await walletActivity(p.wallet, { hours: dh }); console.log(`\n— 近期出手明細（近${Math.round(dh / 24)}天 · 什麼項目 / 方向 / 成本¢($) / 現價 / 狀態）—\n${fmtDetailText(bets)}`); } catch (e) { console.error("拉取明细出错:", e.message); }
     return;
   }
 
   if (process.argv.includes("--dashboard")) {
-    // 生成本地 dashboard.html(浏览器双击打开)。--refresh 先跑一轮捕捉/结算再生成
-    if (process.argv.includes("--refresh")) { try { const { raw } = await winnerRecentBets({ hours: Number(process.env.WINNER_HOURS || 24), trackedWallets: trackedWalletsFromScorecard() }); await trackScorecard(raw); await trackMultiSport(); } catch (e) { console.error("刷新出错(用现有数据生成):", e.message); } }
+    // 生成本地 dashboard.html(浏览器双击打开)。--refresh 顺带刷新候选地址的近期出手明细
+    if (process.argv.includes("--refresh")) {
+      try {
+        const cds = scorecardRows(loadScorecard()).filter((r) => r.candidate).map((r) => r.wallet);
+        console.log(`刷新 ${cds.length} 个候选地址的近期出手明细…`);
+        await refreshWalletDetail(cds.slice(0, 10));
+      } catch (e) { console.error("明细刷新出错(用缓存生成):", e.message); }
+    }
     const r = buildDashboard();
     console.log(`✅ 仪表盘已生成: ${r.file}\n   候选 ${r.cands} · 其余足够样本 ${r.others} · 小样本 ${r.smallN}(隐藏)\n   双击「打开仪表盘.bat」或直接用浏览器打开该文件即可查看`);
     return;
