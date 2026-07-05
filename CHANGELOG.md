@@ -3,6 +3,12 @@
 > 每次迭代升级在此记录并更新版本号。当前版本同步显示在：
 > 启动脚本横幅（`启动世界杯雷达.bat`）+ bot 启动日志（`bot.js` 的 `VERSION`）。
 
+## V7.7 — 2026-07-05（全体育板块自带可信度：CLV + 每条历史ROI + 板块战绩）
+- 用户问「全体育板块是否可信」——查实测(164信号)发现：跟大户胜负盘 100场 ROI**-8%**、让球-25%，跟💎胜负盘 +4%(勉强)。→ 让板块**自己把可信度写在脸上**：
+  - **① 多体育追踪加 CLV**：`trackMultiSport` 结算改用 `getMarketNow`(临近开赛3h内用真实盘口价刷新收盘价),算 `clv=近开赛价−入场价`,累进 `strategies[kind][key].clvSum/clvN`。(存量164条无CLV,新结算起累积。)
+  - **② 每条信号内联历史ROI**：`msVerdict(s)`→{roi,clv,emo,label}(样本≥`SHARP_MIN_N`默15才判)。板块里 胜负盘/大小球/让球 每行末尾加 `· 跟大戶歷史-8%❌`。
+  - **③ 底部「📊板塊戰績」**：胜负/大小球/让球 × 跟大户/跟💎 的 场数·ROI·CLV·标签(✅雙正/🟡ROI正CLV不正/❌別跟/⏳樣本不足)。`fmtMultiSport(games, stats)`、`fmtMultiSportStats`、digest、`--sharps` 全接入。
+
 ## V7.6 — 2026-07-05（记分卡:样本量闸门 + 候选标记 + 总览）
 - **让记分卡别再拿小样本噪声当信号**(用户反馈榜首 +337% 其实只 2 场):
   - `SCORECARD_MIN_N`(默15)样本量闸门。`scorecardRows` 加 `enough`(n≥MIN)/`candidate`(enough 且 ROI+CLV 双正) 标记,**按 候选→足够样本→小样本 分层排序**(不再按 ROI 把噪声顶上来)。

@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V7.6"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V7.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1007,10 +1007,26 @@ function fmtPositioning(markets, threshold) {
 
 // 「今日聪明钱 · 全体育」: 世界杯以外(MLB/网球…)每场胜负盘的💎赢家 vs 🐋最大注(2-outcome 版)
 const SPORT_EMOJI = { mlb: "⚾", tennis: "🎾", nba: "🏀", basketball: "🏀", nhl: "🏒", nfl: "🏈" };
-function fmtMultiSport(games) {
+// 某策略前向战绩判定: ROI + CLV + 样本闸门 → ✅可跟 / 🟡勉强 / ❌别跟 / ⏳样本不足
+function msVerdict(s) {
+  if (!s || !s.bets) return null;
+  const n = s.bets, MIN = Number(process.env.SHARP_MIN_N || 15);
+  const roi = Math.round((s.profit / n) * 100);
+  const clv = s.clvN ? +((s.clvSum / s.clvN) * 100).toFixed(1) : null;
+  const emo = n < MIN ? "⏳" : roi > 0 && clv != null && clv > 0 ? "✅" : roi > 0 ? "🟡" : "❌";
+  const label = emo + (n < MIN ? "樣本不足" : emo === "✅" ? "可跟" : emo === "🟡" ? "勉強" : "別跟");
+  return { n, roi, clv, emo, label };
+}
+// 内联小标签: " · 跟大戶歷史-8%❌"
+function msInline(stats, kind, key) {
+  const v = msVerdict(stats && stats[kind] && stats[kind][key]);
+  if (!v) return "";
+  return ` · ${key === "followWinner" ? "跟💎" : "跟大戶"}歷史${v.roi >= 0 ? "+" : ""}${v.roi}%${v.emo}`;
+}
+function fmtMultiSport(games, stats) {
   if (!games || !games.length) return null;
   const url = (g) => (g.eventSlug ? `https://polymarket.com/event/${g.eventSlug}` : "https://polymarket.com");
-  const cn = ["🎯 <b>近期聰明錢 · 全體育</b>", "（世界盃以外 · 近期 · 💎贏家在押誰 + 大小球/讓球）", ""];
+  const cn = ["🎯 <b>近期聰明錢 · 全體育</b>", "（世界盃以外 · 💎贏家在押誰 + 每條信號帶「歷史ROI+標籤」）", ""];
   for (const g of games) {
     const emo = SPORT_EMOJI[g.sport] || "🏟";
     const ko = koHKT(g.kickoffMs);
@@ -1023,11 +1039,30 @@ function fmtMultiSport(games) {
       cn.push(`   ${x.usd === topUsd ? "🟩" : "🟥"} ${esc(x.o)} <b>${pct}%</b>${odds}`);
     }
     for (const l of smartMoneyLines(g, (o) => esc(o))) cn.push(l);
-    if (g.ou) { const t = g.ou; const ex = t.winnerSide ? ` · 💎贏家偏${t.winnerSide === "Over" ? "大" : "小"}${t.winnerSide === t.side ? "✓" : "⚠️分歧"}` : ""; cn.push(`   ⚽ 大小球: 大戶偏 ${t.side === "Over" ? "大" : "小"} ${t.pct}%（O/U ${esc(t.line)}）${ex}`); }
-    if (g.spread) { const s = g.spread; const disp = s.side === "cover" ? `${esc(s.favTeam)} -${esc(s.line)}` : `${esc(s.dogTeam)} +${esc(s.line)}`; const ex = s.winnerSide ? ` · 💎贏家${s.winnerSide === s.side ? "同向✓" : "分歧⚠️"}` : ""; cn.push(`   ⚖️ 讓球: 大戶偏 ${disp} ${s.pct}%${ex}`); }
+    if (stats && (stats.ml?.followBig || stats.ml?.followWinner)) {
+      const vb = msVerdict(stats.ml.followBig), vw = msVerdict(stats.ml.followWinner), p = [];
+      if (vb) p.push(`跟大戶${vb.roi >= 0 ? "+" : ""}${vb.roi}%${vb.emo}`);
+      if (vw) p.push(`跟💎${vw.roi >= 0 ? "+" : ""}${vw.roi}%${vw.emo}`);
+      if (p.length) cn.push(`   ↳ 胜负盘歷史: ${p.join(" · ")}`);
+    }
+    if (g.ou) { const t = g.ou; const ex = t.winnerSide ? ` · 💎贏家偏${t.winnerSide === "Over" ? "大" : "小"}${t.winnerSide === t.side ? "✓" : "⚠️分歧"}` : ""; cn.push(`   ⚽ 大小球: 大戶偏 ${t.side === "Over" ? "大" : "小"} ${t.pct}%（O/U ${esc(t.line)}）${ex}${msInline(stats, "ou", "followBig")}`); }
+    if (g.spread) { const s = g.spread; const disp = s.side === "cover" ? `${esc(s.favTeam)} -${esc(s.line)}` : `${esc(s.dogTeam)} +${esc(s.line)}`; const ex = s.winnerSide ? ` · 💎贏家${s.winnerSide === s.side ? "同向✓" : "分歧⚠️"}` : ""; cn.push(`   ⚖️ 讓球: 大戶偏 ${disp} ${s.pct}%${ex}${msInline(stats, "spread", "followBig")}`); }
     cn.push("");
   }
-  cn.push("⚠️ 數據分析 · 非投注建議");
+  if (stats) {
+    const MIN = Number(process.env.SHARP_MIN_N || 15);
+    cn.push(`📊 <b>板塊戰績</b>（跟著下的實測 · 樣本≥${MIN}才算數 · ✅雙正/🟡ROI正CLV不正/❌別跟）`);
+    const kl = { ml: "胜负盘", ou: "大小球", spread: "让球" };
+    for (const kind of ["ml", "ou", "spread"]) {
+      for (const [key, kn] of [["followBig", "跟大戶"], ["followWinner", "跟💎"]]) {
+        const v = msVerdict(stats[kind] && stats[kind][key]);
+        if (!v) continue;
+        cn.push(`   ${kl[kind]} ${kn}: ${v.n}場 ROI ${v.roi >= 0 ? "+" : ""}${v.roi}% · CLV ${v.clv != null ? (v.clv >= 0 ? "+" : "") + v.clv + "pt" : "-"} ${v.label}`);
+      }
+    }
+    cn.push("");
+  }
+  cn.push("⚠️ 數據分析 · 非投注建議 · 標籤=歷史前向實測,不保證未來");
   cn.push(`🔭 Polaris Research · Polymarket 聰明錢雷達`);
   return cn.join("\n");
 }
@@ -1127,14 +1162,14 @@ function fmtMultiSportStats(ms) {
     if (!S) continue;
     const parts = [];
     for (const [key, name] of [["followWinner", "跟💎贏家"], ["followBig", "跟大戶"]]) {
-      const s = S[key];
-      if (!s || !s.bets) continue;
-      parts.push(`${name} ${s.bets}場 命中${Math.round((s.wins / s.bets) * 100)}% ROI ${Math.round((s.profit / s.bets) * 100) >= 0 ? "+" : ""}${Math.round((s.profit / s.bets) * 100)}%`);
+      const v = msVerdict(S[key]);
+      if (!v) continue;
+      parts.push(`${name} ${v.n}場 ROI ${v.roi >= 0 ? "+" : ""}${v.roi}% CLV ${v.clv != null ? (v.clv >= 0 ? "+" : "") + v.clv + "pt" : "-"} ${v.label}`);
     }
-    if (parts.length) { any = true; out.push(`<b>${lbl[kind]}</b>: ${parts.join(" · ")}`); }
+    if (parts.length) { any = true; out.push(`<b>${lbl[kind]}</b>`, ...parts.map((p) => "  " + p)); }
   }
   if (!any) return null;
-  out.push("", "⚠️ 未證明 edge · 前向攢樣本中");
+  out.push("", `⚠️ 樣本≥${Number(process.env.SHARP_MIN_N || 15)}才算數 · 標籤=前向實測,不保證未來`);
   return out.join("\n");
 }
 // 捕捉(锁定赛前信号) + 结算(市场解析) 全体育, 返回 {ms, newN, games}
@@ -1161,28 +1196,38 @@ async function trackMultiSport() {
     };
     ms.predictions[g.eventSlug] = { eventSlug: g.eventSlug, title: g.title, sport: g.sport, kickoffMs: g.kickoffMs, capturedAt: new Date().toISOString(), ml: seg("ml"), ou: seg("ou"), spread: seg("spread") };
   }
-  // 2) 结算已解析的市场(开赛后)
+  // 2) 临近开赛用真实盘口价刷新收盘价(CLV) + 结算已解析的市场
   let newN = 0;
+  const REFRESH_MS = 3 * 3600 * 1000;
   for (const slug in ms.predictions) {
     const p = ms.predictions[slug];
-    if (p.kickoffMs && Date.now() < p.kickoffMs) continue;
     for (const kind of ["ml", "ou", "spread"]) {
       const s = p[kind];
       if (!s || s.settled || s.id == null) continue;
-      const winnerName = await getMarketResolution(s.id).catch(() => null);
-      if (!winnerName) continue; // 还没解析
+      if (!(p.kickoffMs && Date.now() >= p.kickoffMs - REFRESH_MS)) continue; // 临近开赛才刷/结算, 省 API
+      const mk = await getMarketNow(s.id).catch(() => null);
+      if (!mk) continue;
+      if (mk.price && s.outcomes) s.last = s.outcomes.map((o) => mk.price[o]); // 最后观测价 ≈ 收盘价(CLV 用)
+      if (!mk.closed || !mk.winner) continue; // 还没解析
       const evalOne = (idx) => {
         if (idx == null || !s.outcomes || !s.prices) return null;
         const price = Number(s.prices[idx]);
         if (!(price > 0 && price < 1)) return null;
-        const win = s.outcomes[idx] === winnerName;
-        return { win, profit: win ? (1 - price) / price : -1 };
+        const win = s.outcomes[idx] === mk.winner;
+        const lastP = s.last ? Number(s.last[idx]) : null;
+        const clv = lastP > 0 && lastP < 1 ? +(lastP - price).toFixed(4) : null; // 近开赛价 − 入场价
+        return { win, profit: win ? (1 - price) / price : -1, clv };
       };
       const strat = { followBig: evalOne(s.backedIdx), followWinner: evalOne(s.winnerIdx) };
       const S = (ms.strategies[kind] = ms.strategies[kind] || {});
-      for (const key in strat) { const r = strat[key]; if (!r) continue; const st = (S[key] = S[key] || { bets: 0, wins: 0, profit: 0 }); st.bets++; if (r.win) st.wins++; st.profit += r.profit; }
+      for (const key in strat) {
+        const r = strat[key]; if (!r) continue;
+        const st = (S[key] = S[key] || { bets: 0, wins: 0, profit: 0, clvSum: 0, clvN: 0 });
+        st.bets++; if (r.win) st.wins++; st.profit += r.profit;
+        if (r.clv != null) { st.clvSum = (st.clvSum || 0) + r.clv; st.clvN = (st.clvN || 0) + 1; }
+      }
       s.settled = true;
-      ms.settled.push({ eventSlug: slug, sport: p.sport, kind, winner: winnerName, backed: s.outcomes[s.backedIdx], bigWin: strat.followBig ? strat.followBig.win : null, settledAt: new Date().toISOString() });
+      ms.settled.push({ eventSlug: slug, sport: p.sport, kind, winner: mk.winner, backed: s.outcomes[s.backedIdx], bigWin: strat.followBig ? strat.followBig.win : null, settledAt: new Date().toISOString() });
       newN++;
     }
   }
@@ -1527,7 +1572,7 @@ async function pollOnce() {
     if (SHARP_ON && now - (d.sharps || 0) >= Number(process.env.SHARP_MIN || 360) * 60000) {
       try {
         const { ms, newN, games } = await trackMultiSport(); // 一次扫描搞定: 快照 + 捕捉赛前信号 + 结算已解析市场
-        const text = fmtMultiSport((games || []).slice(0, Number(process.env.SHARP_TOP || 8)));
+        const text = fmtMultiSport((games || []).slice(0, Number(process.env.SHARP_TOP || 8)), ms.strategies);
         if (text) { await send(text); console.log(`  → 已推全体育聪明钱(${games.length}场)`); }
         if (newN > 0) { const st = fmtMultiSportStats(ms); if (st) await send(st); console.log(`  → 全体育新结算 ${newN} 项`); }
         d.sharps = now;
@@ -1725,7 +1770,8 @@ async function main() {
     const sports = (process.env.SHARP_SPORTS || "mlb,tennis").split(",").map((s) => s.trim()).filter(Boolean);
     console.log(`扫描全体育聪明钱: ${sports.join(", ")} …`);
     const { games } = await multiSportSentiment(sports, { topMarkets: Number(process.env.SHARP_TOP || 10), windowMs: Number(process.env.SHARP_WINDOW_H || 504) * 3600 * 1000 });
-    const text = fmtMultiSport(games);
+    let msStrat = {}; try { msStrat = (JSON.parse(fs.readFileSync(MS_FILE, "utf8")).strategies) || {}; } catch {}
+    const text = fmtMultiSport(games, msStrat);
     if (!text) { console.log("(暂无未开赛的对局盘)"); return; }
     if (process.argv.includes("--dry")) console.log(text.replace(/<[^>]+>/g, ""));
     else { await send(text); console.log(`✅ 已推送 ${games.length} 场 → ${CHANNEL}`); }
