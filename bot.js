@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V8.1"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V8.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1391,14 +1391,14 @@ async function trackStrengthSignals() {
       fresh.push(t.signals[key]);
     }
   }
-  // 3) 临近开赛刷新 last(算 CLV) + 结算
+  // 3) 每轮刷新未结算信号的现价(供仪表盘"現價") + 临近开赛顺带刷 last(算 CLV) + 结算
   const REFRESH_MS = 3 * 3600 * 1000;
   for (const key in t.signals) {
     const sg = t.signals[key];
     if (sg.settled || sg.gammaId == null) continue;
-    if (!(sg.kickoffMs && now >= sg.kickoffMs - REFRESH_MS)) continue;
     const mk = await getMarketNow(sg.gammaId).catch(() => null); if (!mk) continue;
-    const pr = mk.price[sg.outcome]; if (pr > 0 && pr < 1) sg.last = pr;
+    const pr = mk.price[sg.outcome];
+    if (pr > 0 && pr < 1) { sg.nowPrice = pr; sg.nowTs = nowS; if (sg.kickoffMs && now >= sg.kickoffMs - REFRESH_MS) sg.last = pr; } // 现价每轮刷; last(CLV基准)只临近开赛刷
     if (mk.closed && mk.winner) { sg.win = sg.outcome === mk.winner; sg.profit = sg.win ? (1 - sg.entry) / sg.entry : -1; sg.clv = sg.last != null ? +(sg.last - sg.entry).toFixed(4) : null; sg.settled = true; }
   }
   saveStrengthTrack(t);
@@ -1702,9 +1702,15 @@ function buildDashboard() {
   const sgRow = (s, settled) => {
     const link = s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc((s.title || "").slice(0, 34))}</a>` : esc((s.title || "").slice(0, 34));
     const res = settled ? (s.win ? `<span class="pos">✅贏 +${Math.round((s.profit || 0) * 100)}%</span>` : `<span class="neg">❌輸</span>`) : `<span class="warn2">進行中</span>`;
-    return `<tr><td>${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))}</td><td><b>${esc(s.kind)}</b></td><td>${link}</td><td>${esc(s.outcome)}</td><td>${Math.round(s.entry * 100)}¢</td><td>${s.clv != null ? (s.clv >= 0 ? "+" : "") + Math.round(s.clv * 100) + "pt" : "-"}</td><td>${res}</td></tr>`;
+    // 現價(未结算才有意义): 相对成本涨=红(跟更贵)/跌=绿(更便宜); 结算后无現價
+    let nowCell = "-";
+    if (!settled && s.nowPrice != null) {
+      const d = s.nowPrice - s.entry, dc = d > 0.02 ? "neg" : d < -0.02 ? "pos" : "muted";
+      nowCell = `${Math.round(s.nowPrice * 100)}¢${Math.abs(d) >= 0.02 ? ` <span class="${dc}">${d >= 0 ? "+" : ""}${Math.round(d * 100)}</span>` : ""}`;
+    }
+    return `<tr><td>${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))}</td><td><b>${esc(s.kind)}</b></td><td>${link}</td><td>${esc(s.outcome)}</td><td>${Math.round(s.entry * 100)}¢</td><td>${nowCell}</td><td>${s.clv != null ? (s.clv >= 0 ? "+" : "") + Math.round(s.clv * 100) + "pt" : "-"}</td><td>${res}</td></tr>`;
   };
-  const sgTable = (arr, settled) => arr.length ? `<table class="grid det"><thead><tr><th>地址</th><th>擅長盤</th><th>項目</th><th>方向</th><th>成本</th><th>CLV</th><th>${settled ? "結果" : "狀態"}</th></tr></thead><tbody>${arr.slice(0, 12).map((s) => sgRow(s, settled)).join("")}</tbody></table>` : "";
+  const sgTable = (arr, settled) => arr.length ? `<table class="grid det"><thead><tr><th>地址</th><th>擅長盤</th><th>項目</th><th>方向</th><th>成本</th><th>現價</th><th>CLV</th><th>${settled ? "結果" : "狀態"}</th></tr></thead><tbody>${arr.slice(0, 12).map((s) => sgRow(s, settled)).join("")}</tbody></table>` : "";
   const strHtmlBody = sst.n
     ? `<div class="card"><div class="pc-head"><span class="badge ${svCls}">${sv.emo}</span><b>樣本外前向戰績</b><span class="muted">凍結標籤後才算 · 起算 ${sst.frozenAt ? dHK(sst.frozenAt) : "-"} HKT</span></div>
         <div style="font-size:16px;margin:6px 0">已結算 <b>${sst.n}</b> 注 · 命中 <b>${sst.winrate}%</b> · ROI <b class="${roiCls(sst.roi)}">${roiTxt(sst.roi, "%")}</b> · 均CLV <b class="${roiCls(sst.clv)}">${sst.clv != null ? roiTxt(sst.clv, "pt") : "-"}</b> · 未結算 ${sst.open}</div>
@@ -2176,8 +2182,9 @@ async function main() {
     if (process.argv.includes("--refresh")) {
       try {
         const cds = scorecardRows(loadScorecard()).filter((r) => r.candidate).map((r) => r.wallet);
-        console.log(`刷新 ${cds.length} 个候选地址的近期出手明细…`);
+        console.log(`刷新 ${cds.length} 个候选地址的近期出手明细 + 擅长盘亮灯现价…`);
         await refreshWalletDetail(cds.slice(0, 10));
+        await trackStrengthSignals(); // 顺带捕捉新亮灯 + 刷新进行中信号的現價
       } catch (e) { console.error("明细刷新出错(用缓存生成):", e.message); }
     }
     const r = buildDashboard();

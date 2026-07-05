@@ -2,7 +2,7 @@
 cd /d "%~dp0"
 set POLL_SECONDS=20
 echo ==========================================
-echo   Polaris Radar V8.1 - Crypto Local (20s)
+echo   Polaris Radar V8.2 - Crypto Local (20s)
 echo   Close this window to STOP.
 echo ==========================================
 echo.
