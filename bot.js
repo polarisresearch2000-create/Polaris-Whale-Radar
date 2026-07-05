@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V8.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V8.6"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1679,8 +1679,15 @@ function strengthPaper(track, opts = {}) {
   const settled = sigs.filter((s) => s.settled).sort((a, b) => (a.entryTs || 0) - (b.entryTs || 0));
   const r = simulateKelly(settled, { kf }); // 复用同一 Kelly 引擎, 喂前向样本外信号
   const open = sigs.filter((s) => !s.settled);
-  const openExposure = open.reduce((sum, s) => sum + kellyFraction(s.entry, { kf }) * r.final, 0);
-  return { start: 1000, bankroll: r.final, roi: r.roi, n: r.n, wins: r.wins, winrate: r.winrate, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(openExposure), kf };
+  // 当前持仓明细: 每个进行中信号 → 纸面注(按当前本金 Kelly 定) + 浮盈(现价 vs 成本)
+  const positions = open.map((s) => {
+    const stake = kellyFraction(s.entry, { kf }) * r.final;
+    const unreal = (s.nowPrice > 0 && s.nowPrice < 1) ? ((s.nowPrice - s.entry) / s.entry) * stake : null;
+    return { ...s, stake: Math.round(stake), unreal: unreal != null ? +unreal.toFixed(2) : null };
+  }).sort((a, b) => b.stake - a.stake);
+  const openExposure = positions.reduce((sum, s) => sum + s.stake, 0);
+  const unrealTotal = positions.reduce((sum, s) => sum + (s.unreal || 0), 0);
+  return { start: 1000, bankroll: r.final, roi: r.roi, n: r.n, wins: r.wins, winrate: r.winrate, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(openExposure), unrealTotal: Math.round(unrealTotal), positions, kf };
 }
 function fmtPaperText(track) {
   const p = strengthPaper(track);
@@ -1688,8 +1695,16 @@ function fmtPaperText(track) {
   L.push(`  本金 $1000 → 現值 $${p.bankroll.toLocaleString()}  ROI ${p.roi >= 0 ? "+" : ""}${p.roi}%`);
   if (p.n) L.push(`  已結算 ${p.n} 注 · 勝率 ${p.winrate}% · 最大回撤 ${p.maxDD}%`);
   else L.push(`  ⏳ 尚無已結算(等亮燈信號的賽事結算)`);
-  L.push(`  進行中 ${p.openN} 注 · 目前在押 ~$${p.openExposure}`);
-  L.push(`  ✅ 這是【前向·樣本外】——冻结擅长盘後、真·未來出現的信號才跟,按你能成交的價、真賽果結算。這才是"跟不跟得賺"的誠實答案(需攢幾週)。`);
+  L.push(`  進行中 ${p.openN} 注 · 在押 ~$${p.openExposure} · 浮盈 ${p.unrealTotal >= 0 ? "+" : ""}$${p.unrealTotal}`);
+  if (p.positions.length) {
+    L.push(`  — 目前在押明細(纸面注 · 浮盈) —`);
+    for (const s of p.positions.slice(0, 20)) {
+      const u = s.unreal != null ? `${s.unreal >= 0 ? "+" : ""}$${s.unreal.toFixed(1)}` : "-";
+      const ex = s.exit ? ` ⚠️贏家${s.reduced ? "減倉" : "已賣"}` : "";
+      L.push(`    $${String(s.stake).padStart(3)}  ${(s.name || s.wallet.slice(0, 6)).slice(0, 9).padEnd(9)} ${s.kind} 押${s.outcome}@${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""} 浮${u}${ex} · ${(s.title || "").slice(0, 30)}`);
+    }
+  }
+  L.push(`  ✅ 前向·樣本外·¼Kelly —— 這才是"跟不跟得賺"的誠實答案(需攢幾週)。`);
   return L.join("\n");
 }
 function runSimSet(sc) {
@@ -1817,9 +1832,17 @@ function buildDashboard() {
   // 🎲 $1000 前向纸面账户: 只跟擅长盘亮灯信号(样本外·真赛果结算)
   const paper = strengthPaper(strk);
   const paperCls = paper.n ? (paper.roi > 0 ? "ok" : paper.roi < 0 ? "bad" : "wait") : "wait";
+  const posRow = (s) => {
+    const link = s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc((s.title || "").slice(0, 32))}</a>` : esc((s.title || "").slice(0, 32));
+    const u = s.unreal != null ? `<span class="${s.unreal > 0 ? "pos" : s.unreal < 0 ? "neg" : "muted"}">${s.unreal >= 0 ? "+" : ""}$${Math.abs(s.unreal) < 1 ? s.unreal.toFixed(1) : Math.round(s.unreal)}</span>` : "-";
+    const st = s.exit ? `<span class="neg">⚠️贏家${s.reduced ? "減倉" : "已賣"}</span>` : `<span class="warn2">持倉中</span>`;
+    return `<tr class="${s.exit ? "exitrow" : ""}"><td><b>$${s.stake}</b></td><td>${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))}</td><td>${esc(s.kind)}</td><td>${link}</td><td>${esc(s.outcome)}</td><td>${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""}</td><td>${u}</td><td>${st}</td></tr>`;
+  };
+  const posTable = paper.positions.length ? `<div class="det-h">📌 目前在押明細（$1000 賬戶正在跟進的盤 · 紙面注按當前本金 ¼Kelly 定）</div><table class="grid det"><thead><tr><th>紙面注</th><th>地址</th><th>擅長盤</th><th>項目</th><th>方向</th><th>成本→現價</th><th>浮盈</th><th>狀態</th></tr></thead><tbody>${paper.positions.slice(0, 20).map(posRow).join("")}</tbody></table>` : "";
   const paperHtml = `<div class="card">
     <div class="pc-head"><span class="badge ${paperCls}">🎲</span><b>本金 $1000 → 現值 $${paper.bankroll.toLocaleString()}</b><span class="${roiCls(paper.roi)}" style="font-size:18px">${roiTxt(paper.roi, "%")}</span><span class="muted">¼ Kelly · 按你能成交價</span></div>
-    <div style="margin:6px 0">${paper.n ? `已結算 <b>${paper.n}</b> 注 · 勝率 <b>${paper.winrate}%</b> · 最大回撤 <b class="neg">-${paper.maxDD}%</b>` : "⏳ 尚無已結算（等亮燈信號的賽事結算）"} · 進行中 <b>${paper.openN}</b> 注 · 目前在押 ~<b>$${paper.openExposure.toLocaleString()}</b></div>
+    <div style="margin:6px 0">${paper.n ? `已結算 <b>${paper.n}</b> 注 · 勝率 <b>${paper.winrate}%</b> · 最大回撤 <b class="neg">-${paper.maxDD}%</b>` : "⏳ 尚無已結算（等亮燈信號的賽事結算）"} · 進行中 <b>${paper.openN}</b> 注 · 在押 ~<b>$${paper.openExposure.toLocaleString()}</b> · 浮盈 <b class="${roiCls(paper.unrealTotal)}">${paper.unrealTotal >= 0 ? "+" : ""}$${paper.unrealTotal.toLocaleString()}</b></div>
+    ${posTable}
     <div class="banner">✅ <b>前向 · 樣本外</b>：只跟凍結擅長盤之後、真·未來出現的亮燈信號，按你能成交的價下注、真賽果結算 —— 這是「跟不跟得賺」的誠實答案（不是回放，需攢幾週）。仍：非投注建議，未證明 edge。</div></div>`;
   const lb = (led.bets || []).filter((b) => b.settled);
   const staked = lb.reduce((s, b) => s + (b.stake || 0), 0), lpnl = lb.reduce((s, b) => s + (b.pnl || 0), 0);
