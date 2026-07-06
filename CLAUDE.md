@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V9.4**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V9.5**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -53,7 +53,7 @@ node bot.js --profile <地址/名字>  # 钱包深度画像:按入场价分桶 R
 node bot.js --dashboard            # 生成本地 dashboard.html(浏览器打开;雷达运行时每轮自动刷新)
 node bot.js --simulate             # $1000 Kelly 模拟账户(回放候选信号·固定假设edge·出ROI/胜率/最大回撤)
 node bot.js --strength [--dry]      # 擅长盘前向验证器:候选在其擅长盘出新赛前注→亮灯+纸面记账+样本外ROI/CLV(--dry不推)
-node bot.js --paper                # $1000 前向纸面账户:只跟擅长盘亮灯信号(样本外·¼Kelly·按能成交价·真赛果结算)的现值/ROI/回撤
+node bot.js --paper                # $1000 前向纸面账户:只跟擅长盘亮灯信号(样本外·等注2%主口径+¼Kelly对照·按能成交价·真赛果结算)的现值/ROI/回撤
 node bot.js --serve [端口]        # 本地仪表盘服务(默8899):浏览器 F5 即刷新最新数据,无需重启(「打开仪表盘.bat」已用此模式)
 #   ↳ --profile 末尾/仪表盘候选卡 都会显示该地址「近期出手明细」(项目/成本¢$/现价/状态, walletActivity 实时拉 /activity)
 ```
@@ -102,6 +102,7 @@ node bot.js --serve [端口]        # 本地仪表盘服务(默8899):浏览器 F
 | `SHARP_ENABLED` / `SHARP_SPORTS` / `SHARP_MIN` / `SHARP_WINDOW_H` / `SHARP_TOP` / `SHARP_TRACK_TOP` | on / `mlb,tennis` / 360 / 504 / 8 / 15 | 全体育聪明钱digest：开关 / 扫哪些tag / 间隔(分) / 只看未来N小时开赛 / 显示几场 / 前向追踪锁定几场。`--sharps [--dry]` 手动快照; `--sharps-results` 前向战绩; `--quote <slug> [额]` 成本报价 |
 | `MM_MIN_N` / `MM_HEDGE_RATIO` / `WINNER_SCAN_MAX` | 8 / 0.6 / 100 | 🤖做市预过滤(V9.3):被捕捉≥8注中对冲占比≥60%→永久停跟 / 赢家扫描上限 |
 | `RETIRE_MIN_N` | 10 | 退役规则(V9.2):地址×盘类 样本外 n≥10 且 ROI<0 且 CLV不为正 → 永久停捕(只退不进) |
+| `PAPER_STAKE_FRAC` | 0.02 | 纸面账户主口径=等注2%(V9.5,测量期最不失真);¼Kelly仅作对照线 |
 | `EVENT_CAP_FRAC` / `LOWODDS_MAXFRAC` | 0.05 / 0.02 | 纸面账户:同场总仓位≤5%本金;≥80¢低赔注仓位封顶2%(V9.1) |
 | `GATE_TEST_USD` / `SPREAD_MAX_CENTS` | 50 / 5 | 成交闸门:亮灯时按$50查订单簿,点差>5¢或深度不够=⛔跟不进(剔出账户)。能跟的按VWAP成本感知入场 |
 | `PAPER_PUSH_ENABLED` / `PAPER_PUSH_MIN` | on / 120 | $1000 前向纸面账户推送开关 / 间隔(分,默2h,V9.4)。`--paper --push` 手动推;`--paper` 只读渲染 |
