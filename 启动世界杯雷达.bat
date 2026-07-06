@@ -24,7 +24,7 @@ set PROFILES_ENABLED=off
 rem turn off per-signal spam; consolidate into the periodic digests
 set SIGNALS_ENABLED=off
 echo ==========================================
-echo   Polaris Radar V9.6 - World Cup (personal DM)
+echo   Polaris Radar V9.7 - World Cup (personal DM)
 echo   focus: winner-bets pin + per-wallet scorecard
 echo   Close this window to STOP.
 echo ==========================================
