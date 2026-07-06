@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V9.7"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V9.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1954,6 +1954,7 @@ function buildDashboard() {
   let led = { bets: [] }; try { led = loadLedger(); } catch {}
   const det = loadDetail();
   const strk = loadStrengthTrack();
+  applyLiveOverlay(strk); // serve模式下用内存实时价覆盖(比文件新才覆盖; 不落盘)
   try { for (const s of xconfKeys(Object.values(strk.signals || {}).filter((x) => x.afterFreeze !== false && followable(x)))) s._xconf = true; } catch {} // 先标🤝分歧, 信号表才有标签
   const now = hkNow().toISOString().slice(0, 16).replace("T", " ");
   // 🏅 只跟擅长盘·样本外前向战绩
@@ -2028,7 +2029,8 @@ function buildDashboard() {
     const st = s.exit ? `<span class="neg">⚠️贏家${s.reduced ? "減倉" : "已賣"}</span>` : `<span class="warn2">持倉中</span>`;
     return `<tr class="${s.exit ? "exitrow" : ""}" data-kick="${s.kickoffMs || 9e15}" data-stake="${s.stake}"><td>⏰${esc(koHKT(s.kickoffMs) || "?")}</td><td><b>$${s.stake}</b></td><td>${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))}</td><td>${esc(s.kind)}</td><td>${link}</td><td>${esc(s.outcome)}</td><td>${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""}</td><td>${u}</td><td>${st}</td></tr>`;
   };
-  const posTable = paper.positions.length ? `<div class="det-h">📌 目前在押明細（等注${Math.round(paper.stakeFrac * 100)}%·同場≤${Math.round(Number(process.env.EVENT_CAP_FRAC || 0.05) * 100)}%）
+  const pxTs = Math.max(0, ...paper.positions.map((s) => s.nowTs || 0));
+  const posTable = paper.positions.length ? `<div class="det-h">📌 目前在押明細（等注${Math.round(paper.stakeFrac * 100)}%·同場≤${Math.round(Number(process.env.EVENT_CAP_FRAC || 0.05) * 100)}%）<span class="muted"> 現價刷新於 ${pxTs ? dHK(pxTs) + " HKT" : "-"}（賽中價變化快, F5 可拉最新）</span>
       <button class="sbtn on" onclick="sortPos('kick',this)">⏰ 最快開賽</button><button class="sbtn" onclick="sortPos('stake',this)">💰 注額最大</button></div>
     <table class="grid det"><thead><tr><th>開賽(HKT)</th><th>紙面注</th><th>地址</th><th>擅長盤</th><th>項目</th><th>方向</th><th>成本→現價</th><th>浮盈</th><th>狀態</th></tr></thead><tbody id="posbody">${paper.positions.slice(0, 25).map(posRow).join("")}</tbody></table>
     <script>function sortPos(m,btn){var tb=document.getElementById('posbody');var rows=Array.prototype.slice.call(tb.rows);rows.sort(function(a,b){return m==='kick'?(+a.dataset.kick-+b.dataset.kick):(+b.dataset.stake-+a.dataset.stake);});rows.forEach(function(r){tb.appendChild(r);});document.querySelectorAll('.sbtn').forEach(function(x){x.classList.remove('on');});btn.classList.add('on');}</script>` : "";
@@ -2103,14 +2105,38 @@ function buildDashboard() {
   fs.writeFileSync(DASH_FILE, html);
   return { file: DASH_FILE, cands: cands.length, others: others.length, smallN, html };
 }
+// 实时现价覆盖(serve模式): F5 时若上次覆盖超 LIVE_REFRESH_S 秒, 现场拉未结算仓的实时价 —— 只进内存渲染, 不写文件(不与雷达抢锁)
+const _liveOverlay = { ts: 0, px: new Map() };
+async function refreshLiveOverlay() {
+  const LIVE_S = Number(process.env.LIVE_REFRESH_S || 180);
+  if (Date.now() - _liveOverlay.ts < LIVE_S * 1000) return;
+  _liveOverlay.ts = Date.now();
+  try {
+    const t = loadStrengthTrack();
+    const open = Object.values(t.signals || {}).filter((s) => s.afterFreeze !== false && !s.settled && followable(s) && s.gammaId != null).slice(0, 30);
+    for (const s of open) {
+      const mk = await getMarketNow(s.gammaId).catch(() => null);
+      const p = mk && mk.price[s.outcome];
+      if (p > 0 && p < 1) _liveOverlay.px.set(s.gammaId + "|" + s.outcome, { p, ts: Date.now() });
+    }
+  } catch {}
+}
+// 把覆盖价套到已加载的信号对象上(仅当比文件里的更新鲜; 内存操作, 永不落盘)
+function applyLiveOverlay(strk) {
+  for (const s of Object.values((strk || {}).signals || {})) {
+    const o = _liveOverlay.px.get(s.gammaId + "|" + s.outcome);
+    if (o && (!s.nowTs || o.ts > s.nowTs * 1000)) { s.nowPrice = o.p; s.nowTs = Math.round(o.ts / 1000); }
+  }
+}
 // 本地服务模式: 每次请求(F5)现算最新数据重新渲染 → 浏览器 F5 即刷新, 无需重启/重跑 .bat
 function serveDashboard(port) {
   const http = require("http");
-  const srv = http.createServer((req, res) => {
+  const srv = http.createServer(async (req, res) => {
     const u = (req.url || "/").split("?")[0];
     if (u === "/favicon.ico") { res.writeHead(204); return res.end(); }
     try {
-      const { html } = buildDashboard(); // 从当前数据文件现算(不联网, 秒回)
+      await refreshLiveOverlay(); // 超3分钟旧就现场拉实时价(首个F5慢几秒, 之后走缓存)
+      const { html } = buildDashboard();
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
       res.end(html);
     } catch (e) { res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" }); res.end("仪表盘生成出错: " + e.message); }
