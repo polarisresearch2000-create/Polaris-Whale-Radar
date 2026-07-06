@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V9.1**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V9.2**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -100,6 +100,7 @@ node bot.js --serve [端口]        # 本地仪表盘服务(默8899):浏览器 F
 | `PROFILES_ENABLED` | on | 全站赢家风格榜；世界杯=off |
 | `DIGESTS` | on | 持仓/风格摘要总开关 |
 | `SHARP_ENABLED` / `SHARP_SPORTS` / `SHARP_MIN` / `SHARP_WINDOW_H` / `SHARP_TOP` / `SHARP_TRACK_TOP` | on / `mlb,tennis` / 360 / 504 / 8 / 15 | 全体育聪明钱digest：开关 / 扫哪些tag / 间隔(分) / 只看未来N小时开赛 / 显示几场 / 前向追踪锁定几场。`--sharps [--dry]` 手动快照; `--sharps-results` 前向战绩; `--quote <slug> [额]` 成本报价 |
+| `RETIRE_MIN_N` | 10 | 退役规则(V9.2):地址×盘类 样本外 n≥10 且 ROI<0 且 CLV不为正 → 永久停捕(只退不进) |
 | `EVENT_CAP_FRAC` / `LOWODDS_MAXFRAC` | 0.05 / 0.02 | 纸面账户:同场总仓位≤5%本金;≥80¢低赔注仓位封顶2%(V9.1) |
 | `GATE_TEST_USD` / `SPREAD_MAX_CENTS` | 50 / 5 | 成交闸门:亮灯时按$50查订单簿,点差>5¢或深度不够=⛔跟不进(剔出账户)。能跟的按VWAP成本感知入场 |
 | `PAPER_PUSH_ENABLED` / `PAPER_PUSH_MIN` | on / 240 | $1000 前向纸面账户推送开关 / 间隔(分,默4h)。`--paper --push` 手动推;`--paper` 只读渲染 |
