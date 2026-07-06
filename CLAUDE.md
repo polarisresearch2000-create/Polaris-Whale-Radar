@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V9.0**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V9.1**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -100,6 +100,7 @@ node bot.js --serve [端口]        # 本地仪表盘服务(默8899):浏览器 F
 | `PROFILES_ENABLED` | on | 全站赢家风格榜；世界杯=off |
 | `DIGESTS` | on | 持仓/风格摘要总开关 |
 | `SHARP_ENABLED` / `SHARP_SPORTS` / `SHARP_MIN` / `SHARP_WINDOW_H` / `SHARP_TOP` / `SHARP_TRACK_TOP` | on / `mlb,tennis` / 360 / 504 / 8 / 15 | 全体育聪明钱digest：开关 / 扫哪些tag / 间隔(分) / 只看未来N小时开赛 / 显示几场 / 前向追踪锁定几场。`--sharps [--dry]` 手动快照; `--sharps-results` 前向战绩; `--quote <slug> [额]` 成本报价 |
+| `EVENT_CAP_FRAC` / `LOWODDS_MAXFRAC` | 0.05 / 0.02 | 纸面账户:同场总仓位≤5%本金;≥80¢低赔注仓位封顶2%(V9.1) |
 | `GATE_TEST_USD` / `SPREAD_MAX_CENTS` | 50 / 5 | 成交闸门:亮灯时按$50查订单簿,点差>5¢或深度不够=⛔跟不进(剔出账户)。能跟的按VWAP成本感知入场 |
 | `PAPER_PUSH_ENABLED` / `PAPER_PUSH_MIN` | on / 240 | $1000 前向纸面账户推送开关 / 间隔(分,默4h)。`--paper --push` 手动推;`--paper` 只读渲染 |
 | `WINNER_BETS_ENABLED` / `WINNER_MIN` / `WINNER_MIN_PNL` / `WINNER_MIN_BET` / `WINNER_HOURS` / `WINNER_SPORTS` | on / 90 / 100000 / 2000 / 24 / (=SHARP_SPORTS+WC) | 💎赢家最新出手feed：开关 / 间隔(分) / 上名单的PnL门槛 / 单注金额门槛 / 只看近N小时 / 扫哪些tag建名单。名单缓存 `data/winners_sports.json`(12h)。`node bot.js --winner-bets [--dry]` 手动 |
@@ -161,7 +162,7 @@ node bot.js --serve [端口]        # 本地仪表盘服务(默8899):浏览器 F
 | 规则 | 现状 | 说明 / 代码位置 |
 |---|---|---|
 | **什么算聪明钱** | ✅ | all-time PnL ≥ $50k 记 💎(`getWalletScore` 交叉 user-pnl-api)。⚠️注意:高 PnL 也可能是**做市机器人**，未区分(见下) |
-| **聪明钱 vs 做市机器人** | ⚠️ | V4.5 上了**本场对冲过滤**:押注分散在多个互斥结果(集中度 `DIR_MIN`<80%)的钱包不当 💎/🐋(`marketSentiment` 用 `byOutcome` 算，零额外 API)。仍未做:全局 MM 识别(需拉钱包交易史看频率/breadth)、同一市场 Yes+No 对冲(三方只取 Yes 侧漏此型) |
+| **聪明钱 vs 做市机器人** | ⚠️ | V4.5 上了**本场对冲过滤**:押注分散在多个互斥结果(集中度 `DIR_MIN`<80%)的钱包不当 💎/🐋(`marketSentiment` 用 `byOutcome` 算，零额外 API)。仍未做:全局 MM 识别。**V9.1 加了擅长盘追踪层的对冲对消**(`markHedges`:同钱包同场同盘类双向=梯子/MM,整组剔出纸面账户)——首日就剔了35注,证实 MM 污染真实存在 |
 | **同一钱包多地址聚类** | ❌ | 一个人用多地址会虚增"人数/共识"。TODO:按出入金关联或行为指纹聚类 |
 | **赛前才算"提前聪明钱"** | ✅ | 赛果追踪(`capturePredictions`)只在 `state==="pre"` 捕捉；持仓分析(`marketSentiment`)按 `event.startTime` 过滤,**`now>=开赛`整场跳过**(V4.4 修复)。 |
 | **不碰的体育市场** | ✅/更新 | **持仓digest**(`marketSentiment`)仍只统计主胜/平/客胜(SPORTS_NOISE 排除衍生)。但 O/U大小球 与 spread让球 现在有**专用信号+前向追踪**(getTotalsSignal/getSpreadSignal, V5.3/V6.0) —— 因数据证明赢家把80%的钱押在 胜负+大小球+让球。仍不碰:准确比分/球员props/半场/网球分盘(=散户) |
