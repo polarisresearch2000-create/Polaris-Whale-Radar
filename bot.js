@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V9.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V9.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1856,7 +1856,7 @@ function fmtPaperTG(track) {
       cn.push(`💵$${s.stake} · ${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))} <b>${esc(s.kind)}</b> 押${esc(s.outcome)}@${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""} 浮${u}${ex}${low} · <i>${esc((s.title || "").slice(0, 22))}</i>`);
     }
   }
-  cn.push("", `🔭 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · 每4h更新 · 非投注建議,未證明 edge`);
+  cn.push("", `🔭 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · 每${(Number(process.env.PAPER_PUSH_MIN || 120) / 60).toFixed(0)}h更新 · 非投注建議,未證明 edge`);
   return cn.join("\n");
 }
 function runSimSet(sc) {
@@ -2331,7 +2331,7 @@ async function pollOnce() {
       }
     }
     // $1000 前向纸面账户: 每 PAPER_PUSH_MIN(默4h) 推一次(只读, 用运行中雷达已刷新的 strength_track)
-    if ((process.env.PAPER_PUSH_ENABLED || "on") !== "off" && now - (d.paperPush || 0) >= Number(process.env.PAPER_PUSH_MIN || 240) * 60000) {
+    if ((process.env.PAPER_PUSH_ENABLED || "on") !== "off" && now - (d.paperPush || 0) >= Number(process.env.PAPER_PUSH_MIN || 120) * 60000) {
       try {
         const track = loadStrengthTrack();
         const p = strengthPaper(track);
