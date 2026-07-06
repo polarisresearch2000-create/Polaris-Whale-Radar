@@ -17,14 +17,14 @@ set SHARP_MIN=360
 rem winner latest-bets pin + per-wallet scorecard, refresh every 60 min
 set WINNER_MIN=60
 set WINNER_HOURS=24
-set WINNER_MIN_BET=2000
-set WINNER_MIN_PNL=100000
+set WINNER_MIN_BET=1000
+set WINNER_MIN_PNL=50000
 rem turn off the global Top-Traders profiles (off-topic for World Cup)
 set PROFILES_ENABLED=off
 rem turn off per-signal spam; consolidate into the periodic digests
 set SIGNALS_ENABLED=off
 echo ==========================================
-echo   Polaris Radar V9.2 - World Cup (personal DM)
+echo   Polaris Radar V9.3 - World Cup (personal DM)
 echo   focus: winner-bets pin + per-wallet scorecard
 echo   Close this window to STOP.
 echo ==========================================

@@ -674,7 +674,7 @@ async function winnerRecentBets(opts = {}) {
   for (const w of [...tracked, ...active]) { const k = (w.wallet || "").toLowerCase(); if (!k || seenW.has(k)) continue; seenW.add(k); winners.push(w); }
   const isSport = (x) => /fifwc|world.?cup|\bmlb\b|baseball|tennis|wimbledon|\batp\b|\bwta\b|\bnba\b|\bnhl\b|\bnfl\b|soccer|\bucl\b|\bepl\b|laliga| vs\.? /i.test(x);
   const out = [];
-  await mapLimit(winners.slice(0, opts.scanMax || 60), CONFIG.WALLET_CONCURRENCY, async (w) => {
+  await mapLimit(winners.slice(0, opts.scanMax || Number(process.env.WINNER_SCAN_MAX || 100)), CONFIG.WALLET_CONCURRENCY, async (w) => {
     const act = await getJSON(`${DATA}/activity?user=${w.wallet}&limit=100`).catch(() => null);
     if (!Array.isArray(act)) return;
     const seen = new Set(); let taken = 0;
