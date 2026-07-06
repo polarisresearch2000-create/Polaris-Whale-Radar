@@ -1954,6 +1954,7 @@ function buildDashboard() {
   let led = { bets: [] }; try { led = loadLedger(); } catch {}
   const det = loadDetail();
   const strk = loadStrengthTrack();
+  try { for (const s of xconfKeys(Object.values(strk.signals || {}).filter((x) => x.afterFreeze !== false && followable(x)))) s._xconf = true; } catch {} // 先标🤝分歧, 信号表才有标签
   const now = hkNow().toISOString().slice(0, 16).replace("T", " ");
   // 🏅 只跟擅长盘·样本外前向战绩
   const sst = strengthStats(strk), sv = sgVerdict(sst);
