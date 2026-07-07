@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V10.0**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V10.1**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -107,6 +107,7 @@ node bot.js --serve [端口]        # 本地仪表盘服务(默8899):浏览器 F
 | `PAPER_STAKE_FRAC` | 0.02 | 纸面账户主口径=等注2%(V9.5,测量期最不失真);¼Kelly仅作对照线 |
 | `EVENT_CAP_FRAC` / `LOWODDS_MAXFRAC` | 0.05 / 0.02 | 纸面账户:同场总仓位≤5%本金;≥80¢低赔注仓位封顶2%(V9.1) |
 | `GATE_TEST_USD` / `SPREAD_MAX_CENTS` | 50 / 5 | 成交闸门:亮灯时按$50查订单簿,点差>5¢或深度不够=⛔跟不进(剔出账户)。能跟的按VWAP成本感知入场 |
+| `ESPORTS_PUSH_ENABLED` / `ESPORTS_PUSH_MIN` | on / 120 | $500电竞影子账户(V10.1):独立跟4个电竞原生方向专家 · 独立推送间隔(分) · `--esports`查看 · roster在data/esports_roster.json |
 | `PAPER_PUSH_ENABLED` / `PAPER_PUSH_MIN` | on / 120 | $1000 前向纸面账户推送开关 / 间隔(分,默2h,V9.4)。`--paper --push` 手动推;`--paper` 只读渲染 |
 | `WINNER_BETS_ENABLED` / `WINNER_MIN` / `WINNER_MIN_PNL` / `WINNER_MIN_BET` / `WINNER_HOURS` / `WINNER_SPORTS` | on / 90 / **50000** / **1000** / 24 / (=SHARP_SPORTS+WC) | 💎赢家最新出手feed：开关 / 间隔(分) / 上名单的PnL门槛 / 单注金额门槛 / 只看近N小时 / 扫哪些tag建名单。名单缓存 `data/winners_sports.json`(12h)。`node bot.js --winner-bets [--dry]` 手动 |
 

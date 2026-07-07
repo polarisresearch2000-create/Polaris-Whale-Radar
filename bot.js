@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V10.0"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V10.1"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1910,6 +1910,79 @@ function fmtPaperTG(track) {
   cn.push("", `🔭 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · 每${(Number(process.env.PAPER_PUSH_MIN || 120) / 60).toFixed(0)}h更新 · 非投注建議,未證明 edge`);
   return cn.join("\n");
 }
+
+// ===== 🎮 电竞影子账户: $500, 独立追踪4个"电竞原生方向专家"的赛前直向注(与主账户隔离) =====
+const ESPORTS_ROSTER = path.join(__dirname, "data", "esports_roster.json");
+const ESPORTS_FILE = path.join(__dirname, "data", "esports_shadow.json");
+function loadEsportsRoster() { try { return JSON.parse(fs.readFileSync(ESPORTS_ROSTER, "utf8")); } catch { return { bankrollStart: 500, wallets: {} }; } }
+function loadEsports() { try { return JSON.parse(fs.readFileSync(ESPORTS_FILE, "utf8")); } catch { return { signals: {} }; } }
+function saveEsports(t) { try { fs.writeFileSync(ESPORTS_FILE, JSON.stringify(t, null, 2)); } catch {} }
+async function trackEsportsShadow() {
+  const roster = loadEsportsRoster(), t = loadEsports(); t.signals = t.signals || {};
+  const now = Date.now(), nowS = Math.round(now / 1000), fresh = [];
+  const SPREAD_MAX = Number(process.env.SPREAD_MAX_CENTS || 5), testUsd = Number(process.env.GATE_TEST_USD || 50);
+  for (const [addr, name] of Object.entries(roster.wallets || {})) {
+    const { bets } = await walletActivity(addr, { hours: Number(process.env.STRENGTH_HOURS || 72) }).catch(() => ({ bets: [] }));
+    for (const b of bets || []) {
+      if (sportOf(b) !== "🎮 電競") continue;                  // 只电竞
+      if (betKind(b) !== "勝負/讓球") continue;                 // 只直向胜负盘(排除 map/props 衍生)
+      if (!(b.kickoffMs && now < b.kickoffMs)) continue;        // 只赛前(杜绝赛中 look-ahead, 电竞尤其关键)
+      if (b.gammaId == null || !(b.mktPrice > 0.02 && b.mktPrice < 0.98)) continue;
+      const key = (b.cid || b.eventSlug) + "|" + b.outcome + "|" + addr;
+      if (t.signals[key]) continue;
+      const g = await marketExecQuote(b.gammaId, b.outcome, testUsd).catch(() => null);
+      let gate, entry = b.mktPrice;
+      if (g && g.bestAsk != null) { const spreadC = +((g.spread || 0) * 100).toFixed(1), fill = g.fillPrice != null ? +g.fillPrice.toFixed(4) : null, fillable = !!(g.depthOk && spreadC <= SPREAD_MAX && fill != null && fill < 0.98); gate = { spreadC, fillable }; if (fillable) entry = fill; } else gate = { fillable: null };
+      t.signals[key] = { wallet: addr, name, title: b.title, eventSlug: b.eventSlug, gammaId: b.gammaId, cid: b.cid, outcome: b.outcome, entry, entryTs: nowS, kickoffMs: b.kickoffMs, gate, last: entry, settled: false };
+      fresh.push(t.signals[key]);
+    }
+  }
+  const VOID_MS = Number(process.env.VOID_HOURS || 48) * 3600 * 1000;
+  for (const key in t.signals) {
+    const sg = t.signals[key];
+    if (sg.settled || sg.void || sg.gammaId == null) continue;
+    if (sg.kickoffMs && now - sg.kickoffMs > VOID_MS) { sg.void = true; continue; }
+    const mk = await getMarketNow(sg.gammaId).catch(() => null); if (!mk) continue;
+    if (mk.slug) sg.marketSlug = mk.slug;
+    const pr = mk.price[sg.outcome];
+    if (pr > 0 && pr < 1) { sg.nowPrice = pr; sg.nowTs = nowS; if (sg.kickoffMs && now >= sg.kickoffMs - 3 * 3600e3 && now < sg.kickoffMs) sg.last = pr; }
+    if (mk.closed && mk.winner) { sg.win = sg.outcome === mk.winner; sg.profit = sg.win ? (1 - sg.entry) / sg.entry : -1; sg.clv = sg.last != null ? +(sg.last - sg.entry).toFixed(4) : null; sg.settled = true; }
+  }
+  saveEsports(t);
+  return { fresh, track: t };
+}
+const _median = (a) => (a.length ? a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)] : null);
+function esportsAccount() {
+  const roster = loadEsportsRoster(), t = loadEsports();
+  const start = roster.bankrollStart || 500, posFrac = Number(process.env.PAPER_STAKE_FRAC || 0.02);
+  const eligible = (s) => !(s.gate && s.gate.fillable === false) && !s.void;
+  const sigs = Object.values(t.signals || {}).filter(eligible);
+  const settled = sigs.filter((s) => s.settled).sort((a, b) => (a.kickoffMs || 0) - (b.kickoffMs || 0));
+  const r = simulateKelly(settled, { flat: posFrac, bankroll: start, capFrac: Number(process.env.EVENT_CAP_FRAC || 0.05), keyOf: gameKeyOf });
+  const open = sigs.filter((s) => !s.settled);
+  const positions = [...open].sort((a, b) => (a.kickoffMs || 9e15) - (b.kickoffMs || 9e15)).map((s) => { const stake = posFrac * r.final, unreal = (s.nowPrice > 0 && s.nowPrice < 1) ? ((s.nowPrice - s.entry) / s.entry) * stake : null; return { ...s, stake: Math.round(stake), unreal: unreal != null ? +unreal.toFixed(2) : null }; });
+  const bw = {};
+  for (const w of Object.entries(roster.wallets || {})) bw[w[1]] = { name: w[1], n: 0, wins: 0, profit: 0, clvs: [], open: 0 };
+  for (const s of open) { const k = s.name; if (bw[k]) bw[k].open++; }
+  for (const s of settled) { const k = s.name; const e = (bw[k] = bw[k] || { name: k, n: 0, wins: 0, profit: 0, clvs: [], open: 0 }); e.n++; if (s.win) e.wins++; e.profit += s.profit || 0; if (s.clv != null) e.clvs.push(s.clv); }
+  const board = Object.values(bw).map((e) => ({ name: e.name, n: e.n, wins: e.wins, open: e.open, winrate: e.n ? Math.round(e.wins / e.n * 100) : null, roi: e.n ? Math.round(e.profit / e.n * 100) : null, clv: e.clvs.length ? Math.round(e.clvs.reduce((x, y) => x + y, 0) / e.clvs.length * 100) : null, clvMed: e.clvs.length ? Math.round(_median(e.clvs) * 100) : null })).sort((a, b) => (b.n + b.open) - (a.n + a.open));
+  const n = settled.length, wins = settled.filter((s) => s.win).length, allClv = settled.filter((s) => s.clv != null).map((s) => s.clv);
+  const history = r.trail.map((x) => ({ when: x.ref.kickoffMs, name: x.ref.name, title: x.ref.title, outcome: x.ref.outcome, entry: x.ref.entry, win: x.ref.win, stake: x.stake, pnl: x.pnl, after: x.after })).reverse();
+  return { start, bankroll: r.final, roi: r.roi, n, wins, winrate: n ? Math.round(wins / n * 100) : null, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(positions.reduce((a, s) => a + s.stake, 0)), positions, board, history, clvMean: allClv.length ? Math.round(allClv.reduce((a, b) => a + b, 0) / allClv.length * 100) : null, clvMed: allClv.length ? Math.round(_median(allClv) * 100) : null };
+}
+function fmtEsportsTG(acc) {
+  const a = acc || esportsAccount();
+  const cn = ["🎮 <b>$500 電競影子賬戶</b>（只跟4個電競原生方向專家 · 賽前直向 · 樣本外 · 等注2%）", ""];
+  cn.push(`本金 $${a.start} → 現值 <b>$${a.bankroll.toLocaleString()}</b> · ROI <b>${a.roi >= 0 ? "+" : ""}${a.roi}%</b>`);
+  if (a.n) cn.push(`已結算 ${a.n} 注 · 勝率 ${a.winrate}% · 均CLV ${a.clvMean != null ? (a.clvMean >= 0 ? "+" : "") + a.clvMean : "-"}pt（中位 ${a.clvMed != null ? a.clvMed : "-"}pt）· 最大回撤 ${a.maxDD}%`);
+  else cn.push(`⏳ 尚無已結算（等這4位在電競盤出賽前注 + 賽事結算）`);
+  cn.push(`進行中 ${a.openN} 注 · 在押 ~$${a.openExposure}`);
+  cn.push("", "<b>👤 各專家戰績</b>");
+  for (const b of a.board) cn.push(`${esc(b.name)}: 結算${b.n}·進行${b.open}${b.n ? ` · 命中${b.winrate}% ROI ${b.roi >= 0 ? "+" : ""}${b.roi}% CLV均${b.clv != null ? b.clv : "-"}/中${b.clvMed != null ? b.clvMed : "-"}pt` : ""}`);
+  if (a.positions.length) { cn.push("", "<b>📌 進行中（⏰最快開賽在前）</b>"); for (const s of a.positions.slice(0, 8)) cn.push(`⏰${esc(koHKT(s.kickoffMs) || "?")} $${s.stake} ${esc(s.name)} 押${esc(s.outcome)}@${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""} · <i>${esc((s.title || "").slice(0, 24))}</i>`); }
+  cn.push("", `🔭 ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT · 電競實驗 · 非投注建議,未證明 edge`);
+  return cn.join("\n");
+}
 function runSimSet(sc) {
   const all = candidateBets(sc);
   const strong = all.filter((b) => b.inStrength);
@@ -2114,6 +2187,15 @@ function buildDashboard() {
     + ".str-row{font-size:13px;margin:4px 0 2px}.str-pill{display:inline-block;background:#12261b;border:1px solid #1f4a30;border-radius:6px;padding:1px 7px;margin:2px 4px 2px 0;font-size:12.5px}.str-pill.tent{background:#2a2410;border-color:#5a4520}.str-pill b{color:var(--pos)}"
     + ".sbtn{background:#1b2540;border:1px solid var(--line);color:var(--tx);border-radius:6px;padding:2px 10px;margin-left:8px;font-size:12px;cursor:pointer}.sbtn.on{background:#28406e;border-color:var(--accent)}"
     + ".foot{color:var(--mut);font-size:12px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}";
+  // 🎮 电竞影子账户区域
+  const esp = esportsAccount();
+  const espCls = esp.n ? (esp.roi > 0 ? "ok" : esp.roi < 0 ? "bad" : "wait") : "wait";
+  const espBoard = esp.board.length ? `<table class="grid det"><thead><tr><th>電競專家</th><th>結算</th><th>進行</th><th>命中</th><th>ROI</th><th>CLV均/中位</th></tr></thead><tbody>${esp.board.map((b) => `<tr><td><b>${esc(b.name)}</b></td><td>${b.n}</td><td>${b.open}</td><td>${b.winrate != null ? b.winrate + "%" : "-"}</td><td class="${roiCls(b.roi)}">${b.roi != null ? roiTxt(b.roi, "%") : "-"}</td><td>${b.clv != null ? `<span class="${roiCls(b.clv)}">${roiTxt(b.clv, "")}</span>/<span class="${roiCls(b.clvMed)}">${b.clvMed}</span>pt` : "-"}</td></tr>`).join("")}</tbody></table>` : "";
+  const espPos = esp.positions.length ? `<div class="det-h">📌 進行中（⏰最快開賽在前）</div><table class="grid det"><thead><tr><th>開賽</th><th>注</th><th>專家</th><th>項目</th><th>方向</th><th>成本→現價</th><th>浮盈</th></tr></thead><tbody>${esp.positions.slice(0, 15).map((s) => `<tr><td>⏰${esc(koHKT(s.kickoffMs) || "?")}</td><td><b>$${s.stake}</b></td><td>${esc(s.name)}</td><td>${s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc((s.title || "").slice(0, 30))}</a>` : esc((s.title || "").slice(0, 30))}</td><td>${esc(s.outcome)}</td><td>${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""}</td><td>${s.unreal != null ? `<span class="${roiCls(s.unreal)}">${s.unreal >= 0 ? "+" : ""}$${Math.abs(s.unreal) < 1 ? s.unreal.toFixed(1) : Math.round(s.unreal)}</span>` : "-"}</td></tr>`).join("")}</tbody></table>` : "";
+  const espHtml = `<div class="card"><div class="pc-head"><span class="badge ${espCls}">🎮</span><b>本金 $${esp.start} → 現值 $${esp.bankroll.toLocaleString()}</b><span class="${roiCls(esp.roi)}" style="font-size:18px">${roiTxt(esp.roi, "%")}</span><span class="muted">等注2% · 4位電競原生方向專家 · 只跟賽前直向</span></div>
+    <div style="margin:6px 0">${esp.n ? `已結算 <b>${esp.n}</b> 注 · 勝率 <b>${esp.winrate}%</b> · 均CLV <b class="${roiCls(esp.clvMean)}">${esp.clvMean != null ? roiTxt(esp.clvMean, "pt") : "-"}</b>（中位 ${esp.clvMed != null ? esp.clvMed + "pt" : "-"}）· 回撤 <b class="neg">-${esp.maxDD}%</b>` : "⏳ 尚無已結算（等這4位出賽前直向注 + 賽事結算）"} · 進行中 <b>${esp.openN}</b> 注 · 在押 ~$${esp.openExposure}</div>
+    ${espBoard}${espPos}
+    <div class="banner">🎮 <b>獨立實驗</b>：$500 只跟 4 個「電競原生方向專家」(joblessfinalbo/0xE16D/SineNooneEI/GeorgeRe) 的<b>賽前直向</b>注(赛中单自動跳過)。用中位CLV抗離群。與 $1000 主賬戶完全隔離,測「電競是否比傳統體育更低效」。仍：非投注建議,未證明 edge。</div></div>`;
   const html = `<!doctype html><html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Polaris 記分卡儀表盤</title><style>${css}</style></head><body><div class="wrap">
     <h1>📇 聰明錢記分卡 · 儀表盤</h1>
     <div class="meta">生成於 ${now} HKT · 資料隨雷達運行更新（重跑「打开仪表盘.bat」刷新）</div>
@@ -2122,6 +2204,7 @@ function buildDashboard() {
     <h2>🏅 只跟擅長盤 · 樣本外前向驗證器（凍結後才算 · 真·出樣本）</h2>${strHtml}
     <h2>🏅 高信心跟單組合（地址 × 他擅長的盤）</h2><div class="card">${comboHtml}</div>
     <h2>🎲 $1000 前向紙面賬戶（只跟擅長盤亮燈 · 真·未來樣本）</h2>${paperHtml}
+    <h2>🎮 $500 電競影子賬戶（4位電競原生方向專家 · 獨立實驗）</h2>${espHtml}
     <h2>✅ 候選可跟（附「賺從哪來」拆解＋近期出手明細）</h2>${candHtml}
     <h2>📋 其餘足夠樣本（參考）</h2>${othHtml}
     <div class="meta">另有 ${smallN} 個地址樣本 < ${MIN_N}（噪聲，已隱藏）</div>
@@ -2409,6 +2492,7 @@ async function pollOnce() {
         if (list.length) { await postOrUpdateWinnerPin(list, d); console.log(`  → 已更新赢家最新出手置顶(${list.length}笔)`); }
         try { const n = await trackScorecard(raw); if (n) console.log(`  → 记分卡: 新捕捉/结算 ${n}`); await postOrUpdateScorecardPin(loadScorecard(), d); } catch (e) { console.error("记分卡出错:", e.message); }
         try { const { fresh, exits, track } = await trackStrengthSignals(); if (fresh.length) { const a = fmtStrengthAlert(fresh); if (a) await send(a); console.log(`  → 🏅擅长盘亮灯: 新捕捉 ${fresh.length}`); } if (exits && exits.length) { const ea = fmtStrengthExitAlert(exits); if (ea) await send(ea); console.log(`  → ⚠️赢家离场: ${exits.length}`); } await postOrUpdateStrengthPin(track, d); } catch (e) { console.error("擅长盘追踪出错:", e.message); }
+        try { const { fresh } = await trackEsportsShadow(); if (fresh.length) console.log(`  → 🎮电竞影子: 新捕捉 ${fresh.length}`); } catch (e) { console.error("电竞影子追踪出错:", e.message); }
         try { const cds = scorecardRows(loadScorecard()).filter((r) => r.candidate).map((r) => r.wallet); await refreshWalletDetail(cds.slice(0, 10)); buildDashboard(); } catch (e) { console.error("仪表盘生成出错:", e.message); } // 顺带刷新候选出手明细 + 本地 dashboard.html
         try { const l = loadLedger(); if ((l.bets || []).some((b) => !b.settled)) { const sn = await settleLedger(l); if (sn) console.log(`  → 台账新结算 ${sn} 注`); } await postOrUpdateLedgerPin(l, d); } catch (e) { console.error("台账置顶出错:", e.message); }
         d.winnerBets = now;
@@ -2424,6 +2508,10 @@ async function pollOnce() {
         if (p.openN > 0 || p.n > 0) { await send(fmtPaperTG(track)); console.log("  → 已推 $1000 前向纸面账户"); }
         d.paperPush = now; // 空也记时间, 免每轮重试
       } catch (e) { console.error("纸面账户推送出错:", e.message); }
+    }
+    // 🎮 $500 电竞影子账户: 独立推送(默认同 2h)
+    if ((process.env.ESPORTS_PUSH_ENABLED || "on") !== "off" && now - (d.esportsPush || 0) >= Number(process.env.ESPORTS_PUSH_MIN || 120) * 60000) {
+      try { const a = esportsAccount(); if (a.openN > 0 || a.n > 0) { await send(fmtEsportsTG(a)); console.log("  → 已推 $500 电竞影子账户"); } d.esportsPush = now; } catch (e) { console.error("电竞影子推送出错:", e.message); }
     }
     if (PROFILES_ENABLED && now - (d.profiles || 0) >= PROFILES_MIN * 60000) {
       try {
@@ -2557,6 +2645,15 @@ async function main() {
     const track = loadStrengthTrack();
     console.log(fmtPaperText(track));
     if (process.argv.includes("--push")) { await send(fmtPaperTG(track)); console.log(`\n✅ 已推 $1000 前向纸面账户 → ${CHANNEL}`); }
+    return;
+  }
+
+  if (process.argv.includes("--esports")) {
+    // 🎮 $500 电竞影子账户(只跟4个电竞原生方向专家)。--refresh 先捕捉/结算; --push 推 Telegram
+    if (process.argv.includes("--refresh")) { try { const { fresh } = await trackEsportsShadow(); console.log(`(刷新: 新捕捉 ${fresh.length})`); } catch (e) { console.error("刷新出错:", e.message); } }
+    const a = esportsAccount();
+    console.log(fmtEsportsTG(a).replace(/<[^>]+>/g, ""));
+    if (process.argv.includes("--push")) { await send(fmtEsportsTG(a)); console.log(`\n✅ 已推 $500 电竞影子账户 → ${CHANNEL}`); }
     return;
   }
 
