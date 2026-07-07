@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V9.8**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V9.9**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -99,7 +99,7 @@ node bot.js --serve [端口]        # 本地仪表盘服务(默8899):浏览器 F
 | `SIGNALS_ENABLED` | on | 逐条信号开关；世界杯=off |
 | `PROFILES_ENABLED` | on | 全站赢家风格榜；世界杯=off |
 | `DIGESTS` | on | 持仓/风格摘要总开关 |
-| `SHARP_ENABLED` / `SHARP_SPORTS` / `SHARP_MIN` / `SHARP_WINDOW_H` / `SHARP_TOP` / `SHARP_TRACK_TOP` | on / `mlb,tennis` / 360 / 504 / 8 / 15 | 全体育聪明钱digest：开关 / 扫哪些tag / 间隔(分) / 只看未来N小时开赛 / 显示几场 / 前向追踪锁定几场。`--sharps [--dry]` 手动快照; `--sharps-results` 前向战绩; `--quote <slug> [额]` 成本报价 |
+| `SHARP_ENABLED` / `SHARP_SPORTS` / `SHARP_MIN` / `SHARP_WINDOW_H` / `SHARP_TOP` / `SHARP_TRACK_TOP` | on / `mlb,tennis,esports`(V9.9) / 360 / 504 / 8 / 15 | 全体育聪明钱digest：开关 / 扫哪些tag / 间隔(分) / 只看未来N小时开赛 / 显示几场 / 前向追踪锁定几场。`--sharps [--dry]` 手动快照; `--sharps-results` 前向战绩; `--quote <slug> [额]` 成本报价 |
 | `MM_MIN_N` / `MM_HEDGE_RATIO` / `WINNER_SCAN_MAX` | 8 / 0.6 / 100 | 🤖做市预过滤(V9.3):被捕捉≥8注中对冲占比≥60%→永久停跟 / 赢家扫描上限 |
 | `RETIRE_MIN_N` | 10 | 退役规则(V9.2):地址×盘类 样本外 n≥10 且 ROI<0 且 CLV不为正 → 永久停捕(只退不进) |
 | `VOID_HOURS` | 48 | 僵尸清理(V9.6):开赛超48h未结算(取消/延期)→🕳️作废,剔出账户+停止查询 |

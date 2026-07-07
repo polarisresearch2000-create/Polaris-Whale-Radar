@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V9.8"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V9.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1006,7 +1006,7 @@ function fmtPositioning(markets, threshold) {
 }
 
 // 「今日聪明钱 · 全体育」: 世界杯以外(MLB/网球…)每场胜负盘的💎赢家 vs 🐋最大注(2-outcome 版)
-const SPORT_EMOJI = { mlb: "⚾", tennis: "🎾", nba: "🏀", basketball: "🏀", nhl: "🏒", nfl: "🏈" };
+const SPORT_EMOJI = { mlb: "⚾", tennis: "🎾", nba: "🏀", basketball: "🏀", nhl: "🏒", nfl: "🏈", esports: "🎮" };
 // 某策略前向战绩判定: ROI + CLV + 样本闸门 → ✅可跟 / 🟡勉强 / ❌别跟 / ⏳样本不足
 function msVerdict(s) {
   if (!s || !s.bets) return null;
@@ -1071,6 +1071,7 @@ function fmtMultiSport(games, stats) {
 function sportOf(b) {
   const x = ((b.title || "") + " " + (b.eventSlug || "")).toLowerCase();
   if (/fifwc|world.?cup/.test(x)) return "⚽ 世界盃";
+  if (/\blol\b|league of legends|counter.?strike|\bcs2\b|\bdota\b|valorant|esports|\bbo[35]\b|\bmsi\b|\bvct\b|\blck\b|\blpl\b|\blec\b/.test(x)) return "🎮 電競";
   if (/tennis|wimbledon|\batp\b|\bwta\b|\bitf\b/.test(x)) return "🎾 網球";
   if (/\bmlb\b|baseball|\b(yankees|red sox|dodgers|mets|cubs|braves|astros|rays|phillies|pirates|cardinals|reds|marlins|rockies|brewers|guardians|orioles|padres|giants|mariners|rangers|angels|athletics|twins|royals|tigers|white sox|blue jays|nationals|diamondbacks)\b/.test(x)) return "⚾ 棒球(MLB)";
   if (/\bnba\b|\bwnba\b|basketball/.test(x)) return "🏀 籃球";
@@ -1623,7 +1624,7 @@ function statsOf(bets) {
 function betKind(b) {
   const o = String(b.outcome || "").toLowerCase(), s = (String(b.eventSlug || "") + " " + String(b.title || "")).toLowerCase();
   // 衍生/散户盘先判(角球/黄牌/半场/单节/球员等即使是 Over/Under 也算衍生, 不是核心全场大小球)
-  if (/halftime|half.?time|1st.?half|2nd.?half|first.?half|second.?half|1st.?set|2nd.?set|period|quarter|exact|btts|both.?teams|advance|to.?score|clean.?sheet|corner|card|player|winning.?margin|first-|anytime|handicap-game/.test(s)) return "衍生/散戶";
+  if (/halftime|half.?time|1st.?half|2nd.?half|first.?half|second.?half|1st.?set|2nd.?set|period|quarter|exact|btts|both.?teams|advance|to.?score|clean.?sheet|corner|card|player|winning.?margin|first-|anytime|handicap-game|map ?\d|total maps|first blood|first map|pistol|round \d|kills/.test(s)) return "衍生/散戶";
   if (o === "over" || o === "under") return "大小球";
   if (o === "yes" || o === "no") return "是非盤";
   return "勝負/讓球";

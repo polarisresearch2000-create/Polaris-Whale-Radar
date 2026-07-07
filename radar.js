@@ -640,9 +640,10 @@ const SW_FILE = path.join(__dirname, "data", "winners_sports.json");
 async function buildSportsWinners(opts = {}) {
   const minPnl = opts.minPnl || Number(process.env.WINNER_MIN_PNL || 100000);
   const ttl = 12 * 3600 * 1000;
-  if (_swCache.list && _swCache.minPnl === minPnl && Date.now() - _swCache.t < ttl) return _swCache.list;
-  try { const c = JSON.parse(fs.readFileSync(SW_FILE, "utf8")); if (c && c.t && c.minPnl === minPnl && Date.now() - c.t < ttl && Array.isArray(c.list)) { _swCache = c; return c.list; } } catch {}
   const tags = (process.env.WINNER_SPORTS || process.env.SHARP_SPORTS || "fifa-world-cup,mlb,tennis").split(",").map((s) => s.trim()).filter(Boolean);
+  const tagKey = tags.slice().sort().join(","); // 缓存也按 tag 集合校验: 改了扫描运动就重建(修 esports 加了不生效的坑)
+  if (_swCache.list && _swCache.minPnl === minPnl && _swCache.tagKey === tagKey && Date.now() - _swCache.t < ttl) return _swCache.list;
+  try { const c = JSON.parse(fs.readFileSync(SW_FILE, "utf8")); if (c && c.t && c.minPnl === minPnl && c.tagKey === tagKey && Date.now() - c.t < ttl && Array.isArray(c.list)) { _swCache = c; return c.list; } } catch {}
   const nameOf = new Map();
   for (const tag of tags) {
     const evs = await getJSON(`${GAMMA}/events?tag_slug=${tag}&closed=false&limit=40&order=volume24hr&ascending=false`).catch(() => null);
@@ -657,7 +658,7 @@ async function buildSportsWinners(opts = {}) {
   const uniq = [...nameOf.keys()].slice(0, 120);
   const scored = await mapLimit(uniq, CONFIG.WALLET_CONCURRENCY, async (w) => ({ wallet: w, score: await getWalletScore(w).catch(() => ({ allTimePnl: 0 })) }));
   const winners = scored.filter((s) => (s.score.allTimePnl || 0) >= minPnl).sort((a, b) => b.score.allTimePnl - a.score.allTimePnl).map((s) => ({ wallet: s.wallet, profit: s.score.allTimePnl, name: nameOf.get(s.wallet) || "" }));
-  _swCache = { t: Date.now(), list: winners, minPnl };
+  _swCache = { t: Date.now(), list: winners, minPnl, tagKey };
   try { fs.mkdirSync(path.dirname(SW_FILE), { recursive: true }); fs.writeFileSync(SW_FILE, JSON.stringify(_swCache)); } catch {}
   return winners;
 }
@@ -672,7 +673,7 @@ async function winnerRecentBets(opts = {}) {
   const tracked = (opts.trackedWallets || []).map((t) => ({ wallet: t.wallet, name: t.name, profit: t.pnl != null ? t.pnl : t.profit }));
   const seenW = new Set(); const winners = [];
   for (const w of [...tracked, ...active]) { const k = (w.wallet || "").toLowerCase(); if (!k || seenW.has(k)) continue; seenW.add(k); winners.push(w); }
-  const isSport = (x) => /fifwc|world.?cup|\bmlb\b|baseball|tennis|wimbledon|\batp\b|\bwta\b|\bnba\b|\bnhl\b|\bnfl\b|soccer|\bucl\b|\bepl\b|laliga| vs\.? /i.test(x);
+  const isSport = (x) => /fifwc|world.?cup|\bmlb\b|baseball|tennis|wimbledon|\batp\b|\bwta\b|\bnba\b|\bnhl\b|\bnfl\b|soccer|\bucl\b|\bepl\b|laliga|lol|league of legends|counter.?strike|cs2|dota|valorant|esports|bo[35]| vs\.? /i.test(x);
   const out = [];
   await mapLimit(winners.slice(0, opts.scanMax || Number(process.env.WINNER_SCAN_MAX || 100)), CONFIG.WALLET_CONCURRENCY, async (w) => {
     const act = await getJSON(`${DATA}/activity?user=${w.wallet}&limit=100`).catch(() => null);
@@ -744,7 +745,7 @@ async function walletActivity(addr, opts = {}) {
   const minUsd = opts.minUsd || Number(process.env.DETAIL_MIN_USD || 500);
   const cutoff = Date.now() / 1000 - hours * 3600;
   const sportsOnly = opts.sportsOnly !== false;
-  const isSport = (x) => /fifwc|world.?cup|\bmlb\b|baseball|tennis|wimbledon|\batp\b|\bwta\b|\bnba\b|\bnhl\b|\bnfl\b|soccer|\bucl\b|\bepl\b|laliga| vs\.? /i.test(x);
+  const isSport = (x) => /fifwc|world.?cup|\bmlb\b|baseball|tennis|wimbledon|\batp\b|\bwta\b|\bnba\b|\bnhl\b|\bnfl\b|soccer|\bucl\b|\bepl\b|laliga|lol|league of legends|counter.?strike|cs2|dota|valorant|esports|bo[35]| vs\.? /i.test(x);
   const act = await getJSON(`${DATA}/activity?user=${wallet}&limit=200`).catch(() => null);
   if (!Array.isArray(act)) return { wallet, bets: [], sells: [] };
   const raw = [];

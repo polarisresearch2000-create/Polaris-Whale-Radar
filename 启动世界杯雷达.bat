@@ -14,6 +14,9 @@ set POSITIONING_MIN_NOTIONAL=500
 rem declutter: focus is the winner pin + scorecard pin; drop the hourly positioning message + slow all-sports to 6h
 set POSITIONING_ENABLED=off
 set SHARP_MIN=360
+rem sports to scan for winners + strength tracking (added esports V9.9: LoL/CS2/Dota big volume, own out-of-sample group)
+set SHARP_SPORTS=mlb,tennis,esports
+set WINNER_SPORTS=fifa-world-cup,mlb,tennis,esports
 rem winner latest-bets pin + per-wallet scorecard, refresh every 60 min
 set WINNER_MIN=60
 set WINNER_HOURS=24
@@ -24,7 +27,7 @@ set PROFILES_ENABLED=off
 rem turn off per-signal spam; consolidate into the periodic digests
 set SIGNALS_ENABLED=off
 echo ==========================================
-echo   Polaris Radar V9.8 - World Cup (personal DM)
+echo   Polaris Radar V9.9 - World Cup (personal DM)
 echo   focus: winner-bets pin + per-wallet scorecard
 echo   Close this window to STOP.
 echo ==========================================
