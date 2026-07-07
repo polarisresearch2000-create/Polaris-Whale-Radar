@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V9.9"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V10.0"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1500,6 +1500,21 @@ function strengthGroupStats(track) {
   for (const k in map) { const g = map[k]; g.roi = g.n ? Math.round((g.profit / g.n) * 100) : null; g.clv = g.clvN ? +((g.clvSum / g.clvN) * 100).toFixed(1) : null; }
   return map;
 }
+// 📊 按运动板块拆分样本外战绩(账户口径:剔对冲/跟不进/作废/分歧) —— 电竞 vs 世界杯 vs 网球... 并排看
+function strengthByVertical(track) {
+  const all = Object.values((track || {}).signals || {}).filter((s) => s.afterFreeze !== false && followable(s));
+  const xc = xconfKeys(all);
+  const map = {};
+  for (const s of all) {
+    if (xc.has(s)) continue;
+    const v = sportOf(s);
+    const g = (map[v] = map[v] || { vertical: v, n: 0, wins: 0, profit: 0, clvSum: 0, clvN: 0, open: 0 });
+    if (s.settled) { g.n++; if (s.win) g.wins++; g.profit += s.profit || 0; if (s.clv != null && s.settledBy !== "exit") { g.clvSum += s.clv; g.clvN++; } }
+    else g.open++;
+  }
+  return Object.values(map).map((g) => ({ vertical: g.vertical, n: g.n, wins: g.wins, open: g.open, winrate: g.n ? Math.round((g.wins / g.n) * 100) : null, roi: g.n ? Math.round((g.profit / g.n) * 100) : null, clv: g.clvN ? +((g.clvSum / g.clvN) * 100).toFixed(1) : null }))
+    .sort((a, b) => (b.n + b.open) - (a.n + a.open));
+}
 // 预承诺退役规则(纪律,非学习): 地址×盘类 样本外 n≥RETIRE_MIN_N 且 ROI<0 且 CLV不为正 → 永久退役
 // 只退不进、不按热手回补、阈值不改 —— 事先写死的单向止损闸门
 function applyRetireRule(t) {
@@ -1826,7 +1841,8 @@ function strengthPaper(track, opts = {}) {
   const board = Object.entries(pnlBy).map(([k, e]) => { const [nm, kd] = k.split("|"); const g = Object.values(gs).find((x) => (x.name || x.wallet.slice(0, 6)) === nm && x.kind === kd); return { name: nm, kind: kd, n: e.n, wins: e.wins, pnl: +e.pnl.toFixed(2), roi: g ? g.roi : null, clv: g ? g.clv : null }; }).sort((a, b) => a.pnl - b.pnl);
   const retired = Object.entries((track || {}).retired || {}).map(([k, v]) => ({ key: k, name: v.name || k.split("|")[0].slice(0, 8), kind: k.split("|")[1], ...v }));
   const mmList = Object.entries((track || {}).mm || {}).map(([w, v]) => ({ wallet: w, name: v.name || w.slice(0, 8), n: v.n, hedged: v.hedged }));
-  return { start: 1000, bankroll: r.final, roi: r.roi, n: r.n, wins: r.wins, winrate: r.winrate, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(openExposure), unrealTotal: Math.round(unrealTotal), positions, blocked, hedgedN, voidN, xconfN, history, board, retired, mmList, kellyAlt, stakeFrac, kf };
+  const verticals = strengthByVertical(track); // 📊 板块分账(电竞 vs 世界杯 vs 网球...)
+  return { start: 1000, bankroll: r.final, roi: r.roi, n: r.n, wins: r.wins, winrate: r.winrate, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(openExposure), unrealTotal: Math.round(unrealTotal), positions, blocked, hedgedN, voidN, xconfN, history, board, retired, mmList, verticals, kellyAlt, stakeFrac, kf };
 }
 function fmtPaperText(track) {
   const p = strengthPaper(track);
@@ -1842,6 +1858,10 @@ function fmtPaperText(track) {
       const ex = s.exit ? ` ⚠️贏家${s.reduced ? "減倉" : "已賣"}` : "";
       L.push(`    ⏰${koHKT(s.kickoffMs) || "?"}  $${String(s.stake).padStart(3)}  ${(s.name || s.wallet.slice(0, 6)).slice(0, 9).padEnd(9)} ${s.kind} 押${s.outcome}@${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""} 浮${u}${ex} · ${(s.title || "").slice(0, 28)}`);
     }
+  }
+  if (p.verticals.length) {
+    L.push(`  — 📊 板塊分帳(電競 vs 傳統體育 · 樣本外) —`);
+    for (const v of p.verticals) L.push(`    ${v.vertical.padEnd(8)} 結算${String(v.n).padStart(2)} 進行中${String(v.open).padStart(2)}${v.n ? ` · 命中${v.winrate}% ROI ${(v.roi >= 0 ? "+" : "") + v.roi}% CLV ${v.clv != null ? (v.clv >= 0 ? "+" : "") + v.clv + "pt" : "-"}` : ""}`);
   }
   if (p.board.length) {
     L.push(`  — 盈虧榜(地址×盤類 · 誰在賺/虧你的錢) —`);
@@ -1871,6 +1891,10 @@ function fmtPaperTG(track) {
   if (p.history.length) {
     cn.push("", "<b>📜 最近結算</b>");
     for (const h of p.history.slice(0, 4)) cn.push(`${h.win ? "✅" : "❌"}${h.settledBy === "exit" ? "跟賣" : ""} ${esc((h.name || "").slice(0, 9))} ${esc(h.kind)} 押${esc(h.outcome)}@${Math.round(h.entry * 100)}¢ 注$${h.stake} → <b>${h.pnl >= 0 ? "+" : ""}$${h.pnl}</b> · 餘$${h.after}`);
+  }
+  if (p.verticals.length) {
+    cn.push("", "<b>📊 板塊分帳（電競 vs 傳統體育）</b>");
+    for (const v of p.verticals) cn.push(`${esc(v.vertical)}: 結算 ${v.n}·進行 ${v.open}${v.n ? ` · 命中 ${v.winrate}% · ROI <b>${v.roi >= 0 ? "+" : ""}${v.roi}%</b> · CLV ${v.clv != null ? (v.clv >= 0 ? "+" : "") + v.clv + "pt" : "-"}` : ""}`);
   }
   if (p.retired.length) cn.push(`🚫 已退役: ${p.retired.map((r) => esc((r.name || "").slice(0, 9)) + "·" + esc(r.kind)).join(" / ")}（雙負閘門, 永不再捕）`);
   if (p.mmList.length) cn.push(`🤖 判為做市停跟: ${p.mmList.map((m) => esc((m.name || "").slice(0, 10))).join(" / ")}`);
@@ -2044,6 +2068,8 @@ function buildDashboard() {
     const up = pts[pts.length - 1] >= 1000;
     curveHtml = `<div class="det-h">📈 餘額曲線（$1000 起 · 每筆結算後）</div><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:${H}px"><polyline points="${xy}" fill="none" stroke="${up ? "#3fd07f" : "#ff6b6b"}" stroke-width="2"/><line x1="0" y1="${(H - 6 - (1000 - mn) / rg * (H - 12)).toFixed(1)}" x2="${W}" y2="${(H - 6 - (1000 - mn) / rg * (H - 12)).toFixed(1)}" stroke="#26304a" stroke-dasharray="4 4"/></svg>`;
   }
+  // 📊 板块分账(电竞 vs 传统体育并排)
+  const vertHtml = paper.verticals.length ? `<div class="det-h">📊 板塊分帳（電競 vs 傳統體育並排 · 樣本外 · 賬戶口徑）</div><table class="grid det"><thead><tr><th>板塊</th><th>已結算</th><th>進行中</th><th>命中</th><th>均ROI</th><th>均CLV</th></tr></thead><tbody>${paper.verticals.map((v) => `<tr><td><b>${esc(v.vertical)}</b></td><td>${v.n}</td><td>${v.open}</td><td>${v.winrate != null ? v.winrate + "%" : "-"}</td><td class="${roiCls(v.roi)}">${v.roi != null ? roiTxt(v.roi, "%") : "-"}</td><td class="${roiCls(v.clv)}">${v.clv != null ? roiTxt(v.clv, "pt") : "-"}</td></tr>`).join("")}</tbody></table>` : "";
   // 盈亏榜(地址×盘类, 亏钱的在前)
   const boardHtml2 = paper.board.length ? `<div class="det-h">🏦 盈虧榜（地址×盤類 · 誰在賺/虧你的錢 · 虧的在前）</div><table class="grid det"><thead><tr><th>地址</th><th>盤類</th><th>注</th><th>盈虧$</th><th>ROI</th><th>CLV</th></tr></thead><tbody>${paper.board.map((b) => `<tr><td>${esc((b.name || "").slice(0, 10))}</td><td>${esc(b.kind)}</td><td>${b.n}</td><td class="${roiCls(b.pnl)}"><b>${b.pnl >= 0 ? "+" : ""}$${b.pnl.toFixed(1)}</b></td><td class="${roiCls(b.roi)}">${b.roi != null ? roiTxt(b.roi, "%") : "-"}</td><td class="${roiCls(b.clv)}">${b.clv != null ? roiTxt(b.clv, "pt") : "-"}</td></tr>`).join("")}</tbody></table>` : "";
   // 📜 账户流水(最近15笔)
@@ -2056,7 +2082,7 @@ function buildDashboard() {
   const paperHtml = `<div class="card">
     <div class="pc-head"><span class="badge ${paperCls}">🎲</span><b>本金 $1000 → 現值 $${paper.bankroll.toLocaleString()}</b><span class="${roiCls(paper.roi)}" style="font-size:18px">${roiTxt(paper.roi, "%")}</span><span class="muted">等注${Math.round(paper.stakeFrac * 100)}% · 按你能成交價 · 對照¼Kelly: $${paper.kellyAlt.bankroll.toLocaleString()}(${roiTxt(paper.kellyAlt.roi, "%")})</span></div>
     <div style="margin:6px 0">${paper.n ? `已結算 <b>${paper.n}</b> 注 · 勝率 <b>${paper.winrate}%</b> · 最大回撤 <b class="neg">-${paper.maxDD}%</b>` : "⏳ 尚無已結算（等亮燈信號的賽事結算）"} · 進行中 <b>${paper.openN}</b> 注 · 在押 ~<b>$${paper.openExposure.toLocaleString()}</b> · 浮盈 <b class="${roiCls(paper.unrealTotal)}">${paper.unrealTotal >= 0 ? "+" : ""}$${paper.unrealTotal.toLocaleString()}</b>${paper.blocked ? ` · <span class="neg">⛔${paper.blocked}跟不進</span>` : ""}${paper.hedgedN ? ` · <span class="neg">⚖️${paper.hedgedN}對沖對消(已剔除)</span>` : ""}${paper.voidN ? ` · <span class="muted">🕳️${paper.voidN}作廢(取消/延期)</span>` : ""}${paper.xconfN ? ` · <span class="warn2">🤝${paper.xconfN}分歧棄權(候選對賭)</span>` : ""}</div>
-    ${curveHtml}${boardHtml2}${posTable}${histHtml}${retiredHtml}
+    ${curveHtml}${vertHtml}${boardHtml2}${posTable}${histHtml}${retiredHtml}
     <div class="banner">✅ <b>前向 · 樣本外</b>：只跟凍結擅長盤之後、真·未來出現的亮燈信號，按你能成交的價下注、真賽果結算 —— 這是「跟不跟得賺」的誠實答案（不是回放，需攢幾週）。仍：非投注建議，未證明 edge。</div></div>`;
   const lb = (led.bets || []).filter((b) => b.settled);
   const staked = lb.reduce((s, b) => s + (b.stake || 0), 0), lpnl = lb.reduce((s, b) => s + (b.pnl || 0), 0);
