@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V10.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V10.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1297,7 +1297,7 @@ function scorecardRows(sc) {
     const cA = done.filter((b) => b.clv != null);
     const clv = cA.length ? +((cA.reduce((s, b) => s + b.clv, 0) / cA.length) * 100).toFixed(1) : null;
     const enough = n >= MIN_N;
-    const candidate = enough && roi > 0 && clv != null && clv > 0; // 只有样本够 + ROI+CLV 双正才算候选
+    const candidate = enough && roi > 0; // 盈利第一: 样本够 + ROI>0 即候选(CLV 仅参考列, 不再当准入门槛)
     rows.push({ wallet, name: W.name, pnl: W.pnl || 0, n, wins, wr: n ? Math.round((wins / n) * 100) : null, roi, clv, open, enough, candidate });
   }
   const tier = (r) => (r.candidate ? 0 : r.enough ? 1 : 2); // 候选 → 足够样本 → 小样本
@@ -1319,7 +1319,7 @@ function fmtScorecard(sc) {
   const MIN_N = Number(process.env.SCORECARD_MIN_N || 15);
   const all = scorecardRows(sc);
   const settled = all.filter((r) => r.n >= 1);
-  const cn = ["📇 <b>每錢包前向記分卡</b>（跟隨者視角 · 按你能成交的價算）", "（✅候選=樣本夠且 ROI+CLV 雙正才值得跟；小樣本=噪聲別信）", ""];
+  const cn = ["📇 <b>每錢包前向記分卡</b>（跟隨者視角 · 按你能成交的價算）", "（✅候選=樣本夠且樣本外 ROI>0 就值得跟；CLV僅參考;小樣本=噪聲別信）", ""];
   if (!settled.length) {
     cn.push(`⏳ 還沒有已結算的跟隨樣本（已鎖定 ${all.reduce((s, r) => s + r.open, 0)} 筆未結算）`);
     cn.push(`🔭 持續更新 · ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
@@ -1330,11 +1330,11 @@ function fmtScorecard(sc) {
   cn.push("（⚠️多為同一批世界盃賽事、樣本未跨不同行情,別當定論）", "");
   const cands = settled.filter((r) => r.candidate);
   if (cands.length) {
-    cn.push(`✅ <b>候選可跟</b>（樣本≥${MIN_N} 且 ROI+CLV 雙正）`);
+    cn.push(`✅ <b>候選可跟</b>（樣本≥${MIN_N} 且 ROI>0 · 盈利第一 · CLV僅參考）`);
     for (const r of cands.slice(0, 8)) cn.push(`🟢 <code>${esc(r.wallet.slice(0, 6))}…</code>${r.name ? " " + esc(String(r.name).slice(0, 10)) : ""} — ${r.n}場 命中${r.wr}% · ROI +${r.roi}% · CLV +${r.clv}pt${r.open ? ` · 未結算${r.open}` : ""}`);
     cn.push("");
   } else {
-    cn.push(`✅ 候選可跟：<b>暫無</b>（還沒地址達到 樣本≥${MIN_N} 且 ROI+CLV 雙正）`, "");
+    cn.push(`✅ 候選可跟：<b>暫無</b>（還沒地址達到 樣本≥${MIN_N} 且 ROI>0）`, "");
   }
   const others = settled.filter((r) => r.enough && !r.candidate);
   if (others.length) {
@@ -1344,7 +1344,7 @@ function fmtScorecard(sc) {
   }
   const smallN = settled.filter((r) => !r.enough).length;
   if (smallN) cn.push(`… 另有 ${smallN} 個地址樣本<${MIN_N}（噪聲,已隱藏,別信其 ROI）`);
-  cn.push("", "⚠️ 只有 ROI 與 CLV 雙正、且跨不同行情仍成立的地址才值得跟 · 未證明 edge");
+  cn.push("", "⚠️ 以樣本外 ROI 為準(盈利第一) · CLV僅樣本不足時防運氣 · 需跨行情仍成立 · 未證明 edge");
   cn.push(`🔭 持續更新 · ${hkNow().toISOString().slice(5, 16).replace("T", " ")} HKT`);
   return cn.join("\n");
 }
@@ -1525,7 +1525,7 @@ function applyRetireRule(t) {
   for (const k in gs) {
     if (t.retired[k]) continue;
     const g = gs[k];
-    if (g.n >= MIN && g.roi < 0 && !(g.clv > 0)) { t.retired[k] = { since: Math.round(Date.now() / 1000), n: g.n, roi: g.roi, clv: g.clv, name: g.name }; newR++; }
+    if (g.n >= MIN && g.roi < 0) { t.retired[k] = { since: Math.round(Date.now() / 1000), n: g.n, roi: g.roi, clv: g.clv, name: g.name }; newR++; } // 盈利第一: 只看ROI<0退役(不再让CLV正保住亏钱的)
   }
   return newR;
 }
@@ -1564,11 +1564,15 @@ function strengthStats(track) {
   return { n, wins, winrate: n ? Math.round((wins / n) * 100) : null, roi, clv, open, total: sigs.length, frozenAt, exitN, reducedN, blocked, hedgedN, xconfN };
 }
 function sgVerdict(st) {
+  // 判据: 盈利第一 —— 以样本外 ROI 为准; CLV 仅在样本不足时当"防运气"参考, 不否决盈利
   const MIN = Number(process.env.STRENGTH_VERDICT_N || 10);
+  if (st.roi != null && st.roi > 0) {
+    if (st.n >= MIN) return { emo: "✅", label: `樣本外 ROI +${st.roi}%（${st.n}注）→ 在賺,值得跟` };
+    if (st.clv != null && st.clv < -5) return { emo: "⚠️", label: `ROI +${st.roi}% 但樣本少(${st.n})且CLV${st.clv} → 恐是運氣,別急著加注` };
+    return { emo: "🟡", label: `樣本外 ROI +${st.roi}% 但樣本少(${st.n}<${MIN})→ 初步在賺,繼續攢` };
+  }
   if (st.n < MIN) return { emo: "⏳", label: `樣本外僅 ${st.n} 注（<${MIN}），繼續攢` };
-  if (st.roi > 0 && st.clv != null && st.clv > 0) return { emo: "✅", label: "樣本外 ROI+CLV 雙正 → 擅長盤 edge 站得住" };
-  if (st.roi > 0) return { emo: "🟡", label: "樣本外 ROI 正但 CLV 未穩 → 觀察" };
-  return { emo: "❌", label: "樣本外轉負 → 之前多半是選擇偏差, 別再跟" };
+  return { emo: "❌", label: `樣本外 ROI ${st.roi}%（${st.n}注）→ 在虧, 別跟` };
 }
 function fmtStrengthStatsText(track) {
   const st = strengthStats(track), v = sgVerdict(st);
@@ -1672,12 +1676,12 @@ function walletProfile(sc, query) {
   const types = {};
   for (const b of settled) { const k = betKind(b); (types[k] = types[k] || []).push(b); }
   const byType = Object.entries(types).map(([k, arr]) => ({ k, ...statsOf(arr) })).sort((a, b) => b.n - a.n);
-  // 强项: 该地址真正擅长的盘口类型(样本够 + ROI+CLV 双正; 排除衍生/散户)。得分=ROI+CLV, 按得分排
+  // 强项: 盈利第一 —— 该地址在赚钱的盘口类型(样本够 + ROI>0; 排除衍生/散户)。按 ROI 排, CLV 仅参考
   const S_MIN = Number(process.env.STRENGTH_MIN_N || 6);
   const strengths = byType
-    .filter((t) => t.k !== "衍生/散戶" && t.n >= S_MIN && t.roi > 0 && t.clv != null && t.clv > 0)
-    .map((t) => ({ ...t, score: t.roi + t.clv, tentative: t.n < MIN }))
-    .sort((a, b) => b.score - a.score);
+    .filter((t) => t.k !== "衍生/散戶" && t.n >= S_MIN && t.roi > 0)
+    .map((t) => ({ ...t, score: t.roi + (t.clv || 0), tentative: t.n < MIN }))
+    .sort((a, b) => b.roi - a.roi);
   const strengthKinds = new Set(strengths.map((s) => s.k));
   // 近期滑坡: 最近8场(按下注时间)
   const recentBets = [...settled].sort((a, b) => (b.entryTs || 0) - (a.entryTs || 0)).slice(0, 8);
@@ -1838,7 +1842,7 @@ function strengthPaper(track, opts = {}) {
   const gs = strengthGroupStats(track);
   const pnlBy = {};
   for (const x of r.trail) { const k = (x.ref.name || x.ref.wallet.slice(0, 6)) + "|" + x.ref.kind; const e = (pnlBy[k] = pnlBy[k] || { n: 0, wins: 0, pnl: 0 }); e.n++; if (x.pnl > 0) e.wins++; e.pnl += x.pnl; }
-  const board = Object.entries(pnlBy).map(([k, e]) => { const [nm, kd] = k.split("|"); const g = Object.values(gs).find((x) => (x.name || x.wallet.slice(0, 6)) === nm && x.kind === kd); return { name: nm, kind: kd, n: e.n, wins: e.wins, pnl: +e.pnl.toFixed(2), roi: g ? g.roi : null, clv: g ? g.clv : null }; }).sort((a, b) => a.pnl - b.pnl);
+  const board = Object.entries(pnlBy).map(([k, e]) => { const [nm, kd] = k.split("|"); const g = Object.values(gs).find((x) => (x.name || x.wallet.slice(0, 6)) === nm && x.kind === kd); return { name: nm, kind: kd, n: e.n, wins: e.wins, pnl: +e.pnl.toFixed(2), roi: g ? g.roi : null, clv: g ? g.clv : null }; }).sort((a, b) => (b.roi ?? -9999) - (a.roi ?? -9999)); // ROI优先: 赚的在前(盈利第一)
   const retired = Object.entries((track || {}).retired || {}).map(([k, v]) => ({ key: k, name: v.name || k.split("|")[0].slice(0, 8), kind: k.split("|")[1], ...v }));
   const mmList = Object.entries((track || {}).mm || {}).map(([w, v]) => ({ wallet: w, name: v.name || w.slice(0, 8), n: v.n, hedged: v.hedged }));
   const verticals = strengthByVertical(track); // 📊 板块分账(电竞 vs 世界杯 vs 网球...)
@@ -1965,7 +1969,7 @@ function esportsAccount() {
   for (const w of Object.entries(roster.wallets || {})) bw[w[1]] = { name: w[1], n: 0, wins: 0, profit: 0, clvs: [], open: 0 };
   for (const s of open) { const k = s.name; if (bw[k]) bw[k].open++; }
   for (const s of settled) { const k = s.name; const e = (bw[k] = bw[k] || { name: k, n: 0, wins: 0, profit: 0, clvs: [], open: 0 }); e.n++; if (s.win) e.wins++; e.profit += s.profit || 0; if (s.clv != null) e.clvs.push(s.clv); }
-  const board = Object.values(bw).map((e) => ({ name: e.name, n: e.n, wins: e.wins, open: e.open, winrate: e.n ? Math.round(e.wins / e.n * 100) : null, roi: e.n ? Math.round(e.profit / e.n * 100) : null, clv: e.clvs.length ? Math.round(e.clvs.reduce((x, y) => x + y, 0) / e.clvs.length * 100) : null, clvMed: e.clvs.length ? Math.round(_median(e.clvs) * 100) : null })).sort((a, b) => (b.n + b.open) - (a.n + a.open));
+  const board = Object.values(bw).map((e) => ({ name: e.name, n: e.n, wins: e.wins, open: e.open, winrate: e.n ? Math.round(e.wins / e.n * 100) : null, roi: e.n ? Math.round(e.profit / e.n * 100) : null, clv: e.clvs.length ? Math.round(e.clvs.reduce((x, y) => x + y, 0) / e.clvs.length * 100) : null, clvMed: e.clvs.length ? Math.round(_median(e.clvs) * 100) : null })).sort((a, b) => (b.roi ?? -9999) - (a.roi ?? -9999) || (b.n + b.open) - (a.n + a.open)); // ROI优先(盈利第一), 无结算的垫底
   const n = settled.length, wins = settled.filter((s) => s.win).length, allClv = settled.filter((s) => s.clv != null).map((s) => s.clv);
   const history = r.trail.map((x) => ({ when: x.ref.kickoffMs, name: x.ref.name, title: x.ref.title, eventSlug: x.ref.eventSlug, outcome: x.ref.outcome, entry: x.ref.entry, win: x.ref.win, stake: x.stake, pnl: x.pnl, after: x.after })).reverse();
   return { start, bankroll: r.final, roi: r.roi, n, wins, winrate: n ? Math.round(wins / n * 100) : null, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(positions.reduce((a, s) => a + s.stake, 0)), positions, board, history, clvMean: allClv.length ? Math.round(allClv.reduce((a, b) => a + b, 0) / allClv.length * 100) : null, clvMed: allClv.length ? Math.round(_median(allClv) * 100) : null };
@@ -2102,7 +2106,7 @@ function buildDashboard() {
     <div class="muted">${ov.n || 0} 注 · 命中 ${ov.wr != null ? ov.wr + "%" : "-"} · 均CLV ${ov.clv != null ? roiTxt(ov.clv, "pt") : "-"} · ⚠️ 多為同批世界盃、未跨行情</div></section>`;
   const candHtml = cands.length
     ? cands.map((r) => profileCardHtml(walletProfile(sc, r.wallet), (det.wallets || {})[r.wallet.toLowerCase()])).filter(Boolean).join("")
-    : `<div class="card muted">暫無地址達到「樣本 ≥ ${MIN_N} 且 ROI+CLV 雙正」。繼續讓雷達跑、攢樣本。</div>`;
+    : `<div class="card muted">暫無地址達到「樣本 ≥ ${MIN_N} 且樣本外 ROI>0」。繼續讓雷達跑、攢樣本。</div>`;
   const othRows = others.slice(0, 15).map((r) => `<tr><td><code>${esc(r.wallet.slice(0, 8))}…</code> ${esc((r.name || "").slice(0, 12))}</td><td>${r.n}</td><td>${r.wr}%</td><td class="${roiCls(r.roi)}">${roiTxt(r.roi, "%")}</td><td class="${roiCls(r.clv)}">${r.clv != null ? roiTxt(r.clv, "pt") : "-"}</td></tr>`).join("");
   const othHtml = others.length ? `<table class="grid"><thead><tr><th>地址（≥${MIN_N}·未雙正·僅參考）</th><th>場</th><th>命中</th><th>ROI</th><th>CLV</th></tr></thead><tbody>${othRows}</tbody></table>` : `<div class="muted">（暫無足夠樣本的地址）</div>`;
   const kinds = [["ml", "勝負盤"], ["ou", "大小球"], ["spread", "讓球"]], keys = [["followBig", "跟大戶"], ["followWinner", "跟💎"]];
@@ -2144,7 +2148,7 @@ function buildDashboard() {
   // 📊 板块分账(电竞 vs 传统体育并排)
   const vertHtml = paper.verticals.length ? `<div class="det-h">📊 板塊分帳（電競 vs 傳統體育並排 · 樣本外 · 賬戶口徑）</div><table class="grid det"><thead><tr><th>板塊</th><th>已結算</th><th>進行中</th><th>命中</th><th>均ROI</th><th>均CLV</th></tr></thead><tbody>${paper.verticals.map((v) => `<tr><td><b>${esc(v.vertical)}</b></td><td>${v.n}</td><td>${v.open}</td><td>${v.winrate != null ? v.winrate + "%" : "-"}</td><td class="${roiCls(v.roi)}">${v.roi != null ? roiTxt(v.roi, "%") : "-"}</td><td class="${roiCls(v.clv)}">${v.clv != null ? roiTxt(v.clv, "pt") : "-"}</td></tr>`).join("")}</tbody></table>` : "";
   // 盈亏榜(地址×盘类, 亏钱的在前)
-  const boardHtml2 = paper.board.length ? `<div class="det-h">🏦 盈虧榜（地址×盤類 · 誰在賺/虧你的錢 · 虧的在前）</div><table class="grid det"><thead><tr><th>地址</th><th>盤類</th><th>注</th><th>盈虧$</th><th>ROI</th><th>CLV</th></tr></thead><tbody>${paper.board.map((b) => `<tr><td>${esc((b.name || "").slice(0, 10))}</td><td>${esc(b.kind)}</td><td>${b.n}</td><td class="${roiCls(b.pnl)}"><b>${b.pnl >= 0 ? "+" : ""}$${b.pnl.toFixed(1)}</b></td><td class="${roiCls(b.roi)}">${b.roi != null ? roiTxt(b.roi, "%") : "-"}</td><td class="${roiCls(b.clv)}">${b.clv != null ? roiTxt(b.clv, "pt") : "-"}</td></tr>`).join("")}</tbody></table>` : "";
+  const boardHtml2 = paper.board.length ? `<div class="det-h">🏦 盈虧榜（地址×盤類 · 按ROI排 · 賺的在前）</div><table class="grid det"><thead><tr><th>地址</th><th>盤類</th><th>注</th><th>盈虧$</th><th>ROI</th><th>CLV</th></tr></thead><tbody>${paper.board.map((b) => `<tr><td>${esc((b.name || "").slice(0, 10))}</td><td>${esc(b.kind)}</td><td>${b.n}</td><td class="${roiCls(b.pnl)}"><b>${b.pnl >= 0 ? "+" : ""}$${b.pnl.toFixed(1)}</b></td><td class="${roiCls(b.roi)}">${b.roi != null ? roiTxt(b.roi, "%") : "-"}</td><td class="${roiCls(b.clv)}">${b.clv != null ? roiTxt(b.clv, "pt") : "-"}</td></tr>`).join("")}</tbody></table>` : "";
   // 📜 账户流水(最近15笔)
   const histRow = (h) => {
     const link = h.eventSlug ? `<a href="https://polymarket.com/event/${esc(h.eventSlug)}" target="_blank">${esc((h.title || "").slice(0, 30))}</a>` : esc((h.title || "").slice(0, 30));
@@ -2209,7 +2213,7 @@ function buildDashboard() {
   const html = `<!doctype html><html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Polaris 記分卡儀表盤</title><style>${css}</style></head><body><div class="wrap">
     <h1>📇 聰明錢記分卡 · 儀表盤</h1>
     <div class="meta">生成於 ${now} HKT · 資料隨雷達運行更新（重跑「打开仪表盘.bat」刷新）</div>
-    <div class="banner">⚠️ 判據：只有 ROI 與 CLV 雙正、<b>非熱門也賺</b>、且跨行情仍成立的地址才值得跟。目前多為世界盃順風窗口，未證明 edge。</div>
+    <div class="banner">⚠️ 判據：<b>盈利第一</b> —— 以樣本外 ROI 為準,CLV 僅樣本不足時防運氣。需樣本夠 + 跨行情仍成立。目前多為世界盃順風窗口,未證明 edge。</div>
     ${ovHtml}
     <h2>🏅 只跟擅長盤 · 樣本外前向驗證器（凍結後才算 · 真·出樣本）</h2>${strHtml}
     <h2>🏅 高信心跟單組合（地址 × 他擅長的盤）</h2><div class="card">${comboHtml}</div>
@@ -2625,7 +2629,7 @@ async function main() {
     if (!rows.length) { console.log("(还没有任何跟随样本; 让它跑几天)"); return; }
     console.log(`📊 总览(跟所有信号): ${ov.n}注 命中${ov.wr}% ROI ${ov.roi >= 0 ? "+" : ""}${ov.roi}% 均CLV ${ov.clv != null ? (ov.clv >= 0 ? "+" : "") + ov.clv + "pt" : "-"}  ⚠️多为同批世界杯、未跨行情`);
     const cands = rows.filter((r) => r.candidate);
-    console.log(`\n✅ 候选可跟(样本≥${MIN_N} 且 ROI+CLV 双正): ${cands.length ? "" : "暂无"}`);
+    console.log(`\n✅ 候选可跟(样本≥${MIN_N} 且样本外 ROI>0 · 盈利第一 · CLV仅参考): ${cands.length ? "" : "暂无"}`);
     for (const r of cands) console.log(`  🟢 ${r.wallet.slice(0, 8)}… ${(r.name || "").slice(0, 12).padEnd(12)} ${r.n}场 命中${r.wr}% ROI +${r.roi}% CLV +${r.clv}pt 未结算${r.open}`);
     const others = rows.filter((r) => r.enough && !r.candidate);
     if (others.length) { console.log(`\n其余足够样本(≥${MIN_N}·未双正·参考):`); for (const r of others) console.log(`  ${r.roi >= 0 ? "🟡" : "🔴"} ${r.wallet.slice(0, 8)}… ${(r.name || "").slice(0, 12).padEnd(12)} ${r.n}场 ROI ${r.roi >= 0 ? "+" : ""}${r.roi}% CLV ${r.clv != null ? (r.clv >= 0 ? "+" : "") + r.clv + "pt" : "-"}`); }
