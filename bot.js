@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V10.1"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V10.2"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1967,7 +1967,7 @@ function esportsAccount() {
   for (const s of settled) { const k = s.name; const e = (bw[k] = bw[k] || { name: k, n: 0, wins: 0, profit: 0, clvs: [], open: 0 }); e.n++; if (s.win) e.wins++; e.profit += s.profit || 0; if (s.clv != null) e.clvs.push(s.clv); }
   const board = Object.values(bw).map((e) => ({ name: e.name, n: e.n, wins: e.wins, open: e.open, winrate: e.n ? Math.round(e.wins / e.n * 100) : null, roi: e.n ? Math.round(e.profit / e.n * 100) : null, clv: e.clvs.length ? Math.round(e.clvs.reduce((x, y) => x + y, 0) / e.clvs.length * 100) : null, clvMed: e.clvs.length ? Math.round(_median(e.clvs) * 100) : null })).sort((a, b) => (b.n + b.open) - (a.n + a.open));
   const n = settled.length, wins = settled.filter((s) => s.win).length, allClv = settled.filter((s) => s.clv != null).map((s) => s.clv);
-  const history = r.trail.map((x) => ({ when: x.ref.kickoffMs, name: x.ref.name, title: x.ref.title, outcome: x.ref.outcome, entry: x.ref.entry, win: x.ref.win, stake: x.stake, pnl: x.pnl, after: x.after })).reverse();
+  const history = r.trail.map((x) => ({ when: x.ref.kickoffMs, name: x.ref.name, title: x.ref.title, eventSlug: x.ref.eventSlug, outcome: x.ref.outcome, entry: x.ref.entry, win: x.ref.win, stake: x.stake, pnl: x.pnl, after: x.after })).reverse();
   return { start, bankroll: r.final, roi: r.roi, n, wins, winrate: n ? Math.round(wins / n * 100) : null, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(positions.reduce((a, s) => a + s.stake, 0)), positions, board, history, clvMean: allClv.length ? Math.round(allClv.reduce((a, b) => a + b, 0) / allClv.length * 100) : null, clvMed: allClv.length ? Math.round(_median(allClv) * 100) : null };
 }
 function fmtEsportsTG(acc) {
@@ -2191,10 +2191,20 @@ function buildDashboard() {
   const esp = esportsAccount();
   const espCls = esp.n ? (esp.roi > 0 ? "ok" : esp.roi < 0 ? "bad" : "wait") : "wait";
   const espBoard = esp.board.length ? `<table class="grid det"><thead><tr><th>電競專家</th><th>結算</th><th>進行</th><th>命中</th><th>ROI</th><th>CLV均/中位</th></tr></thead><tbody>${esp.board.map((b) => `<tr><td><b>${esc(b.name)}</b></td><td>${b.n}</td><td>${b.open}</td><td>${b.winrate != null ? b.winrate + "%" : "-"}</td><td class="${roiCls(b.roi)}">${b.roi != null ? roiTxt(b.roi, "%") : "-"}</td><td>${b.clv != null ? `<span class="${roiCls(b.clv)}">${roiTxt(b.clv, "")}</span>/<span class="${roiCls(b.clvMed)}">${b.clvMed}</span>pt` : "-"}</td></tr>`).join("")}</tbody></table>` : "";
+  // 🎮 电竞影子账户: 余额曲线 + 历史流水(可回溯)
+  let espCurve = "";
+  if (esp.history.length >= 2) {
+    const pts = [esp.start, ...[...esp.history].reverse().map((h) => h.after)];
+    const W = 560, H = 60, mn = Math.min(...pts), mx = Math.max(...pts), rg = mx - mn || 1;
+    const xy = pts.map((v, i) => `${(i / (pts.length - 1) * W).toFixed(1)},${(H - 6 - (v - mn) / rg * (H - 12)).toFixed(1)}`).join(" ");
+    const base = (H - 6 - (esp.start - mn) / rg * (H - 12)).toFixed(1);
+    espCurve = `<div class="det-h">📈 餘額曲線（$${esp.start} 起 · 每筆結算後）</div><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:${H}px"><polyline points="${xy}" fill="none" stroke="${pts[pts.length - 1] >= esp.start ? "#3fd07f" : "#ff6b6b"}" stroke-width="2"/><line x1="0" y1="${base}" x2="${W}" y2="${base}" stroke="#26304a" stroke-dasharray="4 4"/></svg>`;
+  }
+  const espHist = esp.history.length ? `<div class="det-h">📜 賬戶流水（最近 ${Math.min(20, esp.history.length)} 筆 · 共 ${esp.history.length} 筆 · 可回溯）</div><table class="grid det"><thead><tr><th>結算(HKT)</th><th>專家</th><th>項目</th><th>方向@成本</th><th>注</th><th>盈虧</th><th>餘額</th></tr></thead><tbody>${esp.history.slice(0, 20).map((h) => `<tr><td>${dHK(Math.round((h.when || 0) / 1000))}</td><td>${esc(h.name)}</td><td>${h.eventSlug ? `<a href="https://polymarket.com/event/${esc(h.eventSlug)}" target="_blank">${esc((h.title || "").slice(0, 30))}</a>` : esc((h.title || "").slice(0, 30))}</td><td>${esc(h.outcome)}@${Math.round(h.entry * 100)}¢</td><td>$${h.stake}</td><td class="${roiCls(h.pnl)}"><b>${h.pnl >= 0 ? "+" : ""}$${h.pnl}</b></td><td>$${h.after}</td></tr>`).join("")}</tbody></table>` : "";
   const espPos = esp.positions.length ? `<div class="det-h">📌 進行中（⏰最快開賽在前）</div><table class="grid det"><thead><tr><th>開賽</th><th>注</th><th>專家</th><th>項目</th><th>方向</th><th>成本→現價</th><th>浮盈</th></tr></thead><tbody>${esp.positions.slice(0, 15).map((s) => `<tr><td>⏰${esc(koHKT(s.kickoffMs) || "?")}</td><td><b>$${s.stake}</b></td><td>${esc(s.name)}</td><td>${s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc((s.title || "").slice(0, 30))}</a>` : esc((s.title || "").slice(0, 30))}</td><td>${esc(s.outcome)}</td><td>${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""}</td><td>${s.unreal != null ? `<span class="${roiCls(s.unreal)}">${s.unreal >= 0 ? "+" : ""}$${Math.abs(s.unreal) < 1 ? s.unreal.toFixed(1) : Math.round(s.unreal)}</span>` : "-"}</td></tr>`).join("")}</tbody></table>` : "";
   const espHtml = `<div class="card"><div class="pc-head"><span class="badge ${espCls}">🎮</span><b>本金 $${esp.start} → 現值 $${esp.bankroll.toLocaleString()}</b><span class="${roiCls(esp.roi)}" style="font-size:18px">${roiTxt(esp.roi, "%")}</span><span class="muted">等注2% · 4位電競原生方向專家 · 只跟賽前直向</span></div>
     <div style="margin:6px 0">${esp.n ? `已結算 <b>${esp.n}</b> 注 · 勝率 <b>${esp.winrate}%</b> · 均CLV <b class="${roiCls(esp.clvMean)}">${esp.clvMean != null ? roiTxt(esp.clvMean, "pt") : "-"}</b>（中位 ${esp.clvMed != null ? esp.clvMed + "pt" : "-"}）· 回撤 <b class="neg">-${esp.maxDD}%</b>` : "⏳ 尚無已結算（等這4位出賽前直向注 + 賽事結算）"} · 進行中 <b>${esp.openN}</b> 注 · 在押 ~$${esp.openExposure}</div>
-    ${espBoard}${espPos}
+    ${espBoard}${espPos}${espCurve}${espHist}
     <div class="banner">🎮 <b>獨立實驗</b>：$500 只跟 4 個「電競原生方向專家」(joblessfinalbo/0xE16D/SineNooneEI/GeorgeRe) 的<b>賽前直向</b>注(赛中单自動跳過)。用中位CLV抗離群。與 $1000 主賬戶完全隔離,測「電競是否比傳統體育更低效」。仍：非投注建議,未證明 edge。</div></div>`;
   const html = `<!doctype html><html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Polaris 記分卡儀表盤</title><style>${css}</style></head><body><div class="wrap">
     <h1>📇 聰明錢記分卡 · 儀表盤</h1>
