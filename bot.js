@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V10.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V10.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1650,6 +1650,25 @@ function betKind(b) {
   if (o === "yes" || o === "no") return "是非盤";
   return "勝負/讓球";
 }
+// 盘口详情: 从 title 解析 盘口类型 + 对局(A vs B) + 对手方近似价 + 点差 (供仪表盘详细列出)
+function mktInfo(s) {
+  const title = String(s.title || ""), t = title.toLowerCase();
+  let type;
+  const gm = t.match(/game ?(\d)/); const mp = t.match(/map ?(\d)/);
+  if (gm) type = `單局G${gm[1]}`;
+  else if (mp) type = `單圖M${mp[1]}`;
+  else if (/total maps|maps over|maps under/.test(t)) type = "總局數";
+  else if (/exact score/.test(t)) type = "準確比分";
+  else if (/handicap|[+-]\d\.5|spread/.test(t)) type = "讓分";
+  else if (/\bover\b|\bunder\b|o\/u/.test(t)) type = "大小";
+  else if (/first blood|first map|pistol|first-|to score|advance/.test(t)) type = "衍生";
+  else if (/(series|match) winner|to win|- winner|match result/.test(t)) type = "賽果(整場)";
+  else type = "勝負";
+  // 对局 A vs B: 去掉前缀"运动:"和后缀"- xxx"
+  const mu = title.replace(/^[^:]{0,18}:\s*/, "").replace(/\s*[-–—]\s*[^-–—]*$/, "").trim();
+  const oppPx = s.entry > 0 && s.entry < 1 ? Math.round((1 - s.entry) * 100) : null; // 二元近似对手价
+  return { type, matchup: mu.slice(0, 34) || title.slice(0, 34), oppPx, spreadC: s.gate ? s.gate.spreadC : null };
+}
 // 按 地址前缀 / 名字 找钱包
 function findWallet(sc, q) {
   q = String(q || "").toLowerCase().trim();
@@ -2131,15 +2150,16 @@ function buildDashboard() {
   const paper = strengthPaper(strk);
   const paperCls = paper.n ? (paper.roi > 0 ? "ok" : paper.roi < 0 ? "bad" : "wait") : "wait";
   const posRow = (s) => {
-    const link = (s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc((s.title || "").slice(0, 32))}</a>` : esc((s.title || "").slice(0, 32))) + sgTags(s);
+    const mi = mktInfo(s);
+    const link = (s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc(mi.matchup)}</a>` : esc(mi.matchup)) + sgTags(s);
     const u = s.unreal != null ? `<span class="${s.unreal > 0 ? "pos" : s.unreal < 0 ? "neg" : "muted"}">${s.unreal >= 0 ? "+" : ""}$${Math.abs(s.unreal) < 1 ? s.unreal.toFixed(1) : Math.round(s.unreal)}</span>` : "-";
     const st = s.exit ? `<span class="neg">⚠️贏家${s.reduced ? "減倉" : "已賣"}</span>` : `<span class="warn2">持倉中</span>`;
-    return `<tr class="${s.exit ? "exitrow" : ""}" data-kick="${s.kickoffMs || 9e15}" data-stake="${s.stake}"><td>⏰${esc(koHKT(s.kickoffMs) || "?")}</td><td><b>$${s.stake}</b></td><td>${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))}</td><td>${esc(s.kind)}</td><td>${link}</td><td>${esc(s.outcome)}</td><td>${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""}</td><td>${u}</td><td>${st}</td></tr>`;
+    return `<tr class="${s.exit ? "exitrow" : ""}" data-kick="${s.kickoffMs || 9e15}" data-stake="${s.stake}"><td>⏰${esc(koHKT(s.kickoffMs) || "?")}</td><td><b>$${s.stake}</b></td><td>${esc(String(s.name || s.wallet.slice(0, 6)).slice(0, 10))}</td><td><span class="mtag">${esc(mi.type)}</span></td><td>${link}</td><td><b>押${esc(s.outcome)}</b></td><td>${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""}</td><td class="muted">${mi.oppPx != null ? mi.oppPx + "¢" : "-"}</td><td>${mi.spreadC != null ? mi.spreadC + "¢" : "-"}</td><td>${u}</td><td>${st}</td></tr>`;
   };
   const pxTs = Math.max(0, ...paper.positions.map((s) => s.nowTs || 0));
-  const posTable = paper.positions.length ? `<div class="det-h">📌 目前在押明細（等注${Math.round(paper.stakeFrac * 100)}%·同場≤${Math.round(Number(process.env.EVENT_CAP_FRAC || 0.05) * 100)}%）<span class="muted"> 現價刷新於 ${pxTs ? dHK(pxTs) + " HKT" : "-"}（賽中價變化快, F5 可拉最新）</span>
+  const posTable = paper.positions.length ? `<div class="det-h">📌 目前在押明細（等注${Math.round(paper.stakeFrac * 100)}%·同場≤${Math.round(Number(process.env.EVENT_CAP_FRAC || 0.05) * 100)}% · 盤口詳情）<span class="muted"> 現價刷新於 ${pxTs ? dHK(pxTs) + " HKT" : "-"}（賽中價變化快, F5 可拉最新）</span>
       <button class="sbtn on" onclick="sortPos('kick',this)">⏰ 最快開賽</button><button class="sbtn" onclick="sortPos('stake',this)">💰 注額最大</button></div>
-    <table class="grid det"><thead><tr><th>開賽(HKT)</th><th>紙面注</th><th>地址</th><th>擅長盤</th><th>項目</th><th>方向</th><th>成本→現價</th><th>浮盈</th><th>狀態</th></tr></thead><tbody id="posbody">${paper.positions.slice(0, 25).map(posRow).join("")}</tbody></table>
+    <table class="grid det"><thead><tr><th>開賽(HKT)</th><th>紙面注</th><th>地址</th><th>盤口</th><th>對局</th><th>押方</th><th>成本→現價</th><th>對手價</th><th>點差</th><th>浮盈</th><th>狀態</th></tr></thead><tbody id="posbody">${paper.positions.slice(0, 25).map(posRow).join("")}</tbody></table>
     <script>function sortPos(m,btn){var tb=document.getElementById('posbody');var rows=Array.prototype.slice.call(tb.rows);rows.sort(function(a,b){return m==='kick'?(+a.dataset.kick-+b.dataset.kick):(+b.dataset.stake-+a.dataset.stake);});rows.forEach(function(r){tb.appendChild(r);});document.querySelectorAll('.sbtn').forEach(function(x){x.classList.remove('on');});btn.classList.add('on');}</script>` : "";
   // 📈 余额曲线(内联SVG): $1000 起, 每笔结算后的余额
   let curveHtml = "";
@@ -2195,6 +2215,7 @@ function buildDashboard() {
     + "table.grid tr.strong td{background:#12261b}table.grid tr.exitrow td{background:#3a1616}"
     + ".str-row{font-size:13px;margin:4px 0 2px}.str-pill{display:inline-block;background:#12261b;border:1px solid #1f4a30;border-radius:6px;padding:1px 7px;margin:2px 4px 2px 0;font-size:12.5px}.str-pill.tent{background:#2a2410;border-color:#5a4520}.str-pill b{color:var(--pos)}"
     + ".sbtn{background:#1b2540;border:1px solid var(--line);color:var(--tx);border-radius:6px;padding:2px 10px;margin-left:8px;font-size:12px;cursor:pointer}.sbtn.on{background:#28406e;border-color:var(--accent)}"
+    + ".mtag{display:inline-block;background:#242c44;border:1px solid #35406a;border-radius:4px;padding:0 5px;font-size:11.5px;white-space:nowrap}"
     + ".foot{color:var(--mut);font-size:12px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}";
   // 🎮 电竞影子账户区域
   const esp = esportsAccount();
@@ -2210,7 +2231,13 @@ function buildDashboard() {
     espCurve = `<div class="det-h">📈 餘額曲線（$${esp.start} 起 · 每筆結算後）</div><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:${H}px"><polyline points="${xy}" fill="none" stroke="${pts[pts.length - 1] >= esp.start ? "#3fd07f" : "#ff6b6b"}" stroke-width="2"/><line x1="0" y1="${base}" x2="${W}" y2="${base}" stroke="#26304a" stroke-dasharray="4 4"/></svg>`;
   }
   const espHist = esp.history.length ? `<div class="det-h">📜 賬戶流水（最近 ${Math.min(20, esp.history.length)} 筆 · 共 ${esp.history.length} 筆 · 可回溯）</div><table class="grid det"><thead><tr><th>結算(HKT)</th><th>專家</th><th>項目</th><th>方向@成本</th><th>注</th><th>盈虧</th><th>餘額</th></tr></thead><tbody>${esp.history.slice(0, 20).map((h) => `<tr><td>${dHK(Math.round((h.when || 0) / 1000))}</td><td>${esc(h.name)}</td><td>${h.eventSlug ? `<a href="https://polymarket.com/event/${esc(h.eventSlug)}" target="_blank">${esc((h.title || "").slice(0, 30))}</a>` : esc((h.title || "").slice(0, 30))}</td><td>${esc(h.outcome)}@${Math.round(h.entry * 100)}¢</td><td>$${h.stake}</td><td class="${roiCls(h.pnl)}"><b>${h.pnl >= 0 ? "+" : ""}$${h.pnl}</b></td><td>$${h.after}</td></tr>`).join("")}</tbody></table>` : "";
-  const espPos = esp.positions.length ? `<div class="det-h">📌 進行中（⏰最快開賽在前）</div><table class="grid det"><thead><tr><th>開賽</th><th>注</th><th>專家</th><th>項目</th><th>方向</th><th>成本→現價</th><th>浮盈</th></tr></thead><tbody>${esp.positions.slice(0, 15).map((s) => `<tr><td>⏰${esc(koHKT(s.kickoffMs) || "?")}</td><td><b>$${s.stake}</b></td><td>${esc(s.name)}</td><td>${s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc((s.title || "").slice(0, 30))}</a>` : esc((s.title || "").slice(0, 30))}</td><td>${esc(s.outcome)}</td><td>${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""}</td><td>${s.unreal != null ? `<span class="${roiCls(s.unreal)}">${s.unreal >= 0 ? "+" : ""}$${Math.abs(s.unreal) < 1 ? s.unreal.toFixed(1) : Math.round(s.unreal)}</span>` : "-"}</td></tr>`).join("")}</tbody></table>` : "";
+  const espPosRow = (s) => {
+    const mi = mktInfo(s);
+    const link = s.eventSlug ? `<a href="https://polymarket.com/event/${esc(s.eventSlug)}" target="_blank">${esc(mi.matchup)}</a>` : esc(mi.matchup);
+    const uu = s.unreal != null ? `<span class="${roiCls(s.unreal)}">${s.unreal >= 0 ? "+" : ""}$${Math.abs(s.unreal) < 1 ? s.unreal.toFixed(1) : Math.round(s.unreal)}</span>` : "-";
+    return `<tr><td>⏰${esc(koHKT(s.kickoffMs) || "?")}</td><td><b>$${s.stake}</b></td><td>${esc(s.name)}</td><td><span class="mtag">${esc(mi.type)}</span></td><td>${link}</td><td><b>押 ${esc(s.outcome)}</b></td><td>${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""}</td><td class="muted">對手≈${mi.oppPx != null ? mi.oppPx + "¢" : "-"}</td><td>${mi.spreadC != null ? mi.spreadC + "¢" : "-"}</td><td>${uu}</td></tr>`;
+  };
+  const espPos = esp.positions.length ? `<div class="det-h">📌 進行中（⏰最快開賽在前 · 盤口詳情）</div><table class="grid det"><thead><tr><th>開賽</th><th>注</th><th>專家</th><th>盤口</th><th>對局</th><th>押方</th><th>成本→現價</th><th>對手價</th><th>點差</th><th>浮盈</th></tr></thead><tbody>${esp.positions.slice(0, 15).map(espPosRow).join("")}</tbody></table>` : "";
   const espHtml = `<div class="card"><div class="pc-head"><span class="badge ${espCls}">🎮</span><b>本金 $${esp.start} → 現值 $${esp.bankroll.toLocaleString()}</b><span class="${roiCls(esp.roi)}" style="font-size:18px">${roiTxt(esp.roi, "%")}</span><span class="muted">等注2% · 4位電競原生方向專家 · 只跟賽前直向</span></div>
     <div style="margin:6px 0">${esp.n ? `已結算 <b>${esp.n}</b> 注 · 勝率 <b>${esp.winrate}%</b> · 均CLV <b class="${roiCls(esp.clvMean)}">${esp.clvMean != null ? roiTxt(esp.clvMean, "pt") : "-"}</b>（中位 ${esp.clvMed != null ? esp.clvMed + "pt" : "-"}）· 回撤 <b class="neg">-${esp.maxDD}%</b>` : "⏳ 尚無已結算（等這4位出賽前直向注 + 賽事結算）"} · 進行中 <b>${esp.openN}</b> 注 · 在押 ~$${esp.openExposure}</div>
     ${espBoard}${espPos}${espCurve}${espHist}
