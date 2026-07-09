@@ -1,7 +1,7 @@
 # CLAUDE.md — Polaris Whale Radar 驾驭文档
 
 > 这份是项目操作手册。任何 AI 对话或维护者读完这页即可接手、运行、续做本项目。
-> 当前版本 **V10.3**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本 **V10.4**。详细迭代见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 1. 这是什么
 
@@ -105,7 +105,7 @@ node bot.js --serve [端口]        # 本地仪表盘服务(默8899):浏览器 F
 | `VOID_HOURS` | 48 | 僵尸清理(V9.6):开赛超48h未结算(取消/延期)→🕳️作废,剔出账户+停止查询 |
 | `LIVE_REFRESH_S` | 180 | serve模式实时现价覆盖(V9.8):F5时若超180s旧→现场拉未结算仓实时价(仅内存,不落盘) |
 | `PAPER_STAKE_FRAC` | 0.02 | 纸面账户主口径=等注2%(V9.5,测量期最不失真);¼Kelly仅作对照线 |
-| `EVENT_CAP_FRAC` / `LOWODDS_MAXFRAC` | 0.05 / 0.02 | 纸面账户:同场总仓位≤5%本金;≥80¢低赔注仓位封顶2%(V9.1) |
+| `EVENT_CAP_FRAC` / `LOWODDS_MAXFRAC` / `YIELD_CUT_CENTS` | 0.05 / 0.02 / 90 | 纸面账户:同场总仓位≤5%;≥80¢低赔封顶2%(仅Kelly路径);**≥90¢纯收息注剔出账户(V10.4,平注也生效)** |
 | `GATE_TEST_USD` / `SPREAD_MAX_CENTS` | 50 / 5 | 成交闸门:亮灯时按$50查订单簿,点差>5¢或深度不够=⛔跟不进(剔出账户)。能跟的按VWAP成本感知入场 |
 | `ESPORTS_PUSH_ENABLED` / `ESPORTS_PUSH_MIN` | on / 120 | $500电竞影子账户(V10.1):独立跟4个电竞原生方向专家 · 独立推送间隔(分) · `--esports`查看 · roster在data/esports_roster.json |
 | `PAPER_PUSH_ENABLED` / `PAPER_PUSH_MIN` | on / 120 | $1000 前向纸面账户推送开关 / 间隔(分,默2h,V9.4)。`--paper --push` 手动推;`--paper` 只读渲染 |

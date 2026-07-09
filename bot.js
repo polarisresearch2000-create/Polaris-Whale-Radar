@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V10.3"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V10.4"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1477,7 +1477,9 @@ function markHedges(t) {
   return newN;
 }
 // 账户口径: 剔除 跟不进(⛔) 与 对冲对(⚖️) 的信号
-const followable = (s) => !(s.gate && s.gate.fillable === false) && !s.hedged && !s.void;
+// #③ 纯收息注剔除: 入场价 ≥YIELD_CUT(默90¢) = 上档≤10¢、输一次抹几十次赢 → 理性跟随者不下, 剔出账户(仍显示)
+const isYield = (s) => Math.round((s.entry || 0) * 100) >= Number(process.env.YIELD_CUT_CENTS || 90);
+const followable = (s) => !(s.gate && s.gate.fillable === false) && !s.hedged && !s.void && !isYield(s);
 // 🤝跨钱包分歧(方案C): 同场×同盘类, 不同钱包押不同方向 → 【账户层】弃权(动态计算, 不永久定罪);
 // 【钱包层】(strengthGroupStats/退役规则)仍保留双方样本 —— 对决照打, 裁判照评分
 function xconfKeys(sigs) {
@@ -1811,6 +1813,7 @@ function strengthPaper(track, opts = {}) {
   const blocked = all.filter((s) => s.gate && s.gate.fillable === false).length; // 跟不进, 剔出账户
   const hedgedN = all.filter((s) => s.hedged).length; // 修①: 对冲对, 剔出账户
   const voidN = all.filter((s) => s.void).length; // 🕳️作废(取消/延期), 剔出账户
+  const yieldN = all.filter((s) => isYield(s) && !s.hedged && !s.void && !(s.gate && s.gate.fillable === false)).length; // #③ ≥90¢纯收息, 剔出账户
   const sigs0 = all.filter(followable);
   const xc = xconfKeys(sigs0); const xconfN = xc.size; // 🤝分歧: 账户弃权(钱包层照记)
   for (const s of xc) s._xconf = true; // 瞬态标记(供仪表盘打标签, 不落盘)
@@ -1843,10 +1846,10 @@ function strengthPaper(track, opts = {}) {
   const pnlBy = {};
   for (const x of r.trail) { const k = (x.ref.name || x.ref.wallet.slice(0, 6)) + "|" + x.ref.kind; const e = (pnlBy[k] = pnlBy[k] || { n: 0, wins: 0, pnl: 0 }); e.n++; if (x.pnl > 0) e.wins++; e.pnl += x.pnl; }
   const board = Object.entries(pnlBy).map(([k, e]) => { const [nm, kd] = k.split("|"); const g = Object.values(gs).find((x) => (x.name || x.wallet.slice(0, 6)) === nm && x.kind === kd); return { name: nm, kind: kd, n: e.n, wins: e.wins, pnl: +e.pnl.toFixed(2), roi: g ? g.roi : null, clv: g ? g.clv : null }; }).sort((a, b) => (b.roi ?? -9999) - (a.roi ?? -9999)); // ROI优先: 赚的在前(盈利第一)
-  const retired = Object.entries((track || {}).retired || {}).map(([k, v]) => ({ key: k, name: v.name || k.split("|")[0].slice(0, 8), kind: k.split("|")[1], ...v }));
+  const retired = Object.entries((track || {}).retired || {}).map(([k, v]) => ({ ...v, key: k, kind: k.split("|")[1], name: v.name || k.split("|")[0].slice(0, 8) })); // #修: name回退放最后, 别被 ...v 的空name覆盖
   const mmList = Object.entries((track || {}).mm || {}).map(([w, v]) => ({ wallet: w, name: v.name || w.slice(0, 8), n: v.n, hedged: v.hedged }));
   const verticals = strengthByVertical(track); // 📊 板块分账(电竞 vs 世界杯 vs 网球...)
-  return { start: 1000, bankroll: r.final, roi: r.roi, n: r.n, wins: r.wins, winrate: r.winrate, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(openExposure), unrealTotal: Math.round(unrealTotal), positions, blocked, hedgedN, voidN, xconfN, history, board, retired, mmList, verticals, kellyAlt, stakeFrac, kf };
+  return { start: 1000, bankroll: r.final, roi: r.roi, n: r.n, wins: r.wins, winrate: r.winrate, maxDD: r.maxDD, openN: open.length, openExposure: Math.round(openExposure), unrealTotal: Math.round(unrealTotal), positions, blocked, hedgedN, voidN, yieldN, xconfN, history, board, retired, mmList, verticals, kellyAlt, stakeFrac, kf };
 }
 function fmtPaperText(track) {
   const p = strengthPaper(track);
@@ -1854,7 +1857,7 @@ function fmtPaperText(track) {
   L.push(`  本金 $1000 → 現值 $${p.bankroll.toLocaleString()}  ROI ${p.roi >= 0 ? "+" : ""}${p.roi}%   (對照¼Kelly: $${p.kellyAlt.bankroll.toLocaleString()} ${p.kellyAlt.roi >= 0 ? "+" : ""}${p.kellyAlt.roi}%)`);
   if (p.n) L.push(`  已結算 ${p.n} 注 · 勝率 ${p.winrate}% · 最大回撤 ${p.maxDD}%`);
   else L.push(`  ⏳ 尚無已結算(等亮燈信號的賽事結算)`);
-  L.push(`  進行中 ${p.openN} 注 · 在押 ~$${p.openExposure} · 浮盈 ${p.unrealTotal >= 0 ? "+" : ""}$${p.unrealTotal}${p.blocked ? ` · ⛔${p.blocked}跟不進` : ""}${p.hedgedN ? ` · ⚖️${p.hedgedN}對沖對消` : ""}${p.voidN ? ` · 🕳️${p.voidN}作廢` : ""}${p.xconfN ? ` · 🤝${p.xconfN}分歧棄權` : ""}`);
+  L.push(`  進行中 ${p.openN} 注 · 在押 ~$${p.openExposure} · 浮盈 ${p.unrealTotal >= 0 ? "+" : ""}$${p.unrealTotal}${p.blocked ? ` · ⛔${p.blocked}跟不進` : ""}${p.hedgedN ? ` · ⚖️${p.hedgedN}對沖對消` : ""}${p.voidN ? ` · 🕳️${p.voidN}作廢` : ""}${p.yieldN ? ` · 💤${p.yieldN}收息(≥90¢)剔除` : ""}${p.xconfN ? ` · 🤝${p.xconfN}分歧棄權` : ""}`);
   if (p.positions.length) {
     L.push(`  — 目前在押明細(⏰最快開賽在前 · 纸面注 · 浮盈) —`);
     for (const s of p.positions.slice(0, 20)) {
@@ -1891,6 +1894,7 @@ function fmtPaperTG(track) {
   if (p.blocked) cn.push(`⛔ ${p.blocked} 注跟不進（點差/深度不夠, 已剔出賬戶）`);
   if (p.hedgedN) cn.push(`⚖️ ${p.hedgedN} 注對沖對消（同錢包同場同類雙向=做市/梯子, 已剔出賬戶）`);
   if (p.voidN) cn.push(`🕳️ ${p.voidN} 注作廢（開賽超${Number(process.env.VOID_HOURS || 48)}h未結算=取消/延期, 已剔出）`);
+  if (p.yieldN) cn.push(`💤 ${p.yieldN} 注收息剔除（入場≥${Number(process.env.YIELD_CUT_CENTS || 90)}¢=上檔≤10¢, 理性跟隨者不下, 已剔出）`);
   if (p.xconfN) cn.push(`🤝 ${p.xconfN} 注分歧棄權（候選互相對賭同一場, 賬戶不下·對決照評分）`);
   if (p.history.length) {
     cn.push("", "<b>📜 最近結算</b>");
@@ -1959,7 +1963,7 @@ const _median = (a) => (a.length ? a.slice().sort((x, y) => x - y)[Math.floor(a.
 function esportsAccount() {
   const roster = loadEsportsRoster(), t = loadEsports();
   const start = roster.bankrollStart || 500, posFrac = Number(process.env.PAPER_STAKE_FRAC || 0.02);
-  const eligible = (s) => !(s.gate && s.gate.fillable === false) && !s.void;
+  const eligible = (s) => !(s.gate && s.gate.fillable === false) && !s.void && !isYield(s);
   const sigs = Object.values(t.signals || {}).filter(eligible);
   const settled = sigs.filter((s) => s.settled).sort((a, b) => (a.kickoffMs || 0) - (b.kickoffMs || 0));
   const r = simulateKelly(settled, { flat: posFrac, bankroll: start, capFrac: Number(process.env.EVENT_CAP_FRAC || 0.05), keyOf: gameKeyOf });
@@ -2073,7 +2077,8 @@ function buildDashboard() {
     if (s.hedged) x += ` <span class="neg" title="同一錢包在同場同盤類雙向持倉=做市/梯子交易, 不是方向信號, 整組已剔出賬戶">⚖️對沖</span>`;
     if (s.gate && s.gate.fillable === false) x += ` <span class="neg" title="點差${s.gate.spreadC}¢/深度不夠${s.gate.depthOk === false ? "(吃不滿$" + s.gate.testUsd + ")" : ""} → 跟不進, 已剔出賬戶">⛔跟不進</span>`;
     if (s.marketSlug && s.eventSlug && s.marketSlug !== s.eventSlug) x += ` <span class="muted" title="賽事子盤：點開落在賽事頁(默認勝負盤)，往下找此盤才是此價">子盤</span>`;
-    if (Math.round((s.entry || 0) * 100) >= 80) x += ` <span class="warn2" title="價高=低賠率(收息型)，贏了上檔小、輸一次抹多次">⚠️低賠</span>`;
+    if (Math.round((s.entry || 0) * 100) >= 90) x += ` <span class="neg" title="≥90¢純收息(上檔≤10¢), 已剔出賬戶">💤收息剔除</span>`;
+    else if (Math.round((s.entry || 0) * 100) >= 80) x += ` <span class="warn2" title="80-89¢強熱門(低賠), 保留但風險大">⚠️低賠</span>`;
     return x;
   };
   const sgRow = (s, settled) => {
@@ -2158,7 +2163,7 @@ function buildDashboard() {
   const retiredHtml = (paper.retired.length || paper.mmList.length) ? `<div class="det-h">🚫 停跟名單（單向閘門 · 永不回補）</div><div style="font-size:13px">${paper.retired.map((r) => `<span class="str-pill tent" title="雙負閘門: n≥${Number(process.env.RETIRE_MIN_N || 10)} 且 ROI<0 且 CLV不為正">🚫 ${esc((r.name || "").slice(0, 10))} · ${esc(r.kind)} <span class="muted">${r.n}注 ${r.roi}%</span></span>`).join("")}${paper.mmList.map((m) => `<span class="str-pill tent" title="做市預過濾: 被捕捉注中對沖占比≥${Math.round(Number(process.env.MM_HEDGE_RATIO || 0.6) * 100)}% = 梯子/做市型, 方向腿只是殘渣">🤖 ${esc((m.name || "").slice(0, 10))} <span class="muted">${m.hedged}/${m.n}對沖</span></span>`).join("")}</div>` : "";
   const paperHtml = `<div class="card">
     <div class="pc-head"><span class="badge ${paperCls}">🎲</span><b>本金 $1000 → 現值 $${paper.bankroll.toLocaleString()}</b><span class="${roiCls(paper.roi)}" style="font-size:18px">${roiTxt(paper.roi, "%")}</span><span class="muted">等注${Math.round(paper.stakeFrac * 100)}% · 按你能成交價 · 對照¼Kelly: $${paper.kellyAlt.bankroll.toLocaleString()}(${roiTxt(paper.kellyAlt.roi, "%")})</span></div>
-    <div style="margin:6px 0">${paper.n ? `已結算 <b>${paper.n}</b> 注 · 勝率 <b>${paper.winrate}%</b> · 最大回撤 <b class="neg">-${paper.maxDD}%</b>` : "⏳ 尚無已結算（等亮燈信號的賽事結算）"} · 進行中 <b>${paper.openN}</b> 注 · 在押 ~<b>$${paper.openExposure.toLocaleString()}</b> · 浮盈 <b class="${roiCls(paper.unrealTotal)}">${paper.unrealTotal >= 0 ? "+" : ""}$${paper.unrealTotal.toLocaleString()}</b>${paper.blocked ? ` · <span class="neg">⛔${paper.blocked}跟不進</span>` : ""}${paper.hedgedN ? ` · <span class="neg">⚖️${paper.hedgedN}對沖對消(已剔除)</span>` : ""}${paper.voidN ? ` · <span class="muted">🕳️${paper.voidN}作廢(取消/延期)</span>` : ""}${paper.xconfN ? ` · <span class="warn2">🤝${paper.xconfN}分歧棄權(候選對賭)</span>` : ""}</div>
+    <div style="margin:6px 0">${paper.n ? `已結算 <b>${paper.n}</b> 注 · 勝率 <b>${paper.winrate}%</b> · 最大回撤 <b class="neg">-${paper.maxDD}%</b>` : "⏳ 尚無已結算（等亮燈信號的賽事結算）"} · 進行中 <b>${paper.openN}</b> 注 · 在押 ~<b>$${paper.openExposure.toLocaleString()}</b> · 浮盈 <b class="${roiCls(paper.unrealTotal)}">${paper.unrealTotal >= 0 ? "+" : ""}$${paper.unrealTotal.toLocaleString()}</b>${paper.blocked ? ` · <span class="neg">⛔${paper.blocked}跟不進</span>` : ""}${paper.hedgedN ? ` · <span class="neg">⚖️${paper.hedgedN}對沖對消(已剔除)</span>` : ""}${paper.voidN ? ` · <span class="muted">🕳️${paper.voidN}作廢(取消/延期)</span>` : ""}${paper.yieldN ? ` · <span class="muted">💤${paper.yieldN}收息剔除(≥90¢)</span>` : ""}${paper.xconfN ? ` · <span class="warn2">🤝${paper.xconfN}分歧棄權(候選對賭)</span>` : ""}</div>
     ${curveHtml}${vertHtml}${boardHtml2}${posTable}${histHtml}${retiredHtml}
     <div class="banner">✅ <b>前向 · 樣本外</b>：只跟凍結擅長盤之後、真·未來出現的亮燈信號，按你能成交的價下注、真賽果結算 —— 這是「跟不跟得賺」的誠實答案（不是回放，需攢幾週）。仍：非投注建議，未證明 edge。</div></div>`;
   const lb = (led.bets || []).filter((b) => b.settled);
