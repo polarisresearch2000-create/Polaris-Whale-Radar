@@ -29,7 +29,7 @@ loadEnv(path.join(__dirname, ".env"));
 const PROFILE = (process.env.PROFILE || "").toUpperCase();
 const TAG = (process.env.POLY_TAG || "crypto").toLowerCase();
 const LABEL = process.env.VERTICAL_LABEL || "Crypto"; // 消息中显示的赛道名
-const VERSION = "V10.5"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
+const VERSION = "V10.6"; // 版本号(每次迭代升级时更新; 同步 CHANGELOG.md 与启动脚本横幅)
 const TOKEN = process.env[`${PROFILE}_BOT_TOKEN`] || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL =
   process.env[`${PROFILE}_CHANNEL`] || process.env.TELEGRAM_CHANNEL || "@polarisresearch2000";
@@ -1981,6 +1981,7 @@ async function trackEsportsShadow() {
 const _median = (a) => (a.length ? a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)] : null);
 function esportsAccount() {
   const roster = loadEsportsRoster(), t = loadEsports();
+  applyLiveOverlay(t); // serve模式: 用内存实时价覆盖(电竞单局盘变化快, 比文件新才覆盖)
   const start = roster.bankrollStart || 500, posFrac = Number(process.env.PAPER_STAKE_FRAC || 0.02);
   const eligible = (s) => !(s.gate && s.gate.fillable === false) && !s.void && !isYield(s);
   const sigs = Object.values(t.signals || {}).filter(eligible);
@@ -2237,7 +2238,8 @@ function buildDashboard() {
     const uu = s.unreal != null ? `<span class="${roiCls(s.unreal)}">${s.unreal >= 0 ? "+" : ""}$${Math.abs(s.unreal) < 1 ? s.unreal.toFixed(1) : Math.round(s.unreal)}</span>` : "-";
     return `<tr><td>⏰${esc(koHKT(s.kickoffMs) || "?")}</td><td><b>$${s.stake}</b></td><td>${esc(s.name)}</td><td><span class="mtag">${esc(mi.type)}</span></td><td>${link}</td><td><b>押 ${esc(s.outcome)}</b></td><td>${Math.round(s.entry * 100)}¢${s.nowPrice != null ? `→${Math.round(s.nowPrice * 100)}¢` : ""}</td><td class="muted">對手≈${mi.oppPx != null ? mi.oppPx + "¢" : "-"}</td><td>${mi.spreadC != null ? mi.spreadC + "¢" : "-"}</td><td>${uu}</td></tr>`;
   };
-  const espPos = esp.positions.length ? `<div class="det-h">📌 進行中（⏰最快開賽在前 · 盤口詳情）</div><table class="grid det"><thead><tr><th>開賽</th><th>注</th><th>專家</th><th>盤口</th><th>對局</th><th>押方</th><th>成本→現價</th><th>對手價</th><th>點差</th><th>浮盈</th></tr></thead><tbody>${esp.positions.slice(0, 15).map(espPosRow).join("")}</tbody></table>` : "";
+  const espPxTs = Math.max(0, ...esp.positions.map((s) => s.nowTs || 0));
+  const espPos = esp.positions.length ? `<div class="det-h">📌 進行中（⏰最快開賽在前 · 盤口詳情）<span class="muted"> 現價刷新於 ${espPxTs ? dHK(espPxTs) + " HKT" : "-"}（電競單局盤變化快, F5 拉最新, 最多3分鐘舊）</span></div><table class="grid det"><thead><tr><th>開賽</th><th>注</th><th>專家</th><th>盤口</th><th>對局</th><th>押方</th><th>成本→現價</th><th>對手價</th><th>點差</th><th>浮盈</th></tr></thead><tbody>${esp.positions.slice(0, 15).map(espPosRow).join("")}</tbody></table>` : "";
   const espHtml = `<div class="card"><div class="pc-head"><span class="badge ${espCls}">🎮</span><b>本金 $${esp.start} → 現值 $${esp.bankroll.toLocaleString()}</b><span class="${roiCls(esp.roi)}" style="font-size:18px">${roiTxt(esp.roi, "%")}</span><span class="muted">等注2% · 4位電競原生方向專家 · 只跟賽前直向</span></div>
     <div style="margin:6px 0">${esp.n ? `已結算 <b>${esp.n}</b> 注 · 勝率 <b>${esp.winrate}%</b> · 均CLV <b class="${roiCls(esp.clvMean)}">${esp.clvMean != null ? roiTxt(esp.clvMean, "pt") : "-"}</b>（中位 ${esp.clvMed != null ? esp.clvMed + "pt" : "-"}）· 回撤 <b class="neg">-${esp.maxDD}%</b>` : "⏳ 尚無已結算（等這4位出賽前直向注 + 賽事結算）"} · 進行中 <b>${esp.openN}</b> 注 · 在押 ~$${esp.openExposure}</div>
     ${espBoard}${espPos}${espCurve}${espHist}
@@ -2268,12 +2270,16 @@ async function refreshLiveOverlay() {
   if (Date.now() - _liveOverlay.ts < LIVE_S * 1000) return;
   _liveOverlay.ts = Date.now();
   try {
-    const t = loadStrengthTrack();
-    const open = Object.values(t.signals || {}).filter((s) => s.afterFreeze !== false && !s.settled && followable(s) && s.gammaId != null).slice(0, 30);
+    // 主账户 strength 未结算仓 + 电竞影子未结算仓, 都现拉实时价(电竞单局盘变化快, 尤其需要)
+    const t = loadStrengthTrack(), et = loadEsports();
+    const open = [
+      ...Object.values(et.signals || {}).filter((s) => !s.settled && !s.void && s.gammaId != null), // 电竞放前面(单局盘变化快), 保证不被 slice 截掉
+      ...Object.values(t.signals || {}).filter((s) => s.afterFreeze !== false && !s.settled && followable(s) && s.gammaId != null),
+    ].slice(0, 60);
     for (const s of open) {
       const mk = await getMarketNow(s.gammaId).catch(() => null);
       const p = mk && mk.price[s.outcome];
-      if (p > 0 && p < 1) _liveOverlay.px.set(s.gammaId + "|" + s.outcome, { p, ts: Date.now() });
+      if (p > 0 && p < 1) _liveOverlay.px.set(s.gammaId + "|" + s.outcome, { p, ts: Date.now(), closed: !!(mk && mk.closed) });
     }
   } catch {}
 }
